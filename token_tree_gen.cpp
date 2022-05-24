@@ -37,13 +37,13 @@ struct token_tree
 
 
 token_tree token_tree_gen(){
-    add_token("int");
+    add_token(";");
     add_token("intj");
     add_token("float");
-    add_token("unsigned");
+    add_token("unsignededededddddddddddddddddddddddddddddddddd");
     add_token(" ");
     add_token("void");
-    add_token(";");
+    add_token("int");
     add_token("+");
     add_token("*");
     add_token("-");

@@ -12,7 +12,7 @@ const char* shader_source =
 
 int main(int argc, char *argv[])
 {
-    
+    printf(" /\\_/\\\n( o.o )   ~~ meowcc verion b 0.1 ~~\n > ^ < \n");
 
 
     gl_init();
