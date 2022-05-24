@@ -1,0 +1,4 @@
+#!
+g++ -c glad.c
+g++ test1.cpp -o bin glad.o -lglfw -ldl
+./bin

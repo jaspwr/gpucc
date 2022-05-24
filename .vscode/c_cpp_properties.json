@@ -1,0 +1,37 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/usr/include/c++/11.3.0",
+                "/usr/include/"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/g++",
+            "cStandard": "gnu17",
+            "cppStandard": "gnu++17",
+            "intelliSenseMode": "linux-gcc-x64",
+            "compilerArgs": [
+                "-lglfw",
+                "-lGL",
+                "-lm",
+                "-lX11",
+                "-lpthread",
+                "-lXi",
+                "-lXrandr",
+                "-ldl",
+                "-lglfw",
+                "-lrt",
+                "-lm",
+                "-ldl",
+                "-lGLEW",
+                "-lGL",
+                "-lX11",
+                "-lGLU",
+                "-lOpenGL"
+            ]
+        }
+    ],
+    "version": 4
+}
