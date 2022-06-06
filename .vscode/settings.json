@@ -50,7 +50,7 @@
         "typeinfo": "cpp",
         "shader.cpp": "c",
         "chrono": "cpp",
-        "*.glsl": "cpp",
+        "*.glsl": "glsl",
         "*.comp": "cpp",
         "ctime": "cpp",
         "ratio": "cpp",

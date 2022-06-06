@@ -1,3 +1,6 @@
+R"(
+// This is a prototype RGBA_32F inplementation
+
 #version 460 core
 layout(local_size_x = 8, local_size_y = 4, local_size_z = 1) in;
 layout(rgba32f, binding = 1) writeonly uniform image2D screen;
@@ -161,7 +164,7 @@ void parse_tokens(in ivec2 pos, in ivec2 dims, out vec4 token_ids){
 
 }
 
-
+	
 void main()
 {
 	vec4 pixel = vec4(170./255.);
@@ -174,4 +177,4 @@ void main()
 
 	barrier();
 	imageStore(screen, pixel_coords, pixel);
-}
+})"

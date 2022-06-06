@@ -3,10 +3,10 @@
 #include <chrono> 
 
 #include "shader.cpp"
-#include "token_tree_gen.cpp"
+#include "yacc_parser.cpp"
 
 const char* shader_source =
-#include "stringified_shaders/pass1.comp"
+#include "stringified_shaders/pass1.glsl"
 ;
 
 
@@ -25,9 +25,6 @@ int main(int argc, char *argv[])
             print(PRINT_ERROR,"Too many arguments");
         return 1;
     }
-
-
-
 
 
     auto start = std::chrono::high_resolution_clock::now();
@@ -55,7 +52,35 @@ int main(int argc, char *argv[])
 
 	fclose(in);
 
+
+    //TODO: make everything here preprocessed
+    flush_tree();
+    add_token(";");
+    add_token("intj");
+    add_token("float");
+    add_token("unsignededededddddddddddddddddddddddddddddddddd");
+    add_token(" ");
+    add_token("void");
+    add_token("int");
+    add_token("+");
+    add_token("*");
+    add_token("-");
+    add_token("/");
+    add_token("include");
+    add_token("++");
+    add_token("--");
+    add_token("=");
+    add_token("==");
+    add_token("+=");
+    add_token("-=");
+    add_token("*=");
+    add_token("/=");
+    add_token("if");
+    add_token("else");
+
     token_tree tt = token_tree_gen();
+    
+
     // for(int i = 0; i < 256*4 + 50; i++){
     //     printf("%i\n",tt.data[i]);
     // }
@@ -64,6 +89,7 @@ int main(int argc, char *argv[])
 
 
     GLuint tree = load_to_vram(tt.data,258,tt.height,GL_RGBA32F, GL_RGBA);
+    cst _cst = yacc_token_tree_gen(&tt);
 
     shader shad;
     shader_binding shader_bindings[3];
@@ -113,11 +139,6 @@ int main(int argc, char *argv[])
     #endif
 
 	glfwTerminate();
-
-
-
-    
-
 	return 0;
 }
 
