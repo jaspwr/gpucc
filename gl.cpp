@@ -1,6 +1,4 @@
-#include"libraries/include/glad/glad.h"
-#include"libraries/include/GLFW/glfw3.h"
-#include "ui.cpp"
+#include "gl.h"
 
 #define DEBUG_WINDOW
 
@@ -23,8 +21,6 @@ void main()
 	FragColor = texture(screen, UVs);
 })";
 
-const unsigned int SCREEN_WIDTH = 1024;
-const unsigned int SCREEN_HEIGHT = 1024;
 
 const unsigned short OPENGL_MAJOR_VERSION = 4;
 const unsigned short OPENGL_MINOR_VERSION = 6;
@@ -67,18 +63,6 @@ GLuint create_vram_image(int data_length,  GLenum format){
 }
 
 bool vSync = true;
-GLfloat vertices[] =
-{
-	-1.0f, -1.0f , 0.0f, 0.0f, 0.0f,
-	-1.0f,  1.0f , 0.0f, 0.0f, 1.0f,
-	 1.0f,  1.0f , 0.0f, 1.0f, 1.0f,
-	 1.0f, -1.0f , 0.0f, 1.0f, 0.0f,
-};
-GLuint indices[] =
-{
-	0, 2, 1,
-	0, 3, 2
-};
 
 
 void GLAPIENTRY

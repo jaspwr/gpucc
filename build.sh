@@ -8,7 +8,7 @@ for FILE in *; do
 done
 cd ..
 # Compile glad and main
-g++ -c libraries/include/glad/glad.c
-g++ main.cpp -o bin/meow glad.o -lglfw -ldl
+#g++ -c libraries/include/glad/glad.c
+g++ -o bin/meow glad.o -lglfw -ldl lang.cpp main.cpp gl.cpp shader.cpp ui.cpp yacc_parser.cpp token_tree_gen.cpp
 # Run program (comment out if you don't want to run after compiling)
-./bin/meow test.meow
+./bin/meow tests/test.meow

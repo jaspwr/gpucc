@@ -1,63 +1,44 @@
+#include "token_tree_gen.h"
 // This needs a lot of redesigning to work with in conjuection with Yacc
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <string>
-using std::string;
-#include <iostream>
-using std::cout;
-
 int __i = 0;
-struct token{
-    int outp;
-    string string_;
-};
-const int len = 256;
 token tokens[len];
+
 int add_token(const char* str){
+    
     tokens[__i].outp = __i+1;
-    //printf("%s\n", str);
-    tokens[__i].string_ = (string)str;
+    // printf("%s\n", str);
+    // int ind = __i+add;
+    // printf("%i\n", ind);
+    tokens[__i].string_ = str;
     //std::cout << tokens[__i].string_;
     __i++;
     return __i;
 }
 
 
-
-struct tree_row_item{
-    unsigned char x_jump = 0;   
-    unsigned char exit_id = 0;
-    unsigned char b = 255;
-    unsigned char a = 0;
-};
-
-struct tree_row{
-    int depth;
-    char leading_char;
-    tree_row_item items[256];
-};
-
-struct token_tree
-{
-    unsigned char* data;
-    int height;
-};
-
-int current_capacity = 256;
+int current_capacity = 1000;
 const int _current_capacity = 256;
 tree_row *rows;
 
-tree_row* scuffed_fix;
-void flush_tree(){
-    __i = 0;
-    tree_row* rows1 = rows;
-    tree_row t[_current_capacity];
+//tree_row* scuffed_fix;
+void flush_tree(bool reset_len){
+    if(reset_len)
+        __i = 0;
+    //tree_row* rows1 = rows;
+    tree_row* t = (tree_row*)malloc(_current_capacity*sizeof(tree_row));
+    for(int i = 0; i < _current_capacity; i++){
+        for(int c = 0; c < 256; c++){
+            t[i].items[c].x_jump = 0;
+            t[i].items[c].exit_id = 0;
+            t[i].items[c].b = 255;
+            t[i].items[c].a = 0;
+        }
+    }
     rows = t;
-    if(sizeof(&rows) > 32)
-        scuffed_fix = rows1;
+    //if(sizeof(&rows) > 32)
         //delete &rows1;
+        // //scuffed_fix = rows1; 
 }
 
 token_tree token_tree_gen(){
@@ -102,19 +83,20 @@ token_tree token_tree_gen(){
     }
     unsigned char str[] = "int";
     unsigned char row = 0;
-    int __i;
-    for(__i = 0; str[__i] != '\0'; __i++){
+    int ____i;
+    for(____i = 0; str[____i] != '\0'; ____i++){
         //printf("\n%i\n\n",rows[row].items[str[__i]].a);
-        row = rows[row].items[str[__i]].a;
+        row = rows[row].items[str[____i]].a;
         
     }
-    __i--;
+    ____i--;
     //printf("\n%i\n\n",rows[row].items[str[__i]].x_jump);
 
 
     token_tree ret;
-    ret.data = (unsigned char*)rows;
+    ret.data = rows;
     ret.height = height;
+    ret.token_count = __i;
     //free(rows);
     return ret;
 }

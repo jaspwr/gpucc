@@ -54,6 +54,14 @@
         "*.comp": "cpp",
         "ctime": "cpp",
         "ratio": "cpp",
-        "list": "cpp"
+        "list": "cpp",
+        "bitset": "cpp",
+        "ranges": "cpp",
+        "span": "cpp",
+        "regex": "cpp",
+        "valarray": "cpp",
+        "inc.h": "c",
+        "shader.h": "c",
+        "fstream": "cpp"
     }
 }

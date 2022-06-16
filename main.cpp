@@ -1,9 +1,6 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <chrono> 
-
-#include "shader.cpp"
-#include "yacc_parser.cpp"
+#include "inc.h"
+#include "lang.cpp"
+//#include "yacc_parser.cpp"
 
 const char* shader_source =
 #include "stringified_shaders/pass1.glsl"
@@ -53,46 +50,78 @@ int main(int argc, char *argv[])
 	fclose(in);
 
 
-    //TODO: make everything here preprocessed
-    flush_tree();
-    add_token(";");
-    add_token("intj");
-    add_token("float");
-    add_token("unsignededededddddddddddddddddddddddddddddddddd");
-    add_token(" ");
-    add_token("void");
-    add_token("int");
-    add_token("+");
-    add_token("*");
-    add_token("-");
-    add_token("/");
-    add_token("include");
-    add_token("++");
-    add_token("--");
-    add_token("=");
-    add_token("==");
-    add_token("+=");
-    add_token("-=");
-    add_token("*=");
-    add_token("/=");
-    add_token("if");
-    add_token("else");
+    //taken from here
 
-    token_tree tt = token_tree_gen();
+//     //TODO: make everything here preprocessed
+//     flush_tree(true);
+//     char * dictionary = R"(auto
+// break
+// case
+// char
+// const
+// continue
+// default
+// do
+// double
+// else
+// enum
+// extern
+// float
+// for
+// goto
+// if
+// inline 1, a
+// int
+// long
+// register
+// restrict 1, a
+// return
+// short
+// signed
+// sizeof
+// static
+// struct
+// switch
+// typedef
+// union
+// unsigned
+// void
+// volatile
+// while
+// _Alignas
+// _Alignof
+// _Atomic
+// _Bool
+// _Complex
+// _Generic
+// _Imaginary 
+// _Noreturn 
+// _Static_assert 
+// _Thread_local)";
+
+//     add_token(";");
+//     add_token("intj");
+//     add_token("float");
+//     add_token("unsignededededddddddddddddddddddddddddddddddddd");
+//     add_token(" ");
+//     add_token("void");
+//     add_token("int");
+ 
+
+//     token_tree tt = token_tree_gen();
     
-
-    // for(int i = 0; i < 256*4 + 50; i++){
-    //     printf("%i\n",tt.data[i]);
-    // }
-    // printf("%i",tt.height);
-
-
-
-    GLuint tree = load_to_vram(tt.data,258,tt.height,GL_RGBA32F, GL_RGBA);
-    cst _cst = yacc_token_tree_gen(&tt);
+    // cst _cst = yacc_token_tree_gen(&tt);
+    // GLuint tree = load_to_vram((unsigned char*)tt.data,258,tt.height,GL_RGBA32F, GL_RGBA);
+    // GLuint cst = load_to_vram((unsigned char*)_cst.rows,CST_ROW_WIDTH,512,GL_RGBA32F, GL_RGBA);
+    // free(tt.data);
+    lang::regen_lang();
 
     shader shad;
-    shader_binding shader_bindings[3];
+    shader_binding shader_bindings[4];
+    // shader_bindings[0] = {0,c,GL_READ_ONLY,GL_RG32F};
+    // shader_bindings[1] = {1,screenTex,GL_WRITE_ONLY,GL_RG32F};
+    // shader_bindings[2] = {2,tree,GL_READ_ONLY,GL_RG32F};
+    // shader_bindings[3] = {3,cst,GL_READ_ONLY,GL_RG32F};
     shader_bindings[0].binding = 0;
     shader_bindings[0].texture = c;
     shader_bindings[0].access = GL_READ_ONLY;
@@ -102,9 +131,13 @@ int main(int argc, char *argv[])
     shader_bindings[1].access = GL_WRITE_ONLY;
     shader_bindings[1].format = GL_RGBA32F;
     shader_bindings[2].binding = 2;
-    shader_bindings[2].texture = tree;
+    shader_bindings[2].texture = lang::vram_token_tree;
     shader_bindings[2].access = GL_READ_ONLY;
     shader_bindings[2].format = GL_RGBA32F;
+    shader_bindings[3].binding = 3;
+    shader_bindings[3].texture = lang::vram_cst;
+    shader_bindings[3].access = GL_READ_ONLY;
+    shader_bindings[3].format = GL_RGBA32F;
     shad.init(shader_bindings,&shader_source);
     shad.exec(std::ceil(SCREEN_WIDTH / 8), std::ceil(SCREEN_HEIGHT / 4), 1);
 

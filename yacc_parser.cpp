@@ -1,4 +1,4 @@
-#include "token_tree_gen.cpp"
+#include "yacc_parser.h"
 
 const char *yacc = R"(primary_expression
 	: IDENTIFIER
@@ -405,7 +405,8 @@ function_definition
 )";
 
 int catergorise(char x){
-    if(x < 0x21)
+	//this chould be changed to return an enum but it literally just checks if theyre not equal
+    if(x < '!')
         return 1;
     if(x == '\'')
         return 2;
@@ -414,35 +415,6 @@ int catergorise(char x){
     return 0;
 }
 
-struct sentance{
-    unsigned char* tokens;
-};
-
-struct abstract_token{
-    unsigned char identifier;
-    sentance* handles;
-};
-
-struct cst_rgba_pixel
-{
-    unsigned char r = 0;
-    unsigned char g = 0;
-    unsigned char b = 0;
-    unsigned char a = 0;
-};
-
-#define CST_ROW_WIDTH 256
-struct cst_row
-{
-    cst_rgba_pixel vals[CST_ROW_WIDTH];
-};
-
-
-struct cst{
-    //abstract_token* abstract_tokens;
-    cst_row rows[512];
-    int height;
-};
 
 enum contexts{
     ab_tokens,
@@ -450,13 +422,52 @@ enum contexts{
     norm_token
 };
 
+
+void add_to_working_row(int* in_sentance_index, int* working_row, unsigned int t, cst* ret, int* replacment){
+	if(*in_sentance_index == 0){
+		//std::cout << (int)(t) << " -> " << tokens[t].string_ << std::endl;
+		*working_row = t;
+		if(*working_row > ret->height)
+			ret->height = *working_row;
+		if(*working_row < 0)
+			*working_row = 0;
+		while(ret->rows[*working_row].vals[*in_sentance_index].r != 0){
+			(*in_sentance_index) += 1;
+			if(*in_sentance_index > CST_ROW_WIDTH)
+			{
+				//TODO: fail and die
+				//throw 1;
+				break;
+			}
+		}
+		//in_sentance_index--;
+		ret->rows[*working_row].vals[*in_sentance_index].r = *replacment;
+		ret->rows[*working_row].vals[(*in_sentance_index)+1].r = 1;
+
+	}else{
+		//std::cout << "\t" << (int)(*t) << " -> " << tokens[*t].string_ << std::endl;
+		ret->rows[*working_row].vals[*in_sentance_index].r = (unsigned char)t;
+		ret->rows[*working_row].vals[(*in_sentance_index)+1].r = 1;
+		//std::cout << "\t" << tokens[(unsigned char)t].string_ << std::endl;
+		//std::cout << "\t" << (unsigned int)t << std::endl;
+	}
+	*in_sentance_index += 1;
+}
+
+
 cst yacc_token_tree_gen(token_tree* main_tt){
 //int main(){
-    flush_tree();
+
+    flush_tree(true);
+	
     const int COLON = add_token(":"); // 1
     const int LINE_THING = add_token("|");  // 2
     const int QUOTE = add_token("'"); // 3 
     const int SEMICOLON = add_token(";"); // 4
+	for(int iiii = 0; iiii < main_tt->token_count-4; iiii++)
+		add_token(";i");
+
+
     cst ret;
     token_tree tt = token_tree_gen();
     int len = strlen(yacc);
@@ -473,11 +484,12 @@ cst yacc_token_tree_gen(token_tree* main_tt){
 	char *substr__;
 
     for(i = 0; i < len; i++){
+		//could be a little better inplemented so that catergorise isnt run twice on the same char
         if(i != 0 && catergorise(yacc[i]) != catergorise(yacc[i - 1])){
             unsigned int t = 0;
             bool white_space = false;
             if(!token_unknown)
-                t = rows[row].items[yacc[i-1]].x_jump - 1;
+                t = tt.data[row].items[yacc[i-1]].x_jump - 1;
             else{
                 int _len = i - start_char;
                 char substr[_len+1];
@@ -533,10 +545,10 @@ cst yacc_token_tree_gen(token_tree* main_tt){
                     }
                     break;
                 case 2: // quote
-                    if(context == contexts::norm_token)
-                        context = contexts::_sentance;
-                    else
+                    if(context != contexts::norm_token)
                         context = contexts::norm_token;
+                    else
+                        context = contexts::_sentance;
                     break;
                 case 3: //semicolon
                     if(context != contexts::norm_token)
@@ -558,49 +570,33 @@ cst yacc_token_tree_gen(token_tree* main_tt){
 					{
 						unsigned char ___row = 0;
 						int __i;
-						printf("asdsddasd");
-						for(__i = 0; substr__[__i] != '\0'; __i++){
-							//printf("\n%i\n\n",rows[row].items[str[__i]].a);
-							___row = scuffed_fix[___row].items[substr__[__i]].a;
-							
+						   // declaring character array
+						int n = tokens[t].string_.length();
+						char str[n + 1];
+						// copying the contents of the
+						// string to char array
+						strcpy(str, tokens[t].string_.c_str());
+						//printf("%s", str);
+						//std::cout << tokens[t].string_;
+						for(__i = 0; str[__i] != '\0'; __i++){
+							//printf("\n\t%i\n",str[__i]);
+							___row = main_tt->data[___row].items[str[__i]].a;
 						}
 						__i--;
-						printf("\n%i\n\n",(int)(scuffed_fix[___row].items[substr__[__i]].x_jump));
-						
+						//printf(" -> %i\n",(int)(main_tt->data[___row].items[str[__i]].x_jump));
+						add_to_working_row(&in_sentance_index,&working_row,
+										   (unsigned int)(main_tt->data[___row].items[str[__i]].x_jump-1),
+										   &ret,&replacment);
+						//add_to_working_row(&in_sentance_index,&working_row,t,&ret,&replacment);
 					}
                         break;
                     case contexts::_sentance:
                         
                         //std::cout << (int)(t) << " -> " << tokens[replacment].string_  << std::endl;
-                        if(in_sentance_index == 0){
-                            //std::cout << (int)(t) << " -> " << tokens[t].string_ << std::endl;
-                            working_row = t;
-                            if(working_row > ret.height)
-                                ret.height = working_row;
-                            if(working_row < 0)
-                                working_row = 0;
-                            while(ret.rows[working_row].vals[in_sentance_index].r != 0){
-                                in_sentance_index++;
-                                if(in_sentance_index > CST_ROW_WIDTH)
-                                {
-                                    //TODO: fail and die
-									throw 1;
-                                    break;
-                                }
-                            }
-                            //in_sentance_index--;
-                            ret.rows[working_row].vals[in_sentance_index].r = replacment;
-                            ret.rows[working_row].vals[in_sentance_index+1].r = 1;
+                        add_to_working_row(&in_sentance_index,&working_row,t,&ret,&replacment);
 
-                        }else{
-                            //std::cout << "\t" << (int)(t) << " -> " << tokens[t].string_ << std::endl;
-                            ret.rows[working_row].vals[in_sentance_index].r = (unsigned char)t;
-                            ret.rows[working_row].vals[in_sentance_index+1].r = 1;
-                            //std::cout << "\t" << tokens[(unsigned char)t].string_ << std::endl;
-                            //std::cout << "\t" << (unsigned int)t << std::endl;
-                        }
-                        in_sentance_index += 1;
                         break;
+						
                     }
                     break;
                 }
@@ -609,21 +605,26 @@ cst yacc_token_tree_gen(token_tree* main_tt){
         }
         if(!token_unknown)
         {
-            row = rows[row].items[yacc[i]].a;
+            row = tt.data[row].items[yacc[i]].a;
             if(row == 0){
                 token_unknown = true;
             }
         }
     }
-    return ret;
+
+
+    //return ret;
+	main_tt_height = 22;
     for(int iii = 0; iii < 256; iii++){
         int _in_sentance_index = 0;
         std::cout << iii << " -> " << tokens[iii].string_ << std::endl;
+        //std::cout << iii << " -> " << iii<< std::endl;
         while(ret.rows[iii].vals[_in_sentance_index].r != 0){
             //printf("%s ", tokens[ret.rows[iii].vals[_in_sentance_index].r].string_);
             //printf("%i ", ret.rows[iii].vals[_in_sentance_index].r);
-            
+            //ret.rows[iii].vals[_in_sentance_index].r += main_tt_height;
             std::cout << "\t" << tokens[ret.rows[iii].vals[_in_sentance_index].r].string_  << std::endl;
+            //std::cout << "\t" << (int)ret.rows[iii].vals[_in_sentance_index].r  << std::endl;
             _in_sentance_index++;
             if(_in_sentance_index > CST_ROW_WIDTH)
             {
@@ -632,7 +633,10 @@ cst yacc_token_tree_gen(token_tree* main_tt){
             }
         }
     }
-    //return ret;
+
+	free(tt.data);
+    return ret;
+
     //return 0;
 }
 

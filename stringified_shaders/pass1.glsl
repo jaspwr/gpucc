@@ -6,6 +6,7 @@ layout(local_size_x = 8, local_size_y = 4, local_size_z = 1) in;
 layout(rgba32f, binding = 1) writeonly uniform image2D screen;
 layout (rgba32f, binding = 0) readonly uniform image2D c;
 layout (rgba32f, binding = 2) readonly uniform image2D token_tree;
+layout (rgba32f, binding = 3) readonly uniform image2D cst;
 
 void classify(in uint cha, out int _class){
 	//TODO: optimise with frequency analysis
@@ -172,8 +173,8 @@ void main()
 	ivec2 dims = imageSize(screen);
 	// float x = -(float(pixel_coords.x * 2 - dims.x) / dims.x); // transforms to [-1.0, 1.0]
 	// float y = -(float(pixel_coords.y * 2 - dims.y) / dims.y); // transforms to [-1.0, 1.0]
-	parse_tokens(pixel_coords,dims, pixel);
-	//pixel = vec4(imageLoad(token_tree, ivec2(gl_GlobalInvocationID.x,gl_GlobalInvocationID.y)).r+48./255.,0,0,0);
+	//parse_tokens(pixel_coords,dims, pixel);
+	pixel = vec4(imageLoad(cst, pixel_coords).r,0,0.,1.);
 
 	barrier();
 	imageStore(screen, pixel_coords, pixel);
