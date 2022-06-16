@@ -11,6 +11,6 @@ class lang
 
     private:
         inline static token_tree _token_tree;
-        inline static cst _cst;
+        inline static token_tree _cst;
         lang() {}
 };

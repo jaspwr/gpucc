@@ -26,7 +26,7 @@ struct token_tree
     int token_count;
 };
 
-extern int add_token(const char* str);
+extern int add_token(const char* str, int outp);
 extern void flush_tree(bool reset_len);
 token_tree token_tree_gen();
 const int len = 400;

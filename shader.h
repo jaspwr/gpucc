@@ -15,8 +15,8 @@ class shader{
     public:
         GLuint index;
         GLuint program_index;
-        shader_binding *shader_bindings;
-        void init(shader_binding *_shader_bindings, const char **shader_source);
+        shader_binding *shader_bindings; 
         void exec(GLuint dsp_x, GLuint dsp_y, GLuint dsp_z);
+        shader(shader_binding *_shader_bindings, const char **shader_source);
 
 };

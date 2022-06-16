@@ -1,3 +1,5 @@
-Potential Ideas
-    Make all tree generations preprocessed
-    Swap ASCII catergoriser with a large precomputed table of caterories
+Make all tree generations preprocessed
+Swap ASCII catergoriser with a large precomputed table of caterories
+tree builder
+set up tree memory vram allocation
+design agents

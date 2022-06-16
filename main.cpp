@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
     // free(tt.data);
     lang::regen_lang();
 
-    shader shad;
+    
     shader_binding shader_bindings[4];
     // shader_bindings[0] = {0,c,GL_READ_ONLY,GL_RG32F};
     // shader_bindings[1] = {1,screenTex,GL_WRITE_ONLY,GL_RG32F};
@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
     shader_bindings[3].texture = lang::vram_cst;
     shader_bindings[3].access = GL_READ_ONLY;
     shader_bindings[3].format = GL_RGBA32F;
-    shad.init(shader_bindings,&shader_source);
+    shader shad(shader_bindings,&shader_source);
     shad.exec(std::ceil(SCREEN_WIDTH / 8), std::ceil(SCREEN_HEIGHT / 4), 1);
 
 

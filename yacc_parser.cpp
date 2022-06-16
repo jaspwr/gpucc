@@ -13,9 +13,9 @@ postfix_expression
 	| postfix_expression '(' ')'
 	| postfix_expression '(' argument_expression_list ')'
 	| postfix_expression '.' IDENTIFIER
-	| postfix_expression PTR_OP IDENTIFIER
-	| postfix_expression INC_OP
-	| postfix_expression DEC_OP
+	| postfix_expression '->' IDENTIFIER
+	| postfix_expression '++'
+	| postfix_expression '--'
 	;
 
 argument_expression_list
@@ -25,11 +25,11 @@ argument_expression_list
 
 unary_expression
 	: postfix_expression
-	| INC_OP unary_expression
-	| DEC_OP unary_expression
+	| '++' unary_expression
+	| '--' unary_expression
 	| unary_operator cast_expression
-	| SIZEOF unary_expression
-	| SIZEOF '(' type_name ')'
+	| 'sizeof' unary_expression
+	| 'sizeof' '(' type_name ')'
 	;
 
 unary_operator
@@ -61,22 +61,22 @@ additive_expression
 
 shift_expression
 	: additive_expression
-	| shift_expression LEFT_OP additive_expression
-	| shift_expression RIGHT_OP additive_expression
+	| shift_expression '<<' additive_expression
+	| shift_expression '>>' additive_expression
 	;
 
 relational_expression
 	: shift_expression
 	| relational_expression '<' shift_expression
 	| relational_expression '>' shift_expression
-	| relational_expression LE_OP shift_expression
-	| relational_expression GE_OP shift_expression
+	| relational_expression '<=' shift_expression
+	| relational_expression '>=' shift_expression
 	;
 
 equality_expression
 	: relational_expression
-	| equality_expression EQ_OP relational_expression
-	| equality_expression NE_OP relational_expression
+	| equality_expression '==' relational_expression
+	| equality_expression '!=' relational_expression
 	;
 
 and_expression
@@ -96,12 +96,12 @@ inclusive_or_expression
 
 logical_and_expression
 	: inclusive_or_expression
-	| logical_and_expression AND_OP inclusive_or_expression
+	| logical_and_expression '&&' inclusive_or_expression
 	;
 
 logical_or_expression
 	: logical_and_expression
-	| logical_or_expression OR_OP logical_and_expression
+	| logical_or_expression '||' logical_and_expression
 	;
 
 conditional_expression
@@ -116,16 +116,16 @@ assignment_expression
 
 assignment_operator
 	: '='
-	| MUL_ASSIGN
-	| DIV_ASSIGN
-	| MOD_ASSIGN
-	| ADD_ASSIGN
-	| SUB_ASSIGN
-	| LEFT_ASSIGN
-	| RIGHT_ASSIGN
-	| AND_ASSIGN
-	| XOR_ASSIGN
-	| OR_ASSIGN
+	| '*='
+	| '/='
+	| '%='
+	| '+='
+	| '-='
+	| '<<='
+	| '>>='
+	| '&='
+	| '^='
+	| '|='
 	;
 
 expression
@@ -162,23 +162,23 @@ init_declarator
 	;
 
 storage_class_specifier
-	: TYPEDEF
-	| EXTERN
-	| STATIC
-	| AUTO
-	| REGISTER
+	: 'typedef'
+	| 'extern'
+	| 'static'
+	| 'auto'
+	| 'register'
 	;
 
 type_specifier
-	: VOID
-	| CHAR
-	| SHORT
-	| INT
-	| LONG
-	| FLOAT
-	| DOUBLE
-	| SIGNED
-	| UNSIGNED
+	: 'void'
+	| 'char'
+	| 'short'
+	| 'int'
+	| 'long'
+	| 'float'
+	| 'double'
+	| 'singed'
+	| 'unsigned'
 	| struct_or_union_specifier
 	| enum_specifier
 	| TYPE_NAME
@@ -191,8 +191,8 @@ struct_or_union_specifier
 	;
 
 struct_or_union
-	: STRUCT
-	| UNION
+	: 'struct'
+	| 'union'
 	;
 
 struct_declaration_list
@@ -223,9 +223,9 @@ struct_declarator
 	;
 
 enum_specifier
-	: ENUM '{' enumerator_list '}'
-	| ENUM IDENTIFIER '{' enumerator_list '}'
-	| ENUM IDENTIFIER
+	: 'enum' '{' enumerator_list '}'
+	| 'enum' IDENTIFIER '{' enumerator_list '}'
+	| 'enum' IDENTIFIER
 	;
 
 enumerator_list
@@ -239,8 +239,8 @@ enumerator
 	;
 
 type_qualifier
-	: CONST
-	| VOLATILE
+	: 'const'
+	| 'volatile'
 	;
 
 declarator
@@ -337,8 +337,8 @@ statement
 
 labeled_statement
 	: IDENTIFIER ':' statement
-	| CASE constant_expression ':' statement
-	| DEFAULT ':' statement
+	| 'case' constant_expression ':' statement
+	| 'default' ':' statement
 	;
 
 compound_statement
@@ -364,24 +364,24 @@ expression_statement
 	;
 
 selection_statement
-	: IF '(' expression ')' statement
-	| IF '(' expression ')' statement ELSE statement
-	| SWITCH '(' expression ')' statement
+	: 'if' '(' expression ')' statement
+	| 'if' '(' expression ')' statement 'else' statement
+	| 'switch' '(' expression ')' statement
 	;
 
 iteration_statement
-	: WHILE '(' expression ')' statement
-	| DO statement WHILE '(' expression ')' ';'
-	| FOR '(' expression_statement expression_statement ')' statement
-	| FOR '(' expression_statement expression_statement expression ')' statement
+	: 'while' '(' expression ')' statement
+	| 'do' statement 'while' '(' expression ')' ';'
+	| 'for' '(' expression_statement expression_statement ')' statement
+	| 'for' '(' expression_statement expression_statement expression ')' statement
 	;
 
 jump_statement
-	: GOTO IDENTIFIER ';'
-	| CONTINUE ';'
-	| BREAK ';'
-	| RETURN ';'
-	| RETURN expression ';'
+	: 'goto' IDENTIFIER ';'
+	| 'continue' ';'
+	| 'break' ';'
+	| 'return' ';'
+	| 'return' expression ';'
 	;
 
 translation_unit
@@ -400,243 +400,186 @@ function_definition
 	| declarator declaration_list compound_statement
 	| declarator compound_statement
 	;
-
-
 )";
 
-int catergorise(char x){
-	//this chould be changed to return an enum but it literally just checks if theyre not equal
-    if(x < '!')
-        return 1;
-    if(x == '\'')
-        return 2;
-    if(x == '|' | ':' | ';')
-        return 3;
-    return 0;
-}
-
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 enum contexts{
     ab_tokens,
     _sentance,
     norm_token
 };
+contexts context = contexts::ab_tokens;
 
+int working_row = 0;
+int max_row = 0;
 
-void add_to_working_row(int* in_sentance_index, int* working_row, unsigned int t, cst* ret, int* replacment){
-	if(*in_sentance_index == 0){
-		//std::cout << (int)(t) << " -> " << tokens[t].string_ << std::endl;
-		*working_row = t;
-		if(*working_row > ret->height)
-			ret->height = *working_row;
-		if(*working_row < 0)
-			*working_row = 0;
-		while(ret->rows[*working_row].vals[*in_sentance_index].r != 0){
-			(*in_sentance_index) += 1;
-			if(*in_sentance_index > CST_ROW_WIDTH)
-			{
-				//TODO: fail and die
-				//throw 1;
-				break;
-			}
-		}
-		//in_sentance_index--;
-		ret->rows[*working_row].vals[*in_sentance_index].r = *replacment;
-		ret->rows[*working_row].vals[(*in_sentance_index)+1].r = 1;
-
-	}else{
-		//std::cout << "\t" << (int)(*t) << " -> " << tokens[*t].string_ << std::endl;
-		ret->rows[*working_row].vals[*in_sentance_index].r = (unsigned char)t;
-		ret->rows[*working_row].vals[(*in_sentance_index)+1].r = 1;
-		//std::cout << "\t" << tokens[(unsigned char)t].string_ << std::endl;
-		//std::cout << "\t" << (unsigned int)t << std::endl;
-	}
-	*in_sentance_index += 1;
+int catergorise(char x){
+	//this chould be changed to return an enum but it literally just checks if theyre not equal
+    if(x == '\'')
+        return 2;
+    if(context == contexts::norm_token)
+        return 6;
+    if(x < '!')
+        return 1;
+    if(x == '|')
+		return 3;
+	if(x == ':')
+        return 4;
+	if(x == '&')
+        return 5;
+    return 0;
 }
 
 
-cst yacc_token_tree_gen(token_tree* main_tt){
-//int main(){
+char * _ab_tokens[400];
+int ab_token_counter;
+int starting_ab_token_counter;
+bool str_match(char* s1, char* s2){
+    #define MAX_LEN 500
+    for(int i = 0; i < MAX_LEN && s1[i] != '\0'; i++)
+    {
+        if(s2[i] == '\0' || s1[i] != s2[i])
+            return false;
+    }
+    return true;
+    #undef MAX_LEN
+}
+int get_ab_token_index(char * s){
+    for(int i = starting_ab_token_counter; i < ab_token_counter; i++){
+        if(str_match(s,_ab_tokens[i])){
+            return i;
+        }
+    }
+    //token is not in list and needs to be added
+    int len = strlen(s);
+    _ab_tokens[ab_token_counter] = (char *)malloc(len);
+    for(int i = 0; i < len; i++)
+        (_ab_tokens[ab_token_counter])[i] = s[i];
+    ab_token_counter++;
+    return ab_token_counter-1;
+}
 
+int in_sentance_index = 0;
+int replaces_with = 0;
+char sentance_buffer[10];
+void new_sentace(){
+    if(in_sentance_index != 0){
+        char str[in_sentance_index+1];
+        for(int i = 0; i < in_sentance_index; i++){
+			printf("%c\n", sentance_buffer[i]);
+            str[i] = sentance_buffer[i];
+        }
+		str[in_sentance_index] = '\0';
+        add_token(str,replaces_with);
+    }
+    in_sentance_index = 0;
+}
+
+token_tree gen_tree(token_tree* main_tt){
     flush_tree(true);
-	
-    const int COLON = add_token(":"); // 1
-    const int LINE_THING = add_token("|");  // 2
-    const int QUOTE = add_token("'"); // 3 
-    const int SEMICOLON = add_token(";"); // 4
-	for(int iiii = 0; iiii < main_tt->token_count-4; iiii++)
-		add_token(";i");
+	ab_token_counter = main_tt->height;
+    starting_ab_token_counter = ab_token_counter;
+    int substr_len = 1;
+    int token_start = 0;
+    bool white_space = true;
+    #define MAX_LENGTH 10000
+    for(int i = 0; i < MAX_LENGTH && yacc[i] != '\0'; i++){
+        //if at least one character in token is not an empty char set to false
+        if(yacc[i] > ' ')
+            white_space = false;
 
-
-    cst ret;
-    token_tree tt = token_tree_gen();
-    int len = strlen(yacc);
-    
-    unsigned char row = 0;
-    bool token_unknown = false;
-    int i;
-    int start_char = 0;
-    contexts context = contexts::ab_tokens;
-    int replacment = 0;
-    int main_tt_height = 0;
-    int in_sentance_index = 0;
-    int working_row;
-	char *substr__;
-
-    for(i = 0; i < len; i++){
-		//could be a little better inplemented so that catergorise isnt run twice on the same char
-        if(i != 0 && catergorise(yacc[i]) != catergorise(yacc[i - 1])){
-            unsigned int t = 0;
-            bool white_space = false;
-            if(!token_unknown)
-                t = tt.data[row].items[yacc[i-1]].x_jump - 1;
-            else{
-                int _len = i - start_char;
-                char substr[_len+1];
-                //strncpy(substr, yacc + start_char, _len);
-                for(int ___i = 0; ___i < _len; ___i++){
-                    substr[___i] = yacc[start_char+___i];
+        if(catergorise(yacc[i+1]) != catergorise(yacc[i])){
+            if(substr_len != 0 && !white_space){
+                //run when 'i' reaches end of a token
+                char substr[substr_len + 1];
+                for(int ii = 0; ii < substr_len; ii++){
+                    substr[ii] = yacc[token_start + ii];
                 }
-                substr[_len] = '\0';
-                for(int ii = 0; substr[ii] != '\0'; ii++){
-                    if(substr[ii] < 0x21){
-                        white_space = true;
+                substr[substr_len] = '\0';
+
+                // check for colon, semicolon, ect.
+                bool not_marker = true;
+                if(substr_len == 1)
+                {
+                    not_marker = false;
+                    switch (substr[0])
+                    {
+                    case ':':
+                        if(context != contexts::norm_token)
+                        {
+                            context = contexts::_sentance;
+                            new_sentace();
+                        }
+                        break;
+                    case '|':
+                        if(context != contexts::norm_token)
+                        {
+                            context = contexts::_sentance;
+                            new_sentace();
+                        }
+                        break;
+                    case ';':
+                        if(context != contexts::norm_token)
+                            context = contexts::ab_tokens;
+                        break;
+                    case '\'':
+                        //escape to sentance or begin new 'in quotes' block
+                        if(context == contexts::norm_token)
+                            context = contexts::_sentance;
+                        else
+                            context = contexts::norm_token;
+                        break;
+                    default:
+                        not_marker = true;
                         break;
                     }
                 }
-                if(!white_space)
-                {
-                    t = add_token(substr) - 1;
-                    tt = token_tree_gen();
-                }
-				substr__ = substr;
-            }
-            if(t < 0)
-                t = 0;
-            row = 0;
-            token_unknown = false;
-            start_char = i;
-            
-            
-            
-            if(!white_space){
-                // Deal with tokens
-                // Every abstact token created here is going to have tt.height added to it
-                //printf("%i\n",t);
-
-                
-
-                //std::cout <<  << std::endl;
-                switch (t)
-                {
-                case 0: // colon
-                    if(context != contexts::norm_token)
-                    {
-                        context = contexts::_sentance;
-                        in_sentance_index = 0;
-                    }
-                    break;                
-                case 1:
-                    //new sentance
-                    if(context != contexts::norm_token)
-                    {
-                        in_sentance_index = 0;
-                        //ret.rows[working_row].vals[in_sentance_index].r = 1;
-                    }
-                    break;
-                case 2: // quote
-                    if(context != contexts::norm_token)
-                        context = contexts::norm_token;
-                    else
-                        context = contexts::_sentance;
-                    break;
-                case 3: //semicolon
-                    if(context != contexts::norm_token)
-                    {
-                        //ret.rows[working_row].vals[in_sentance_index].r = 1;
-                        context = contexts::ab_tokens;
-                    }
-                    break;
-                default:
+                if(not_marker){
+                    int token = 0;
                     switch (context)
                     {
                     case contexts::ab_tokens:
-                        //printf("%s\n",tokens[t-1].string_);
-                        replacment = t;
-                        //std::cout << tokens[replacment].string_ << std::endl;
-                        //std::cout << (int)replacment << std::endl;
-                        break;
-                    case contexts::norm_token:
-					{
-						unsigned char ___row = 0;
-						int __i;
-						   // declaring character array
-						int n = tokens[t].string_.length();
-						char str[n + 1];
-						// copying the contents of the
-						// string to char array
-						strcpy(str, tokens[t].string_.c_str());
-						//printf("%s", str);
-						//std::cout << tokens[t].string_;
-						for(__i = 0; str[__i] != '\0'; __i++){
-							//printf("\n\t%i\n",str[__i]);
-							___row = main_tt->data[___row].items[str[__i]].a;
-						}
-						__i--;
-						//printf(" -> %i\n",(int)(main_tt->data[___row].items[str[__i]].x_jump));
-						add_to_working_row(&in_sentance_index,&working_row,
-										   (unsigned int)(main_tt->data[___row].items[str[__i]].x_jump-1),
-										   &ret,&replacment);
-						//add_to_working_row(&in_sentance_index,&working_row,t,&ret,&replacment);
-					}
+                        token = get_ab_token_index(substr);
+                        replaces_with = token;
                         break;
                     case contexts::_sentance:
-                        
-                        //std::cout << (int)(t) << " -> " << tokens[replacment].string_  << std::endl;
-                        add_to_working_row(&in_sentance_index,&working_row,t,&ret,&replacment);
-
+                        token = get_ab_token_index(substr);
+                        sentance_buffer[in_sentance_index] = (char)token;
+                        in_sentance_index++;
                         break;
-						
+                    case contexts::norm_token:
+                        int ___row = 0;
+                        int __i;
+                        for(__i = 0; substr[__i] != '\0'; __i++){
+							//printf("\n\t%i\n",str[__i]);
+							___row = main_tt->data[___row].items[substr[__i]].a;
+						}
+						__i--;
+						token = main_tt->data[___row].items[substr[__i]].x_jump;
+						//printf("%s\n", substr);
+                        sentance_buffer[in_sentance_index] = main_tt->data[___row].items[substr[__i]].x_jump+128;
+                        in_sentance_index++;
+                        break;
                     }
-                    break;
+                    //printf("%i\n", token);
                 }
+            }
 
-            }
-        }
-        if(!token_unknown)
-        {
-            row = tt.data[row].items[yacc[i]].a;
-            if(row == 0){
-                token_unknown = true;
-            }
+            substr_len = 1;
+            token_start = i+1;
+            white_space = true;
+        }else{
+            substr_len++;
         }
     }
+    #undef MAX_LENGTH
+    
 
-
-    //return ret;
-	main_tt_height = 22;
-    for(int iii = 0; iii < 256; iii++){
-        int _in_sentance_index = 0;
-        std::cout << iii << " -> " << tokens[iii].string_ << std::endl;
-        //std::cout << iii << " -> " << iii<< std::endl;
-        while(ret.rows[iii].vals[_in_sentance_index].r != 0){
-            //printf("%s ", tokens[ret.rows[iii].vals[_in_sentance_index].r].string_);
-            //printf("%i ", ret.rows[iii].vals[_in_sentance_index].r);
-            //ret.rows[iii].vals[_in_sentance_index].r += main_tt_height;
-            std::cout << "\t" << tokens[ret.rows[iii].vals[_in_sentance_index].r].string_  << std::endl;
-            //std::cout << "\t" << (int)ret.rows[iii].vals[_in_sentance_index].r  << std::endl;
-            _in_sentance_index++;
-            if(_in_sentance_index > CST_ROW_WIDTH)
-            {
-                //TODO: fail and die
-                break;
-            }
-        }
+    for(int i = starting_ab_token_counter; i < ab_token_counter; i++){
+        free(_ab_tokens[i]);
     }
-
-	free(tt.data);
-    return ret;
-
-    //return 0;
+	return token_tree_gen();
 }
-

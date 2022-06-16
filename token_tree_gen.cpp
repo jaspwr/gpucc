@@ -4,9 +4,8 @@
 int __i = 0;
 token tokens[len];
 
-int add_token(const char* str){
-    
-    tokens[__i].outp = __i+1;
+int add_token(const char* str, int outp){
+    tokens[__i].outp = outp;
     // printf("%s\n", str);
     // int ind = __i+add;
     // printf("%i\n", ind);
@@ -55,9 +54,10 @@ token_tree token_tree_gen(){
     for(int i = 0; i < __i; i++){
         int current_row = 0;
         int c;
+        //cout << tokens[i].string_ << "\n";
         for(c = 0; tokens[i].string_[c] != '\0'; c++){
             //unsigned char* x_jump = &(rows[current_row].items[tokens[i].string_[c]].x_jump);
-            //printf("%i\n",current_row);
+            //printf("%i\n",tokens[i].string_[c]);
             if(rows[current_row].items[tokens[i].string_[c]].a == 0){
                 rows[current_row].items[tokens[i].string_[c]].a = height;
                 if(height > current_capacity){
@@ -81,6 +81,7 @@ token_tree token_tree_gen(){
         rows[current_row].items[tokens[i].string_[c]].x_jump = tokens[i].outp;
         
     }
+    
     unsigned char str[] = "int";
     unsigned char row = 0;
     int ____i;

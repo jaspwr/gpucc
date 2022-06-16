@@ -4,6 +4,7 @@ R"(
 #version 460 core
 layout(local_size_x = 8, local_size_y = 4, local_size_z = 1) in;
 layout(rgba32f, binding = 1) writeonly uniform image2D screen;
+layout(rgba32f, binding = 1) readonly uniform image2D r_screen;
 layout (rgba32f, binding = 0) readonly uniform image2D c;
 layout (rgba32f, binding = 2) readonly uniform image2D token_tree;
 layout (rgba32f, binding = 3) readonly uniform image2D cst;
@@ -38,6 +39,11 @@ void fclassify(in float cha, out int _class){
 		_class = 0; //alphanum
 	else
 		_class = 2; //punctuation
+}
+
+void subtitute_tokens(in ivec2 pos, in ivec2 dims, out vec4 token_ids){
+	// int row = pixel.r;
+	// pixel = vec4(imageLoad(cst, pixel_coords).r,0,0.,1.);
 }
 
 void parse_tokens(in ivec2 pos, in ivec2 dims, out vec4 token_ids){
@@ -174,8 +180,11 @@ void main()
 	// float x = -(float(pixel_coords.x * 2 - dims.x) / dims.x); // transforms to [-1.0, 1.0]
 	// float y = -(float(pixel_coords.y * 2 - dims.y) / dims.y); // transforms to [-1.0, 1.0]
 	//parse_tokens(pixel_coords,dims, pixel);
-	pixel = vec4(imageLoad(cst, pixel_coords).r,0,0.,1.);
+	//pixel = vec4(imageLoad(cst, pixel_coords).r,0,0.,1.);
+	pixel = imageLoad(cst, pixel_coords);
 
-	barrier();
 	imageStore(screen, pixel_coords, pixel);
+	barrier();
+	//subtitute_tokens(pixel_coords,dims,pixel);
+	//imageStore(screen, pixel_coords, pixel);
 })"

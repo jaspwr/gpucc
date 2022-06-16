@@ -3,7 +3,7 @@
 //#define OUTPUT_DISASSEMBLY
 
 
-void shader::init(shader_binding *_shader_bindings, const char **shader_source){
+shader::shader(shader_binding *_shader_bindings, const char **shader_source){
     index = glCreateShader(GL_COMPUTE_SHADER);
     glShaderSource(index, 1, shader_source, NULL);
     glCompileShader(index);
