@@ -48,6 +48,7 @@ void lang::regen_lang(){
 ,
 {
 }
+;
 auto
 break
 case
@@ -96,7 +97,7 @@ _Thread_local)";
     #define MAX_LENGTH 10000
     int substr_len = 1;
     int token_start = 0;
-    int token_i = 0;
+    int token_i = 1;
     for(int i = 0; i < MAX_LENGTH && dictionary[i] != '\0'; i++){
         if(dictionary[i+1] <= ' '){
             //White space
@@ -122,7 +123,7 @@ _Thread_local)";
  
 
     _token_tree = token_tree_gen();
-    _cst = gen_tree(&_token_tree);
+    _cst = gen_tree(&_token_tree,token_i);
     vram_token_tree = load_to_vram((unsigned char*)_token_tree.data,258,_token_tree.height,GL_RGBA32F, GL_RGBA);
     vram_cst = load_to_vram((unsigned char*)_cst.data,258,_cst.height,GL_RGBA32F, GL_RGBA);
     free(_token_tree.data);

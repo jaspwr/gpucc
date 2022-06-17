@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
     lang::regen_lang();
 
     
-    shader_binding shader_bindings[4];
+    shader_binding shader_bindings[5];
     // shader_bindings[0] = {0,c,GL_READ_ONLY,GL_RG32F};
     // shader_bindings[1] = {1,screenTex,GL_WRITE_ONLY,GL_RG32F};
     // shader_bindings[2] = {2,tree,GL_READ_ONLY,GL_RG32F};
@@ -138,14 +138,22 @@ int main(int argc, char *argv[])
     shader_bindings[3].texture = lang::vram_cst;
     shader_bindings[3].access = GL_READ_ONLY;
     shader_bindings[3].format = GL_RGBA32F;
+    GLuint sizes;
+    glCreateTextures(GL_TEXTURE_2D, 1, &sizes);
+	glTextureParameteri(sizes, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTextureParameteri(sizes, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTextureParameteri(sizes, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(sizes, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTextureStorage2D(sizes, 1, GL_RGBA32F, SCREEN_WIDTH, SCREEN_HEIGHT);
+    shader_bindings[4].binding = 4;
+    shader_bindings[4].texture = sizes;
+    shader_bindings[4].access = GL_WRITE_ONLY;
+    shader_bindings[4].format = GL_RGBA32F;
     shader shad(shader_bindings,&shader_source);
     shad.exec(std::ceil(SCREEN_WIDTH / 8), std::ceil(SCREEN_HEIGHT / 4), 1);
 
 
-    auto finish = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed = finish - start;
-    print(PRINT_SUCCESS,"Program compiled successfully");
-    std::cout << "Elapsed time: " << elapsed.count() << " s\n";
+
 
 
     glUseProgram(screenShaderProgram);
@@ -158,9 +166,16 @@ int main(int argc, char *argv[])
     char pixel[(SCREEN_HEIGHT*SCREEN_WIDTH)/8];
     glReadPixels(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT/8, GL_RGBA, GL_UNSIGNED_BYTE, &pixel);
     //get_from_vram(screenTex,4,&outp);
+
+    auto finish = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = finish - start;
+    print(PRINT_SUCCESS,"Program compiled successfully");
+    std::cout << "Elapsed time: " << elapsed.count() << " s\n";
+
     for(int i = 0; i < (SCREEN_HEIGHT*SCREEN_WIDTH)/8 *0.02; i++){
         printf("%c",pixel[i]);
     }
+
 
     #ifdef DEBUG_WINDOW
 		glfwSwapBuffers(window);

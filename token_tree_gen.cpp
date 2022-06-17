@@ -61,7 +61,7 @@ token_tree token_tree_gen(){
             if(rows[current_row].items[tokens[i].string_[c]].a == 0){
                 rows[current_row].items[tokens[i].string_[c]].a = height;
                 if(height > current_capacity){
-                    //non of this works
+                    //none of this works
                     current_capacity++;
                     int size = current_capacity*tree_row_size;
                     tree_row nrows[size];

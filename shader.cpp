@@ -48,13 +48,14 @@ void shader::exec(GLuint dsp_x, GLuint dsp_y, GLuint dsp_z){
     int _i = 0;
     int size = sizeof(shader_bindings)/ (sizeof(shader_binding)/8);
     printf("%i\n",size);
-    for(_i = 0; _i < size; _i++)
+    for(_i = 0; _i < 5; _i++)
     {
         glBindImageTexture(shader_bindings[_i].binding, shader_bindings[_i].texture, 
                             0, GL_FALSE, 0, shader_bindings[_i].access, 
                             shader_bindings[_i].format);
     }
     glDispatchCompute(dsp_x, dsp_y, dsp_z);
-    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+    //glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+    glMemoryBarrier(GL_ALL_BARRIER_BITS);
 }
 
