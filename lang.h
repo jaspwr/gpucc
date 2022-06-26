@@ -8,6 +8,7 @@ class lang
         inline static void regen_lang();
         inline static GLuint vram_token_tree;
         inline static GLuint vram_cst;
+        inline static void load_lang(char* preset);
 
     private:
         inline static token_tree _token_tree;

@@ -1,14 +1,20 @@
 #include "yacc_parser.h"
 
 const char *yacc = R"(
+meowffffff
+	: '{' meow '}'
+    | 'auto'
+	;
+
 meoddw
-	: '_Static_assert' '(' ';' 
-	| 'int' 'for' 'auto' '(' 'for' ')'
+    : 'int'
 	;
 
 meow
-	: meoddw 'int'
+	: ';'
+    | meoddw 'int'
 	;
+
 )";
 
 #include <stdio.h>
@@ -81,7 +87,6 @@ void new_sentace(){
 			
             str[i] = sentance_buffer[i];
         }
-		printf("fuc%ifuck\n", replaces_with);
 		str[in_sentance_index] = '\0';
         add_token(str,replaces_with);
     }
@@ -162,7 +167,6 @@ token_tree gen_tree(token_tree* main_tt, int normal_token_count){
                     {
                     case contexts::ab_tokens:
                         token = get_ab_token_index(substr);
-						printf("CUNT: %i\n",token);
                         replaces_with = token;
                         break;
                     case contexts::_sentance:
@@ -179,7 +183,6 @@ token_tree gen_tree(token_tree* main_tt, int normal_token_count){
 						}
 						__i--;
 						token = main_tt->data[___row].items[substr[__i]].x_jump;
-						printf("%i\n", main_tt->data[___row].items[substr[__i]].x_jump);
                         sentance_buffer[in_sentance_index] = main_tt->data[___row].items[substr[__i]].x_jump;
                         in_sentance_index++;
                         break;

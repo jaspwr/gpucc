@@ -1,20 +1,8 @@
-int
-for
+int int int ; ; ; ; ; ; 
+; for int for auto
+; int;int;int;int
 
-
-
-
-auto
-(
-	
-	for
-	) int 
-
-
-  _Static_assert(;(
-
-
-
+{ ; int }
 
 
 for
@@ -39,7 +27,7 @@ int(int)
 [
 ]
 
-_Static_assert ( ; ( int (
+_Static_assert ( ; int int
 ]
 ]
 ]

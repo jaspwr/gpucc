@@ -129,3 +129,29 @@ _Thread_local)";
     free(_token_tree.data);
     free(_cst.data);
 }
+
+void lang::load_lang(char* preset){
+    auto start = std::chrono::high_resolution_clock::now();
+    char file[] = "presets/";
+    strcat(file,preset);
+	FILE *in=fopen(file,"rb");
+    if(in==NULL)
+    {
+        char prnt[] = "Could not locate compiler preset \"";
+        strcat(prnt,preset);
+        strcat(prnt,"\"");
+        print(PRINT_ERROR,prnt);
+    }else{
+        #define BUFFER_SIZE (1 * 1024 * 1024)
+        #define ITERATIONS (10 * 1024)
+        unsigned char buffer[BUFFER_SIZE]; // 1 MiB buffer
+        int i, x;
+        for(i = 0; i < ITERATIONS; ++i)
+        {
+            fread(buffer, BUFFER_SIZE, 1, in);
+        }
+        //GLuint c = load_to_vram(buffer,30000,1,GL_RGBA32F, GL_RGBA);
+        #undef BUFFER_SIZE 
+        #undef ITERATIONS
+    }
+} 

@@ -1,0 +1,14 @@
+Make all tree generations preprocessed
+Swap ASCII catergoriser with a large precomputed table of caterories
+finshed designing agents
+catergorise double brakcets (((((()))))) as separate
+make sizes a local int4 if not doing multiple passes.  edit: ?????
+redo tree
+    move green back to current row
+MIGRATE EVERYTHING USE APPROPRATE SSBO INSTEAD OF FUCKIGN IMAGES
+write good comments for things
+add identified/ literaly tokenisation
+    string literals can have a hard coded tokenisation that scans through until it finds " or '
+fully test ast_builder
+
+if jumps get to big 'b' and 'a' can be used to repsesent larger ints

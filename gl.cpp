@@ -49,6 +49,17 @@ GLuint load_to_vram(unsigned char data[],int wid, int hei, GLint internal_format
 // 	glReadPixels(0,0,length,1,GL_RGBA,GL_UNSIGNED_BYTE,data);
 // }
 
+GLuint create_ssbo(int size){
+	int _data[size];
+    for(int i = 0; i < size; i++)
+        _data[i] = 0;
+    GLuint ssbo;
+    glGenBuffers(1, &ssbo);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(_data), _data, GL_DYNAMIC_COPY);
+	return ssbo;
+}
+
 GLuint create_vram_image(int data_length,  GLenum format){
     GLuint img;
     glCreateTextures(GL_TEXTURE_2D, 1, &img);
@@ -73,7 +84,7 @@ MessageCallback( GLenum source,
                  const GLchar* message,
                  const void* userParam )
 {
-  fprintf( stderr, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
+  fprintf( stderr, "[i] GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
            ( type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ),
             type, severity, message );
 }

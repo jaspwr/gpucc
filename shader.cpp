@@ -3,7 +3,7 @@
 //#define OUTPUT_DISASSEMBLY
 
 
-shader::shader(shader_binding *_shader_bindings, const char **shader_source){
+shader::shader(shader_binding *_shader_bindings, int _binds_count, const char **shader_source){
     index = glCreateShader(GL_COMPUTE_SHADER);
     glShaderSource(index, 1, shader_source, NULL);
     glCompileShader(index);
@@ -38,21 +38,33 @@ shader::shader(shader_binding *_shader_bindings, const char **shader_source){
     glLinkProgram(program_index);
 
     shader_bindings = _shader_bindings;
+    binds_count = _binds_count;
 
 
 }
 
 
-void shader::exec(GLuint dsp_x, GLuint dsp_y, GLuint dsp_z){
+void shader::exec(GLuint dsp_x, GLuint dsp_y, GLuint dsp_z, bool rebind){
     glUseProgram(program_index);
-    int _i = 0;
-    int size = sizeof(shader_bindings)/ (sizeof(shader_binding)/8);
-    printf("%i\n",size);
-    for(_i = 0; _i < 5; _i++)
-    {
-        glBindImageTexture(shader_bindings[_i].binding, shader_bindings[_i].texture, 
-                            0, GL_FALSE, 0, shader_bindings[_i].access, 
-                            shader_bindings[_i].format);
+    if(rebind){
+        int _i = 0;
+        //int size = sizeof(shader_bindings)/ (sizeof(shader_binding)/8);
+        //printf("%i\n",size);
+        for(_i = 0; _i < binds_count; _i++)
+        {
+            switch(shader_bindings[_i].type){
+            case shader_binding_type::image:
+                glBindImageTexture(_i, shader_bindings[_i].texture, 
+                                    0, GL_FALSE, 0, shader_bindings[_i].access, 
+                                    shader_bindings[_i].format);
+                break;
+            case shader_binding_type::ssbo:
+                glBindBufferBase(GL_SHADER_STORAGE_BUFFER, _i, shader_bindings[_i].texture);
+                break;
+            case shader_binding_type::none:
+                break;
+            }
+        }
     }
     glDispatchCompute(dsp_x, dsp_y, dsp_z);
     //glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
