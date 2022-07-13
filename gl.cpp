@@ -50,13 +50,14 @@ GLuint load_to_vram(unsigned char data[],int wid, int hei, GLint internal_format
 // }
 
 GLuint create_ssbo(int size){
-	int _data[size];
+	int* _data = (int*)malloc(size*sizeof(int));
     for(int i = 0; i < size; i++)
         _data[i] = 0;
     GLuint ssbo;
     glGenBuffers(1, &ssbo);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(_data), _data, GL_DYNAMIC_COPY);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, size * sizeof(int), _data, GL_DYNAMIC_COPY);
+	free(_data);
 	return ssbo;
 }
 
@@ -157,8 +158,8 @@ void gl_init(){
 	
 	//const char* vendor = (char*)glGetString(GL_VENDOR); // Returns the vendor
 	const char* renderer = (char*)glGetString(GL_RENDERER); // Returns a hint to the model
-	//strcat(s, vendor);
-	//strcat(s, renderer);
+	//strcat_s(s, vendor);
+	//strcat_s(s, renderer);
 	printf("[i] Using GPU: %s\n", renderer);
 	//print(PRINT_INFO, renderer);
 

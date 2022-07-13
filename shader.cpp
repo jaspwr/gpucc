@@ -1,13 +1,31 @@
 #include "shader.h"
 
-//#define OUTPUT_DISASSEMBLY
+std::string readFile(const char* filePath) {
+    std::string content;
+    std::ifstream fileStream(filePath, std::ios::in);
 
+    if (!fileStream.is_open()) {
+        std::cerr << "Could not read file " << filePath << ". File does not exist." << std::endl;
+        return "";
+    }
 
-shader::shader(shader_binding *_shader_bindings, int _binds_count, const char **shader_source){
+    std::string line = "";
+    while (!fileStream.eof()) {
+        std::getline(fileStream, line);
+        content.append(line + "\n");
+    }
+
+    fileStream.close();
+    return content;
+}
+
+shader::shader(shader_binding* _shader_bindings, int _binds_count, const char* shader_source_file) {
     index = glCreateShader(GL_COMPUTE_SHADER);
-    glShaderSource(index, 1, shader_source, NULL);
+    std::string shader_source = readFile(shader_source_file);
+    const char* c_shader_source = shader_source.c_str();
+    glShaderSource(index, 1, &c_shader_source, NULL);
     glCompileShader(index);
-    GLint isCompiled = 0;
+    GLint isCompiled = 0;//#define OUTPUT_DISASSEMBLY
     glGetShaderiv(index, GL_COMPILE_STATUS, &isCompiled);
     if(isCompiled == GL_FALSE)
     {

@@ -1,3 +1,10 @@
+STRING_LITERAL
+    : '"' ... '"'
+    ;
+
+CONSTANT
+    : CONSTANT '.' CONSTANT
+
 primary_expression
 	: IDENTIFIER
 	| CONSTANT
@@ -176,7 +183,7 @@ type_specifier
 	| 'long'
 	| 'float'
 	| 'double'
-	| 'singed'
+	| 'signed'
 	| 'unsigned'
 	| struct_or_union_specifier
 	| enum_specifier

@@ -23,7 +23,7 @@ class shader{
         GLuint program_index;
         shader_binding *shader_bindings; 
         void exec(GLuint dsp_x, GLuint dsp_y, GLuint dsp_z, bool rebind);
-        shader(shader_binding *_shader_bindings, int _binds_count, const char **shader_source);
+        shader(shader_binding *_shader_bindings, int _binds_count, const char *shader_source);
     private:
         int binds_count;
 

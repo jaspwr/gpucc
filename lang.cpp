@@ -1,10 +1,15 @@
 #include "lang.h"
 #include "shader.h"
 
+
 void lang::regen_lang(){
     //TODO: make everything here preprocessed
     flush_tree(true);
-    const char * dictionary = R"((
+    const char * dictionary = R"(UNKOWN;
+ANYTHING;
+IDENTIFIER;
+LITERAL;
+(
 )
 [
 ]
@@ -33,7 +38,8 @@ void lang::regen_lang(){
 |
 &&
 ||
-?:	
+?
+:	
 =
 +=
 -=
@@ -46,6 +52,7 @@ void lang::regen_lang(){
 ^=
 |=
 ,
+"
 {
 }
 ;
@@ -87,12 +94,12 @@ _Alignas
 _Alignof
 _Atomic
 _Bool
-_Complex
-_Generic
-_Imaginary 
-_Noreturn 
-_Static_assert 
-_Thread_local)";
+_Complex)";
+    /*_Generic
+    _Imaginary
+    _Noreturn
+    _Static_assert
+    _Thread_local*/
 
     #define MAX_LENGTH 10000
     int substr_len = 1;
@@ -102,14 +109,17 @@ _Thread_local)";
         if(dictionary[i+1] <= ' '){
             //White space
             if(substr_len != 0){
-                char substr[substr_len + 1];
+                char* substr = (char*)malloc(substr_len + 1);
                 for(int ii = 0; ii < substr_len; ii++){
                     substr[ii] = dictionary[token_start + ii];
                 }
                 substr[substr_len] = '\0';
-                //printf("%s___", substr);
-                add_token(substr, token_i);
+                //printf("%i\n", token_i);
+                add_token(substr, token_i,0);
+                yacc_parser::tokens.token_list[token_i] = substr;
+
                 token_i++;
+                free(substr);
             }
             substr_len = 0;
             token_start = i+2;
@@ -121,35 +131,47 @@ _Thread_local)";
 
     #undef MAX_LENGTH
  
-
+    ir_codegen::SSBO = (int*)malloc(6000 * sizeof(int));
     _token_tree = token_tree_gen();
-    _cst = gen_tree(&_token_tree,token_i);
+    try {
+        _cst = gen_tree(&_token_tree, token_i);
+    }
+    catch(char * e){
+        print(PRINT_ERROR, e);
+        throw;
+    }
+    //for (int i = 0; i < 256; i++) {
+    //    printf("%i, ", _token_tree.data[4].items[i].x_jump);
+    //    printf("%i\n",_token_tree.data[4].items[i].a);
+    //}
     vram_token_tree = load_to_vram((unsigned char*)_token_tree.data,258,_token_tree.height,GL_RGBA32F, GL_RGBA);
     vram_cst = load_to_vram((unsigned char*)_cst.data,258,_cst.height,GL_RGBA32F, GL_RGBA);
     free(_token_tree.data);
     free(_cst.data);
+    free(ir_codegen::SSBO);
 }
 
 void lang::load_lang(char* preset){
     auto start = std::chrono::high_resolution_clock::now();
     char file[] = "presets/";
-    strcat(file,preset);
-	FILE *in=fopen(file,"rb");
+    strcat_s(file,preset);
+    FILE* in;
+	fopen_s(&in,file,"rb");
     if(in==NULL)
     {
         char prnt[] = "Could not locate compiler preset \"";
-        strcat(prnt,preset);
-        strcat(prnt,"\"");
+        strcat_s(prnt,preset);
+        strcat_s(prnt,"\"");
         print(PRINT_ERROR,prnt);
     }else{
         #define BUFFER_SIZE (1 * 1024 * 1024)
         #define ITERATIONS (10 * 1024)
-        unsigned char buffer[BUFFER_SIZE]; // 1 MiB buffer
-        int i, x;
-        for(i = 0; i < ITERATIONS; ++i)
-        {
-            fread(buffer, BUFFER_SIZE, 1, in);
-        }
+        //unsigned char buffer[BUFFER_SIZE]; // 1 MiB buffer
+        //int i, x;
+        //for(i = 0; i < ITERATIONS; ++i)
+        //{
+        //    fread(buffer, BUFFER_SIZE, 1, in);
+        //}
         //GLuint c = load_to_vram(buffer,30000,1,GL_RGBA32F, GL_RGBA);
         #undef BUFFER_SIZE 
         #undef ITERATIONS

@@ -1,8 +1,10 @@
 #pragma once
 #include "inc.h"
 #include "ui.h"
-#include "libraries/include/glad/glad.h"
-#include "libraries/include/GLFW/glfw3.h"
+//#include "libraries/include/glad/glad.h"
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+//#include "libraries/include/GLFW/glfw3.h"
 #define DEBUG_WINDOW
 const unsigned int SCREEN_WIDTH = 256;
 const unsigned int SCREEN_HEIGHT = 128;
