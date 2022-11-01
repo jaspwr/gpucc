@@ -19,4 +19,4 @@ meow [c file]
 
 Optional flags:
 - `-v` Verbose: More output
-- `-emit-llvm` Emit LLVM: Output raw LLVM IR as ll file (human readable LLVM IR is not yet supported
+- `-emit-llvm` Emit LLVM: Output raw LLVM IR as ll file
