@@ -1,4 +1,4 @@
-# meowcc [alpha]
+# meowcc [unfinished]
 
 ```
  /\_/\
