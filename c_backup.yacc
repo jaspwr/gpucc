@@ -4,405 +4,206 @@ STRING_LITERAL
 
 CONSTANT
     : CONSTANT '.' CONSTANT
+	;
+
+variable_name
+    : $0 IDENTIFIER
+    ; < %X = load #newline >
 
 primary_expression
-	: IDENTIFIER
-	| CONSTANT
-	| STRING_LITERAL
-	| '(' expression ')'
+    : $0 CONSTANT
+    | $0 variable_name
+	| $0 STRING_LITERAL
+	| '(' $0 expression ')'
+    | $0 unary_operation
+    | '(' $0 primary_expression ')'
+    | $0 expression
+    | $0 unary_bool_not
+    | $0 unary_bool_negation
+    | $0 unary_minus
+    | $0 unary_increment
+    | $0 unary_decrement
+    | $0 ternary_conditional_expression
+    | $0 mutliplication
+    | $0 division
+    | $0 modulo
+    | $0 addition
+    | $0 subtraction
+    | $0 bitshift_left
+    | $0 bitshift_right
 	;
 
 
-postfix_expression
-	: primary_expression
-	| postfix_expression '[' expression ']'
-	| postfix_expression '(' ')'
-	| postfix_expression '(' argument_expression_list ')'
-	| postfix_expression '.' IDENTIFIER
-	| postfix_expression '->' IDENTIFIER
-	| postfix_expression '++'
-	| postfix_expression '--'
-	;
+branch
+    : 'if' $0 primary_expression 
+    ; <brandc #newline>
 
-argument_expression_list
-	: assignment_expression
-	| argument_expression_list ',' assignment_expression
-	;
+full_branch
+    : $0 branch $1 scope
+    | $0 branch $1 scope 'else' $2 scope
+    ; < br i1 $0.0.0, label $1, label #newline>
 
-unary_expression
-	: postfix_expression
-	| '++' unary_expression
-	| '--' unary_expression
-	| unary_operator cast_expression
-	| 'sizeof' unary_expression
-	| 'sizeof' '(' type_name ')'
-	;
 
-unary_operator
-	: '&'
-	| '*'
-	| '+'
-	| '-'
-	| '~'
-	| '!'
-	;
+start_connected_terminating_expression
+    : '{' $0 terminating_expression
+    | $0 start_connected_terminating_expression $1 terminating_expression
+    ;
 
-cast_expression
-	: unary_expression
-	| '(' type_name ')' cast_expression
-	;
+scope
+    : $0 start_connected_terminating_expression '}'
+    | '{' '}'
+    ; < Xl #newline>
 
-multiplicative_expression
-	: cast_expression
-	| multiplicative_expression '*' cast_expression
-	| multiplicative_expression '/' cast_expression
-	| multiplicative_expression '%' cast_expression
-	;
 
-additive_expression
-	: multiplicative_expression
-	| additive_expression '+' multiplicative_expression
-	| additive_expression '-' multiplicative_expression
-	;
+terminating_expression
+    : { '*', '/', '%', '-', '+', '<<', '>>', '>', '>=', '<', '<=', '==', '!=', '&', '^', '|', '&&', '||', '?', ':' } $0 primary_expression ';'
+    | $0 assignment
+    | $0 varibale_declaration ';'
+    | $0 full_branch
+    ;
 
-shift_expression
-	: additive_expression
-	| shift_expression '<<' additive_expression
-	| shift_expression '>>' additive_expression
-	;
+assignment
+    : $1 primary_expression $2 assignment_operator $0 terminating_expression
+    | $1 varibale_declaration $2 assignment_operator $0 terminating_expression
+    ; <store i32 $0.0, i32 * $1 #newline>
 
-relational_expression
-	: shift_expression
-	| relational_expression '<' shift_expression
-	| relational_expression '>' shift_expression
-	| relational_expression '<=' shift_expression
-	| relational_expression '>=' shift_expression
-	;
+unary_bool_not
+    :  { ')', expression, primary_expression, terminating_expression} '!' $0 primary_expression
+    ; < %X = xor i1 $0.0, true #newline >
 
-equality_expression
-	: relational_expression
-	| equality_expression '==' relational_expression
-	| equality_expression '!=' relational_expression
-	;
+unary_bitwise_not
+    :  { ')', expression, primary_expression, terminating_expression} '~' $0 primary_expression
+    ; < %X = xor i32 $0.0, -1 #newline >
 
-and_expression
-	: equality_expression
-	| and_expression '&' equality_expression
-	;
+unary_minus
+    :  { ')', expression, primary_expression, terminating_expression} '-' $0 primary_expression
+    ; < %X = sub nsw i32 0, $0.0 #newline >
 
-exclusive_or_expression
-	: and_expression
-	| exclusive_or_expression '^' and_expression
-	;
+unary_increment
+    : $0 primary_expression '++'
+    ; < %X = add nsw i32 $0.0, 1 #newline >
 
-inclusive_or_expression
-	: exclusive_or_expression
-	| inclusive_or_expression '|' exclusive_or_expression
-	;
+unary_decrement
+    : $0 primary_expression '--'
+    ; < %X = sub nsw i32 $0.0, 1 #newline >
 
-logical_and_expression
-	: inclusive_or_expression
-	| logical_and_expression '&&' inclusive_or_expression
-	;
 
-logical_or_expression
-	: logical_and_expression
-	| logical_or_expression '||' logical_and_expression
-	;
 
-conditional_expression
-	: logical_or_expression
-	| logical_or_expression '?' expression ':' conditional_expression
-	;
+addition
+    : [ '*', '/', '%', '-', '+' } $0 primary_expression '+' $1 primary_expression
+    ; < %X = add nsw i32 $0.0, $1.0 #newline >
 
-assignment_expression
-	: conditional_expression
-	| unary_expression assignment_operator assignment_expression
-	;
+subtraction
+    : [ '*', '/', '%', '-', '+' } $0 primary_expression '-' $1 primary_expression
+    ; < %X = sub nsw i32 $0.0, $1.0 #newline >
+
+mutliplication
+    : [ '*', '/', '%' } $0 primary_expression '*' $1 primary_expression
+    ; < %X = mul nsw i32 $0.0, $1.0 #newline >
+
+division
+    : [ '*', '/', '%' } $0 primary_expression '/' $1 primary_expression
+    ; < %X = sdiv i32 $0.0, $1.0 #newline >
+
+modulo
+    : [ '*', '/', '%' } $0 primary_expression '%' $1 primary_expression
+    ; < %X = srem i32 $0.0, $1.0 #newline >
+
+
+
+logical_greater_than
+    : [ '*', '/', '%', '-', '+', '<<', '>>', '>', '>=', '<', '<=' } $0 primary_expression '>' $1 primary_expression
+    ; < %X = icmp sgt i32 $0.0, $1.0 #newline >
+
+logical_less_than
+    : [ '*', '/', '%', '-', '+', '<<', '>>', '>', '>=', '<', '<=' } $0 primary_expression '<' $1 primary_expression
+    ; < %X = icmp slt i32 $0.0, $1.0 #newline >
+
+logical_greater_than_or_equal
+    : [ '*', '/', '%', '-', '+', '<<', '>>', '>', '>=', '<', '<=' } $0 primary_expression '>=' $1 primary_expression
+    ; < %X = icmp sge i32 $0.0, $1.0 #newline >
+
+logical_less_than_or_equal
+    : [ '*', '/', '%', '-', '+', '<<', '>>', '>', '>=', '<', '<=' } $0 primary_expression '<=' $1 primary_expression
+    ; < %X = icmp sle i32 $0.0, $1 #newline >
+
+logical_comparison_expression
+    : $0 logical_greater_than
+    | $0 logical_less_than
+    | $0 logical_greater_than_or_equal
+    | $0 logical_less_than_or_equal
+    ; < %X = zext i1 $0 to i32 #newline >
+
+
+ternary_condition
+    : [ '*', '/', '%', '-', '+', '<<', '>>', '>', '>=', '<', '<=', '==', '!=', '&', '^', '|', '&&', '||', '?' } $0 primary_expression '?'
+    ; < %X = icmp ne i32 $0.0, 0 #newline >
+
+ternary_conditional_expression
+    : [ '*', '/', '%', '-', '+', '<<', '>>', '>', '>=', '<', '<=', '==', '!=', '&', '^', '|', '&&', '||', '?', ':' } $0 ternary_condition $1 primary_expression ':' $2 primary_expression
+    ; <%X = select i1 $0, $1.0, $2.0 #newline >
+
+
+
+logical_equality
+    : [ '*', '/', '%', '-', '+', '<<', '>>', '>', '>=', '<', '<=', '==', '!=' } $0 primary_expression '==' $1 primary_expression
+    ; < %X = icmp eq i32 $0.0, $1.0 #newline >
+
+logical_inequality
+    : [ '*', '/', '%', '-', '+', '<<', '>>', '>', '>=', '<', '<=', '==', '!=' } $0 primary_expression '!=' $1 primary_expression
+    ; < %X = icmp ne i32 $0.0, $1.0 #newline >
+
+logical_equality_expression
+    : $0 logical_equality
+    | $0 logical_inequality
+    ; < %X = zext i1 $0 to i32 #newline >
+
+
+logical_and
+    : [ '*', '/', '%', '-', '+', '<<', '>>', '>', '>=', '<', '<=', '==', '!=', '&', '^', '|', '&&' } $0 primary_expression '&&' $1 primary_expression
+    ; < %X = gwaaaaaaaa #newline >
+
+logical_or
+    : [ '*', '/', '%', '-', '+', '<<', '>>', '>', '>=', '<', '<=', '==', '!=', '&', '^', '|', '&&', '||' } $0 primary_expression '||' $1 primary_expression
+    ; < %X = meowmoewmoew #newline >
+
+
+bitshift_left
+    : [ '*', '/', '%', '-', '+', '<<', '>>' } $0 primary_expression '<<' $1 primary_expression
+    ; < %X = shl i32 $0.0, $1.0 #newline >
+
+bitshift_right
+    : [ '*', '/', '%', '-', '+', '<<', '>>' } $0 primary_expression '>>' $1 primary_expression
+    ; < %X = shr i32 $0.0, $1.0 #newline >
+
+bitwise_xor
+    : [ '*', '/', '%', '-', '+', '<<', '>>', '>', '>=', '<', '<=', '==', '!=', '&', '^' } $0 primary_expression '^' $1 primary_expression
+    ; < %X = xor i32 $0.0, $1.0 #newline >
+
+bitwise_and
+    : [ '*', '/', '%', '-', '+', '<<', '>>', '>', '>=', '<', '<=', '==', '!=', '&' } $0 primary_expression '&' $1 primary_expression
+    ; < %X = and i32 $0.0, $1.0 #newline >
+
+bitwise_or
+    : [ '*', '/', '%', '-', '+', '<<', '>>', '>', '>=', '<', '<=', '==', '!=', '&', '^', '|' } $0 primary_expression '|' $1 primary_expression
+    ; < %X = or i32 $0.0, $1.0 #newline >
 
 assignment_operator
-	: '='
-	| '*='
-	| '/='
-	| '%='
-	| '+='
-	| '-='
-	| '<<='
-	| '>>='
-	| '&='
-	| '^='
-	| '|='
+	: $0 '='
+	| $0 '*='
+	| $0 '/='
+	| $0 '%='
+	| $0 '+='
+	| $0 '-='
+	| $0 '<<='
+	| $0 '>>='
+	| $0 '&='
+	| $0 '^='
+	| $0 '|='
 	;
 
-expression
-	: assignment_expression
-	| expression ',' assignment_expression
-	;
-
-constant_expression
-	: conditional_expression
-	;
-
-declaration
-	: declaration_specifiers ';'
-	| declaration_specifiers init_declarator_list ';'
-	;
-
-declaration_specifiers
-	: storage_class_specifier
-	| storage_class_specifier declaration_specifiers
-	| type_specifier
-	| type_specifier declaration_specifiers
-	| type_qualifier
-	| type_qualifier declaration_specifiers
-	;
-
-init_declarator_list
-	: init_declarator
-	| init_declarator_list ',' init_declarator
-	;
-
-init_declarator
-	: declarator
-	| declarator '=' initializer
-	;
-
-storage_class_specifier
-	: 'typedef'
-	| 'extern'
-	| 'static'
-	| 'auto'
-	| 'register'
-	;
-
-type_specifier
-	: 'void'
-	| 'char'
-	| 'short'
-	| 'int'
-	| 'long'
-	| 'float'
-	| 'double'
-	| 'signed'
-	| 'unsigned'
-	| struct_or_union_specifier
-	| enum_specifier
-	| TYPE_NAME
-	;
-
-struct_or_union_specifier
-	: struct_or_union IDENTIFIER '{' struct_declaration_list '}'
-	| struct_or_union '{' struct_declaration_list '}'
-	| struct_or_union IDENTIFIER
-	;
-
-struct_or_union
-	: 'struct'
-	| 'union'
-	;
-
-struct_declaration_list
-	: struct_declaration
-	| struct_declaration_list struct_declaration
-	;
-
-struct_declaration
-	: specifier_qualifier_list struct_declarator_list ';'
-	;
-
-specifier_qualifier_list
-	: type_specifier specifier_qualifier_list
-	| type_specifier
-	| type_qualifier specifier_qualifier_list
-	| type_qualifier
-	;
-
-struct_declarator_list
-	: struct_declarator
-	| struct_declarator_list ',' struct_declarator
-	;
-
-struct_declarator
-	: declarator
-	| ':' constant_expression
-	| declarator ':' constant_expression
-	;
-
-enum_specifier
-	: 'enum' '{' enumerator_list '}'
-	| 'enum' IDENTIFIER '{' enumerator_list '}'
-	| 'enum' IDENTIFIER
-	;
-
-enumerator_list
-	: enumerator
-	| enumerator_list ',' enumerator
-	;
-
-enumerator
-	: IDENTIFIER
-	| IDENTIFIER '=' constant_expression
-	;
-
-type_qualifier
-	: 'const'
-	| 'volatile'
-	;
-
-declarator
-	: pointer direct_declarator
-	| direct_declarator
-	;
-
-direct_declarator
-	: IDENTIFIER
-	| '(' declarator ')'
-	| direct_declarator '[' constant_expression ']'
-	| direct_declarator '[' ']'
-	| direct_declarator '(' parameter_type_list ')'
-	| direct_declarator '(' identifier_list ')'
-	| direct_declarator '(' ')'
-	;
-
-pointer
-	: '*'
-	| '*' type_qualifier_list
-	| '*' pointer
-	| '*' type_qualifier_list pointer
-	;
-
-type_qualifier_list
-	: type_qualifier
-	| type_qualifier_list type_qualifier
-	;
+ret
+    : 'return' $0 terminating_expression
+    ;
 
 
-parameter_type_list
-	: parameter_list
-	| parameter_list ',' ELLIPSIS
-	;
-
-parameter_list
-	: parameter_declaration
-	| parameter_list ',' parameter_declaration
-	;
-
-parameter_declaration
-	: declaration_specifiers declarator
-	| declaration_specifiers abstract_declarator
-	| declaration_specifiers
-	;
-
-identifier_list
-	: IDENTIFIER
-	| identifier_list ',' IDENTIFIER
-	;
-
-type_name
-	: specifier_qualifier_list
-	| specifier_qualifier_list abstract_declarator
-	;
-
-abstract_declarator
-	: pointer
-	| direct_abstract_declarator
-	| pointer direct_abstract_declarator
-	;
-
-direct_abstract_declarator
-	: '(' abstract_declarator ')'
-	| '[' ']'
-	| '[' constant_expression ']'
-	| direct_abstract_declarator '[' ']'
-	| direct_abstract_declarator '[' constant_expression ']'
-	| '(' ')'
-	| '(' parameter_type_list ')'
-	| direct_abstract_declarator '(' ')'
-	| direct_abstract_declarator '(' parameter_type_list ')'
-	;
-
-initializer
-	: assignment_expression
-	| '{' initializer_list '}'
-	| '{' initializer_list ',' '}'
-	;
-
-initializer_list
-	: initializer
-	| initializer_list ',' initializer
-	;
-
-statement
-	: labeled_statement
-	| compound_statement
-	| expression_statement
-	| selection_statement
-	| iteration_statement
-	| jump_statement
-	;
-
-labeled_statement
-	: IDENTIFIER ':' statement
-	| 'case' constant_expression ':' statement
-	| 'default' ':' statement
-	;
-
-compound_statement
-	: '{' '}'
-	| '{' statement_list '}'
-	| '{' declaration_list '}'
-	| '{' declaration_list statement_list '}'
-	;
-
-declaration_list
-	: declaration
-	| declaration_list declaration
-	;
-
-statement_list
-	: statement
-	| statement_list statement
-	;
-
-expression_statement
-	: ';'
-	| expression ';'
-	;
-
-selection_statement
-	: 'if' '(' expression ')' statement
-	| 'if' '(' expression ')' statement 'else' statement
-	| 'switch' '(' expression ')' statement
-	;
-
-iteration_statement
-	: 'while' '(' expression ')' statement
-	| 'do' statement 'while' '(' expression ')' ';'
-	| 'for' '(' expression_statement expression_statement ')' statement
-	| 'for' '(' expression_statement expression_statement expression ')' statement
-	;
-
-jump_statement
-	: 'goto' IDENTIFIER ';'
-	| 'continue' ';'
-	| 'break' ';'
-	| 'return' ';'
-	| 'return' expression ';'
-	;
-
-translation_unit
-	: external_declaration
-	| translation_unit external_declaration
-	;
-
-external_declaration
-	: function_definition
-	| declaration
-	;
-
-function_definition
-	: declaration_specifiers declarator declaration_list compound_statement
-	| declaration_specifiers declarator compound_statement
-	| declarator declaration_list compound_statement
-	| declarator compound_statement
-	;

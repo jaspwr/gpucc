@@ -41,8 +41,10 @@ int add_token(const char* str, int outp, int parse_tree_extra_pointer){
 }
 
 int char_designed(char c) {
-    if (c < 0)
-        return 127 - (int)c;
+    if (c < 0) {
+        auto de = (int)c + 256;
+        return de;
+    }
     return (int)c;
 }
 
@@ -56,7 +58,7 @@ void flush_tree(bool reset_len){
         __i = 0;
     //tree_row* rows1 = rows;
     tree_row* t = (tree_row*)malloc(_current_capacity*sizeof(tree_row));
-    for(int i = 0; i < _current_capacity; i++){
+    for(int i = 0; i < _current_capacity; i++) {
         for(int c = 0; c < 256; c++){
             t[i].items[c].x_jump = 0;
             t[i].items[c].exit_id = 0;
@@ -81,11 +83,12 @@ token_tree token_tree_gen(){
     //tree_row *rows = (tree_row*) malloc(tree_row_size*current_capacity);
 
     
-    for(int i = 0; i < __i; i++){
+    for(int i = 0; i < __i; i++) {
         int current_row = 0;
         int c;
         int pre_current_row;
         //cout << tokens[i].string_ << "\n";
+        //cout << tokens[i].outp << "\n";
         for(c = 0; tokens[i].string_[c] != '\0'; c++){
             //unsigned char* x_jump = &(rows[current_row].items[tokens[i].string_[c]].x_jump);
             //printf("%i\n",tokens[i].string_[c]);
@@ -121,7 +124,6 @@ token_tree token_tree_gen(){
         c--;
         rows[current_row].items[char_designed(tokens[i].string_[c])].x_jump = tokens[i].outp;
         rows[current_row].items[char_designed(tokens[i].string_[c])].b = tokens[i].parse_tree_extra_pointer;
-        
     }
     
     unsigned char str[] = "int";

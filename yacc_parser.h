@@ -4,6 +4,7 @@
 #include "lang.h"
 #include "ir_parser.h"
 #include "simple_token_parser.h"
+#include "utils.h"
 class yacc_parser{
 public:
 	inline static simple_token_parser tokens;

@@ -10,4 +10,6 @@
 
 void print(int type, const char* message);
 void print(int type, int message);
-void exec_with_args(int argc, char** argv);
+char* parse_args(int argc, char** argv);
+
+int parse_dbg_mode(char* str);

@@ -1,11 +1,11 @@
 #include "lang.h"
 #include "shader.h"
-
+#include "gl.h"
 
 void lang::regen_lang(){
     //TODO: make everything here preprocessed
     flush_tree(true);
-    const char * dictionary = R"(UNKOWN;
+    const char * dictionary = R"(UNKNOWN;
 ANYTHING;
 IDENTIFIER;
 LITERAL;
@@ -132,6 +132,9 @@ _Complex)";
     #undef MAX_LENGTH
  
     ir_codegen::SSBO = (int*)malloc(6000 * sizeof(int));
+    for (int i = 0; i < 256; i++) {
+        ir_codegen::SSBO[i] = 0;
+    }
     _token_tree = token_tree_gen();
     try {
         _cst = gen_tree(&_token_tree, token_i);
@@ -146,6 +149,7 @@ _Complex)";
     //}
     vram_token_tree = load_to_vram((unsigned char*)_token_tree.data,258,_token_tree.height,GL_RGBA32F, GL_RGBA);
     vram_cst = load_to_vram((unsigned char*)_cst.data,258,_cst.height,GL_RGBA32F, GL_RGBA);
+    vram_codegen = load_to_ssbo(ir_codegen::current_SSBO_length, sizeof(int), ir_codegen::SSBO);
     free(_token_tree.data);
     free(_cst.data);
     free(ir_codegen::SSBO);
@@ -154,15 +158,15 @@ _Complex)";
 void lang::load_lang(char* preset){
     auto start = std::chrono::high_resolution_clock::now();
     char file[] = "presets/";
-    strcat_s(file,preset);
+    strcat_s(file, preset);
     FILE* in;
 	fopen_s(&in,file,"rb");
     if(in==NULL)
     {
         char prnt[] = "Could not locate compiler preset \"";
-        strcat_s(prnt,preset);
-        strcat_s(prnt,"\"");
-        print(PRINT_ERROR,prnt);
+        strcat_s(prnt, preset);
+        strcat_s(prnt, "\"");
+        print(PRINT_ERROR, prnt);
     }else{
         #define BUFFER_SIZE (1 * 1024 * 1024)
         #define ITERATIONS (10 * 1024)

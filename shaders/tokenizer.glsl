@@ -3,7 +3,6 @@
 #version 460 core
 //precision highp image2D;
 layout(local_size_x=8,local_size_y=4,local_size_z=1)in;
-layout(rgba32f,binding=5)writeonly uniform image2D screen;
 //layout(rgba32f, binding = 1) readonly uniform image2D r_screen;
 //layout(rgba32f, binding = 4) writeonly uniform image2D size;
 //layout(rgba32f, binding = 4) readonly uniform image2D r_size;
@@ -11,6 +10,10 @@ layout(rgba32f,binding=0)readonly uniform image2D c;
 layout(rgba32f,binding=2)readonly uniform image2D token_tree;
 layout(rgba32f,binding=3)readonly uniform image2D cst;
 //layout (rgba32f, binding = 5) writeonly uniform image2D ast_pointers;
+
+#define NUMERIAL_LITERAL_TOKEN 2
+#define IDENTIFIER_TOKEN 3
+
 
 struct reimp_screen{
 	int _screen;
@@ -42,7 +45,7 @@ void fclassify(in float cha,out int _class){
 	_class=3;//semicolon
 	else if(cha>64./255.&&cha<91./255.)
 	_class=0;//alphanum
-	else if(cha<96./255.&&cha<122./255.)
+	else if(cha<96./255.&&cha<123./255.)
 	_class=0;//alphanum
 	else
 	_class=2;//punctuation
@@ -160,12 +163,12 @@ void parse_tokens(in ivec2 pos,in ivec2 dims){
 					if(start_char_of_token>47){
 						//numerical literals
 						if(start_char_of_token<58){
-							_w_screen[_pos]._screen=3;
+							_w_screen[_pos]._screen=NUMERIAL_LITERAL_TOKEN;
 						}else//indentifiers
 						if((start_char_of_token>64&&start_char_of_token<91)||
 						(start_char_of_token==95)||
 						(start_char_of_token>96&&start_char_of_token<123)){
-							_w_screen[_pos]._screen=3;
+							_w_screen[_pos]._screen=IDENTIFIER_TOKEN;
 						}
 					}
 					//_w_screen[_pos]._screen=cat;
@@ -196,7 +199,7 @@ void parse_tokens(in ivec2 pos,in ivec2 dims){
 void main()
 {
 	ivec2 pixel_coords=ivec2(gl_GlobalInvocationID.xy);
-	ivec2 dims=imageSize(screen);
+	ivec2 dims=ivec2(500);
 	// float x = -(float(pixel_coords.x * 2 - dims.x) / dims.x); // transforms to [-1.0, 1.0]
 	// float y = -(float(pixel_coords.y * 2 - dims.y) / dims.y); // transforms to [-1.0, 1.0]
 	parse_tokens(pixel_coords,dims);

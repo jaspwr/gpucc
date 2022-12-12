@@ -1,6 +1,8 @@
 #include "yacc_parser.h"
+//TODO: Add comments
 
-const char *yacc = R"(
+
+const char *interal_yacc = R"(
 STRING_LITERAL
     : '"' ... '"'
     ;
@@ -9,167 +11,220 @@ CONSTANT
     : CONSTANT '.' CONSTANT
 	;
 
-unary_operation
-    : { ')', expression, primary_expression, terminating_expression} $1 operator $0 primary_expression
-    ; < $1.$0 == '!' : %X = xor i1 $0, true;
-        $1.$0 == '~' : %X = xor $t0 $0, -1;
-        $1.$0 == '-' : %X = sub nsw $t0 0, $0;
-        $1.$0 == '*' : ;
-        $1.$0 == '&' : ;
-      >
-
-primary_expression
-	: $0 IDENTIFIER
-	| $0 CONSTANT
-	| $0 STRING_LITERAL
-	| '(' $0 expression ')'
-    | '(' $0 primary_expression ')'
-    | $0 expression
-    | $0 type_specifier
-    | $0 function_call
-    | $0 array_call
-	;
-
-expression
-    : operation
-    | $0 cast_expression
-    ;
-
-operation
-    : $0 primary_expression $1 operator $2 primary_expression
-    ; < $1.$0 == '+' : add >
-
-two_way_branch
-    : 'if' $0 primary_expression $1 basic_block $2 basic_block
-    | 'if' $0 primary_expression $1 basic_block 'else' $2 basic_block
-    ; < default: br i1 $0, label $1, label $2 ; >
-
-
-start_connected_terminating_expression
-    : '{' terminating_expression
-    | $0 start_connected_terminating_expression $1 terminating_expression
-    | $0 start_connected_terminating_expression $1 primary_expression expression_terminator
-    ;
-
-function
-    : function_definiton basic_block_group '}'
-    ;
-
-basic_block
-    : $0 start_connected_terminating_expression '}'
-    | '{' '}'
-    ;
-
-cast_specifier
-    : '(' $0 type_specifier ')'
-    ;
-
-cast_expression
-    : $1 cast_specifier $0 primary_expression
-    ;
-
-type_specifier
-	: $0 'void'
-	| $0 'char'
-	| $0 'short'
-	| $0 'int'
-	| $0 'long'
-	| $0 'float'
-	| $0 'double'
-	| $0 'signed'
-	| $0 'unsigned'
-	| $0 'struct'
-	| $0 'union'
-	| $0 'enum'
-	| $0 TYPE_NAME
-	;< wee woo >
-
-terminating_expression
-    : expression expression_terminator
-    | expression terminating_expression
-    | primary_expression operator terminating_expression
-    | assignment
-    ;
-
-assignment
-    : primary_expression assignment_operator terminating_expression
-    | primary_expression assignment_operator primary_expression expression_terminator 
-    ;
-
-function_call
-    : function_identifier ')'
-    | function_and_partial_argument_list ')'
-    | function_and_partial_argument_list primary_expression ')'
-    | function_identifier primary_expression ')'
-    ;
+variable_name_read
+    : $0 IDENTIFIER
+    ; < %X = load $0 #newline >
 
 array_call
     : $1 primary_expression '[' $0 primary_expression ']'
-    ;
+    ; < %X = getelementptr inbounds IMPLICITTYPE , IMPLICITTYPE * $1, i64 0, i64 $0 #newline >
 
-function_identifier
-    : primary_expression '('
-    ;
+array_call_loaded
+    : $0 array_call
+    ; < %X = load IMPLICITTYPE , IMPLICITTYPE * $0 #newline >
 
-function_and_partial_argument_list
-    : function_identifier primary_expression ','
-    | function_and_partial_argument_list primary_expression ','
-    ;
+array_call_write
+    : $1 primary_expression '[' $0 primary_expression ']' assignment_operator
+    ; < %X = getelementptr inbounds IMPLICITTYPE , IMPLICITTYPE * $1, i64 0, i64 $0 #newline >
 
-type_qualifier
-	: 'const'
-	| 'volatile'
+
+primary_expression
+    : $0 CONSTANT
+    | $0 variable_name_read
+	| $0 STRING_LITERAL
+    | $0 unary_operation
+    | '(' $0 primary_expression ')'
+    | $0 expression
+    | $0 unary_bool_not
+    | $0 unary_bool_negation
+    | $0 unary_minus
+    | $0 unary_increment
+    | $0 unary_decrement
+    | $0 ternary_conditional_expression
+    | $0 mutliplication
+    | $0 division
+    | $0 modulo
+    | $0 addition
+    | $0 subtraction
+    | $0 bitshift_left
+    | $0 bitshift_right
+    | $0 less_than
+    | $0 less_than_or_equal_to
+    | $0 greater_than
+    | $0 greater_than_or_equal_to
+    | $0 equality
+    | $0 inequality
+    | $0 logical_and
+    | $0 logical_or
+    | $0 logical_xor
+    | $0 logical_not
+    | $0 bitwise_and
+    | $0 bitwise_or
+    | $0 bitwise_xor
+    | $0 function_whole
+    | $0 function_whole_no_args
+    | $0 array_call_loaded
 	;
 
-pointer
-    : type_specifier '*'
+scope
+    : $0 start_connected_terminating_expression '}'
+    | '{' '}'
+    ; < Xl #newline>
+
+assignment
+    : $1 variable_name_write $0 primary_expression ';'
+    | $1 array_call_write $0 primary_expression ';'
+    ; <store i32 $0.0, i32 * $1 #newline>
+
+unary_bool_not
+    :  { ')', primary_expression} '!' $0 primary_expression
+    ; < %X = xor i1 $0.0, true #newline >
+
+unary_bitwise_not
+    :  { ')', primary_expression} '~' $0 primary_expression
+    ; < %X = xor i32 $0.0, -1 #newline >
+
+unary_minus
+    :  { ')', primary_expression} '-' $0 primary_expression
+    ; < %X = sub nsw i32 0, $0.0 #newline >
+
+unary_increment
+    : $0 primary_expression '++'
+    ; < %X = add nsw i32 $0.0, 1 #newline >
+
+unary_decrement
+    : $0 primary_expression '--'
+    ; < %X = sub nsw i32 $0.0, 1 #newline >
+
+
+
+
+
+
+
+
+
+
+variable_name_write
+    : $0 CONSTANT '='
+    ; < %X = load ptr $0 #newline >
+
+
+
+addition
+    : [ '*', '/', '%'} $0 primary_expression '+' $1 primary_expression
+    ; < %X = add nsw i32 $0.0, $1.0 #newline >
+
+subtraction
+    : [ '*', '/', '%' } $0 primary_expression '-' $1 primary_expression
+    ; < %X = sub nsw i32 $0.0, $1.0 #newline >
+
+mutliplication
+    : $0 primary_expression '*' $1 primary_expression
+    ; < %X = mul nsw i32 $0.0, $1.0 #newline >
+
+division
+    : $0 primary_expression '/' $1 primary_expression
+    ; < %X = sdiv i32 $0.0, $1.0 #newline >
+
+modulo
+    : $0 primary_expression '%' $1 primary_expression
+    ; < %X = srem i32 $0.0, $1.0 #newline >
+
+
+
+logical_greater_than
+    : [ '*', '/', '%', '-', '+', '<<', '>>'} $0 primary_expression '>' $1 primary_expression
+    ; < %X = icmp sgt i32 $0.0, $1.0 #newline >
+
+logical_less_than
+    : [ '*', '/', '%', '-', '+', '<<', '>>'} $0 primary_expression '<' $1 primary_expression
+    ; < %X = icmp slt i32 $0.0, $1.0 #newline >
+
+logical_greater_than_or_equal
+    : [ '*', '/', '%', '-', '+', '<<', '>>'} $0 primary_expression '>=' $1 primary_expression
+    ; < %X = icmp sge i32 $0.0, $1.0 #newline >
+
+logical_less_than_or_equal
+    : [ '*', '/', '%', '-', '+', '<<', '>>' } $0 primary_expression '<=' $1 primary_expression
+    ; < %X = icmp sle i32 $0.0, $1 #newline >
+
+logical_comparison_expression
+    : $0 logical_greater_than
+    | $0 logical_less_than
+    | $0 logical_greater_than_or_equal
+    | $0 logical_less_than_or_equal
+    ; < %X = zext i1 $0 to i32 #newline >
+
+
+ternary_condition
+    : [ '*', '/', '%', '-', '+', '<<', '>>', '>', '>=', '<', '<=', '==', '!=', '&', '^', '|', '&&', '||' } $0 primary_expression '?'
+    ; < %X = icmp ne i32 $0.0, 0 #newline >
+
+ternary_conditional_expression
+    : [ '*', '/', '%', '-', '+', '<<', '>>', '>', '>=', '<', '<=', '==', '!=', '&', '^', '|', '&&', '||', '?' } $0 ternary_condition $1 primary_expression ':' $2 primary_expression
+    ; <%X = select i1 $0, $1.0, $2.0 #newline >
+
+
+
+logical_equality
+    : [ '*', '/', '%', '-', '+', '<<', '>>', '>', '>=', '<', '<=' } $0 primary_expression '==' $1 primary_expression
+    ; < %X = icmp eq i32 $0.0, $1.0 #newline >
+
+logical_inequality
+    : [ '*', '/', '%', '-', '+', '<<', '>>', '>', '>=', '<', '<=' } $0 primary_expression '!=' $1 primary_expression
+    ; < %X = icmp ne i32 $0.0, $1.0 #newline >
+
+logical_equality_expression
+    : $0 logical_equality
+    | $0 logical_inequality
+    ; < %X = zext i1 $0 to i32 #newline >
+
+
+logical_and
+    : [ '*', '/', '%', '-', '+', '<<', '>>', '>', '>=', '<', '<=', '==', '!=', '&', '^', '|' } $0 primary_expression '&&' $1 primary_expression
+    ; < %X = gwaaaaaaaa #newline >
+
+logical_or
+    : [ '*', '/', '%', '-', '+', '<<', '>>', '>', '>=', '<', '<=', '==', '!=', '&', '^', '|', '&&'} $0 primary_expression '||' $1 primary_expression
+    ; < %X = meowmoewmoew #newline >
+
+
+bitshift_left
+    : [ '*', '/', '%', '-', '+'} $0 primary_expression '<<' $1 primary_expression
+    ; < %X = shl i32 $0.0, $1.0 #newline >
+
+bitshift_right
+    : [ '*', '/', '%', '-', '+' } $0 primary_expression '>>' $1 primary_expression
+    ; < %X = shr i32 $0.0, $1.0 #newline >
+
+bitwise_xor
+    : [ '*', '/', '%', '-', '+', '<<', '>>', '>', '>=', '<', '<=', '==', '!=', '&' } $0 primary_expression '^' $1 primary_expression
+    ; < %X = xor i32 $0.0, $1.0 #newline >
+
+bitwise_and
+    : [ '*', '/', '%', '-', '+', '<<', '>>', '>', '>=', '<', '<=', '==', '!=' } $0 primary_expression '&' $1 primary_expression
+    ; < %X = and i32 $0.0, $1.0 #newline >
+
+bitwise_or
+    : [ '*', '/', '%', '-', '+', '<<', '>>', '>', '>=', '<', '<=', '==', '!=', '&', '^' } $0 primary_expression '|' $1 primary_expression
+    ; < %X = or i32 $0.0, $1.0 #newline >
+
+
+
+
+start_connected_terminating_expression
+    : '{' $0 primary_expression ';'
+    | $0 start_connected_terminating_expression $1 primary_expression ';'
+    | '{' $0 assignment
+    | start_connected_terminating_expression $0 assignment
+    | '{' $0 full_branch
+    | start_connected_terminating_expression $0 full_branch
     ;
 
-
-operator
-    : $0 '+'
-    | $0 '*'
-    | $0 '-'
-    | $0 '/'
-    | $0 '&'
-    | $0 '~'
-    | $0 '!'
-    ;
-
-assignment_operator
-	: $0 '='
-	| $0 '*='
-	| $0 '/='
-	| $0 '%='
-	| $0 '+='
-	| $0 '-='
-	| $0 '<<='
-	| $0 '>>='
-	| $0 '&='
-	| $0 '^='
-	| $0 '|='
-	;
-
-basic_block_terminator
-    : return
-    | two_way_branch
-    | one_way_branch
-    | switch
-    ;
-
-one_way_branch
-    : '}'
-    ;
-
-return
-    : 'return' $0 terminating_expression
-    ; < default: ret $t0 $0 ; >
-
-expression_terminator
-    : ';'
-    ;
-
-
+ret
+    : 'return' $0 primary_expression ';'
+    ; < ret i32 $0.0.0 #newline >
 )";
 
 #include <stdio.h>
@@ -218,30 +273,31 @@ int catergorise(char x){
 }
 
 
-
-
-
 int in_sentance_index = 0;
 int in_exlusion_tokens_index = 0;
 int replaces_with = 0;
 int parse_tree_extra_pointer = 0;
 char sentance_buffer[10];
 int operand_order_buffer[10];
-int pre_token_exclusions_buffer[10];
+int pre_token_exclusions_buffer[30];
+bool symetrical_exclusion;
 contexts context_returning_to;
 void new_sentace(){
     if(in_sentance_index != 0){
-        char* str = (char*)malloc(in_sentance_index+1);
+        char* str = (char*)malloc(in_sentance_index+1); // Freed in token_tree_gen
 
         parse_tree_extra new_entry_data;
         for(int i = 0; i < in_sentance_index; i++){
             new_entry_data.operand_order[i] = operand_order_buffer[i];
             str[i] = sentance_buffer[i];
+            operand_order_buffer[i] = 0;
         }
         for (int i = 0; i < in_exlusion_tokens_index; i++) {
             new_entry_data.pre_char_exclusions[i] = pre_token_exclusions_buffer[i];
         }
         new_entry_data.pre_char_exclusions_counter = in_exlusion_tokens_index;
+        new_entry_data.symetrical_exclusion = symetrical_exclusion;
+
 
         //check if identical entry in pass_tree_extra_list_exists
         bool new_entry = true;
@@ -267,6 +323,7 @@ void new_sentace(){
     }
     in_sentance_index = 0;
     in_exlusion_tokens_index = 0;
+
 }
 
 int operand_order = 0;
@@ -276,7 +333,15 @@ int operand_order_current() {
     return ret;
 }
 
-token_tree gen_tree(token_tree* main_tt, int normal_token_count){
+
+token_tree gen_tree(token_tree* main_tt, int normal_token_count) {
+    string yacc = "";
+    if(compiler::custom_yacc != nullptr) {
+        yacc = utils::load_file_utf8(compiler::custom_yacc->c_str());
+    }
+    else {
+        yacc = std::string(interal_yacc);
+    }
     lang::_parse_tree_extra = (parse_tree_extra*)malloc(sizeof(parse_tree_extra) * 255);
     flush_tree(true);
     yacc_parser::tokens.ab_token_counter = normal_token_count;
@@ -347,14 +412,25 @@ token_tree gen_tree(token_tree* main_tt, int normal_token_count){
                         }
                         break;
                     case '{':
-                        if (context != contexts::norm_token && context != contexts::codegen)
+                        if (context != contexts::norm_token && context != contexts::codegen) {
                             context = contexts::exclusion_tokens;
+                            symetrical_exclusion = false;
+                        }
+                        else
+                            not_marker = true;
+                        break;
+                    case '[':
+                        if (context != contexts::norm_token && context != contexts::codegen) {
+                            context = contexts::exclusion_tokens;
+                            symetrical_exclusion = true;
+                        }
                         else
                             not_marker = true;
                         break;
                     case '}':
-                        if (context != contexts::norm_token && context != contexts::codegen)
+                        if (context != contexts::norm_token && context != contexts::codegen){ 
                             context = contexts::_sentance;
+                        }
                         else
                             not_marker = true;
                         break;
@@ -384,8 +460,8 @@ token_tree gen_tree(token_tree* main_tt, int normal_token_count){
                         ir_codegen::process_token(substr, context == contexts::norm_token, main_tt);
                     }
                     else {
-                        //printf("%s\n", substr);
-                        //Handle special tokens (TODO: implement this a neater way)
+                        // printf("%s\n", substr);
+                        // Handle special tokens (TODO: implement this a neater way)
                         //
                         //      "..." -> ANYTHING_TOKEN
                         //      "IDENTIFIER" -> ANY_IDENTIFIER_TOKEN
@@ -394,21 +470,21 @@ token_tree gen_tree(token_tree* main_tt, int normal_token_count){
                         //      $X puts the following token as position X in the child nodes when 
                         //      constructing the ast.
                         //
-                        if (simple_token_parser::str_match(substr, (char*)"...")) {
+                        if (utils::str_match(substr, (char*)"...")) {
                             sentance_buffer[in_sentance_index] = ANYTHING_TOKEN;
                             operand_order_buffer[in_sentance_index] = operand_order_current();
                             in_sentance_index++;
                         }
                         else if (substr[0] == '$') {
                             //TODO implement with proper int parse function
-                            operand_order = (int)(substr[1] - '0') + 1;
+                            operand_order = (int)(substr[1] - '0') + 2;
                         }
-                        else if (simple_token_parser::str_match(substr, (char*)"IDENTIFIER")) {
+                        else if (utils::str_match(substr, (char*)"IDENTIFIER")) {
                             sentance_buffer[in_sentance_index] = ANY_IDENTIFIER_TOKEN;
                             operand_order_buffer[in_sentance_index] = operand_order_current();
                             in_sentance_index++;
                         }
-                        else if (simple_token_parser::str_match(substr, (char*)"CONSTANT")) {
+                        else if (utils::str_match(substr, (char*)"CONSTANT")) {
                             sentance_buffer[in_sentance_index] = ANY_LITERAL_TOKEN;
                             operand_order_buffer[in_sentance_index] = operand_order_current();
                             in_sentance_index++;
@@ -433,13 +509,14 @@ token_tree gen_tree(token_tree* main_tt, int normal_token_count){
                                 token = yacc_parser::tokens.get_ab_token_index(substr);
                                 pre_token_exclusions_buffer[in_exlusion_tokens_index] = (int)token;
                                 in_exlusion_tokens_index++;
+
                                 break;
                             case contexts::norm_token:
                                 token = parse_token_with_tree(main_tt, substr);
                                 if (token == 0)
                                     throw "Unkown token in YACC"; // Token did not parse
                                 //printf("%i\n", token);
-                                unsigned char _ret = token;
+                                char _ret = (char)token;
                                 if (context_returning_to == contexts::exclusion_tokens) {
                                     pre_token_exclusions_buffer[in_exlusion_tokens_index] = token;
                                     in_exlusion_tokens_index++;

@@ -1,11 +1,27 @@
 #include "shader.h"
+#include <Windows.h>
+#include <string>
+#include "utils.h"
+
+
+std::string get_bin_dir()
+{
+    char buffer[MAX_PATH];
+    GetModuleFileNameA(NULL, buffer, MAX_PATH);
+    std::string::size_type pos = std::string(buffer).find_last_of("\\/");
+
+    return std::string(buffer).substr(0, pos);
+}
 
 std::string readFile(const char* filePath) {
     std::string content;
-    std::ifstream fileStream(filePath, std::ios::in);
+
+    auto path_full = get_bin_dir() + "/" + std::string(filePath);
+    std::ifstream fileStream(path_full, std::ios::in);
 
     if (!fileStream.is_open()) {
-        std::cerr << "Could not read file " << filePath << ". File does not exist." << std::endl;
+        std::cerr << "Could not read file " << path_full << ". File does not exist." << std::endl;
+        throw;
         return "";
     }
 
@@ -19,7 +35,9 @@ std::string readFile(const char* filePath) {
     return content;
 }
 
-shader::shader(shader_binding* _shader_bindings, int _binds_count, const char* shader_source_file) {
+shader::shader( shader_binding* _shader_bindings, 
+                int _binds_count, 
+                const char* shader_source_file) {
     index = glCreateShader(GL_COMPUTE_SHADER);
     std::string shader_source = readFile(shader_source_file);
     const char* c_shader_source = shader_source.c_str();
@@ -27,8 +45,8 @@ shader::shader(shader_binding* _shader_bindings, int _binds_count, const char* s
     glCompileShader(index);
     GLint isCompiled = 0;//#define OUTPUT_DISASSEMBLY
     glGetShaderiv(index, GL_COMPILE_STATUS, &isCompiled);
-    if(isCompiled == GL_FALSE)
-    {
+    if(isCompiled == GL_FALSE) {
+        printf("Failed to compile \"%s\"\n", shader_source_file);
         GLint maxLength = 0;
         glGetShaderiv(index, GL_INFO_LOG_LENGTH, &maxLength);
 
@@ -62,7 +80,10 @@ shader::shader(shader_binding* _shader_bindings, int _binds_count, const char* s
 }
 
 
-void shader::exec(GLuint dsp_x, GLuint dsp_y, GLuint dsp_z, bool rebind){
+void shader::exec( GLuint dsp_x,
+                   GLuint dsp_y,
+                   GLuint dsp_z, 
+                   bool rebind) {
     glUseProgram(program_index);
     if(rebind){
         int _i = 0;

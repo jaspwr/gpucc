@@ -6,6 +6,9 @@ namespace ir_codegen {
 
 	extern int* SSBO; // is malloced and freed in lang
 	extern int current_SSBO_length;
+	extern simple_token_parser tokens;
+
+
 
 	class ir_bitcode_constant {
 	public:
@@ -18,8 +21,6 @@ namespace ir_codegen {
 		ir_bitcode_constant(const char* str, bool passable) {
 			string = (std::string)str;
 			val = self_count++;
-			//SSBO[current_SSBO_length] = val;
-			//current_SSBO_length++;
 			if (passable) {
 				parse_list[parsable_count] = this;
 				parsable_count++;
@@ -29,4 +30,6 @@ namespace ir_codegen {
 	
 	extern void process_token(char* token, bool in_quotes, token_tree* main_tt);
 	extern void finalise_token(int index);
+	extern void post_process(int* outp);
+
 }

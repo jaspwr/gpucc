@@ -161,8 +161,10 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="shader.cpp" />
     <ClCompile Include="simple_token_parser.cpp" />
+    <ClCompile Include="term_cols.h" />
     <ClCompile Include="token_tree_gen.cpp" />
     <ClCompile Include="ui.cpp" />
+    <ClCompile Include="utils.cpp" />
     <ClCompile Include="yacc_parser.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -176,6 +178,7 @@
     <ClInclude Include="simple_token_parser.h" />
     <ClInclude Include="token_tree_gen.h" />
     <ClInclude Include="ui.h" />
+    <ClInclude Include="utils.h" />
     <ClInclude Include="yacc_parser.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -8,7 +8,6 @@ public:
 	int starting_ab_token_counter = 0;
 	std::string token_list[400];
 	int get_ab_token_index(char* s);
-	static bool str_match(char* s1, char* s2);
 	simple_token_parser(int starting_index) {
 		ab_token_counter = starting_index;
 		starting_ab_token_counter = ab_token_counter;

@@ -1,5 +1,5 @@
 #include "ir_parser.h"
-
+#include "compiler.h"
 
 
 namespace ir_codegen{
@@ -13,6 +13,8 @@ namespace ir_codegen{
 
 	int instruction_buffer[BUFFER_MAX_SIZE];
 	int instruction_buffer_length = 0;
+	int longest_instruction = 0;
+	int instruction_length_counter = 0;
 	contexts context = contexts::condition;
 	
 #define PARSABLE true
@@ -27,8 +29,12 @@ namespace ir_codegen{
 	ir_bitcode_constant REFERENCE_IMPLICIT_TYPE_IDENTIFIER("$t", NOT_PARSABLE);
 	ir_bitcode_constant INSERSION_IDENTIFIER("!", NOT_PARSABLE);
 	ir_bitcode_constant INSERSION_IMPLICIT_TYPE_IDENTIFIER("!t", NOT_PARSABLE);
-	ir_bitcode_constant SELF_REGISTER("%X", NOT_PARSABLE);
+	ir_bitcode_constant SELF_REGISTER_IDENTIFIER("%", NOT_PARSABLE);
+	ir_bitcode_constant SELF_REGISTER_VALUE("X", NOT_PARSABLE);
+	ir_bitcode_constant SELF_LABEL_IDENTIFIER("X:", NOT_PARSABLE);
 	ir_bitcode_constant LANGUAGE_TOKEN_IDENTIFIER("\"", NOT_PARSABLE);
+	ir_bitcode_constant NEWLINE("#newline", PARSABLE);
+	ir_bitcode_constant IDENTIFIER_IDENTIFIER("IDENIFIER", NOT_PARSABLE);
 #undef PASSABLE
 #undef NON_PASSABLE
 	simple_token_parser tokens(ir_bitcode_constant::self_count);
@@ -43,6 +49,10 @@ namespace ir_codegen{
 
 
 	int simple_int_parse(char* str) {
+		// For parent reference
+		if (str[0] == '^') {
+			return -2;
+		}
 		// Always skips the first char and assumes that 'str' will always have a terminating null char
 		// Faster than dealing with substrings and then standard library parse functions
 		int l = 1;
@@ -58,7 +68,10 @@ namespace ir_codegen{
 	}
 
 	int pre_end_condition_location;
-	void process_token(char* token, bool in_quotes, token_tree* main_tt) {
+	int int_parse_next_token = false;
+	void process_token( char* token,
+						bool in_quotes, 
+						token_tree* main_tt) {
 		// TOKEN TYPES
 		//		'%A =' -> assigning to new regester
 		//		$X -> reference to child node (instruction was called previously)
@@ -72,27 +85,39 @@ namespace ir_codegen{
 		//		and will be parsed this way. Variable assigns should always be pared to "store" and
 		//		expressions should use registers of the previous fucntions
 		//
+		if (context == contexts::instruction)
+			instruction_length_counter++;
 
 
 		if (in_quotes) {
 			append_to_buffer(LANGUAGE_TOKEN_IDENTIFIER.val);
 			append_to_buffer(parse_token_with_tree(main_tt, token));
-		}else if (token[0] == '%') {
-			append_to_buffer(SELF_REGISTER.val);
+		}
+		else if (int_parse_next_token) {
+			int_parse_next_token = false;
+			append_to_buffer(simple_int_parse(token) + 1);
+		}
+		else if (token[0] == '%') {
+			append_to_buffer(SELF_REGISTER_IDENTIFIER.val);
+			append_to_buffer(SELF_REGISTER_VALUE.val);
+		}
+		else if (utils::str_match(token, (char*)"Xl")) {
+			append_to_buffer(SELF_LABEL_IDENTIFIER.val);
+			append_to_buffer(SELF_REGISTER_VALUE.val);
 		}
 		else if (token[0] == '$') {
 			if(token[1] == 't') // string length will always be >= 2
 				append_to_buffer(REFERENCE_IMPLICIT_TYPE_IDENTIFIER.val);
 			else
 				append_to_buffer(REFERENCE_IDENTIFIER.val);
-			append_to_buffer(simple_int_parse(token));
+			append_to_buffer(simple_int_parse(token)+1);
 		}
 		else if (token[0] == '!'){
 			if (token[1] == 't')
 				append_to_buffer(INSERSION_IMPLICIT_TYPE_IDENTIFIER.val);
 			else
 				append_to_buffer(INSERSION_IDENTIFIER.val);
-			append_to_buffer(simple_int_parse(token));
+			append_to_buffer(simple_int_parse(token)+1);
 		}
 		else if (context == contexts::condition) {
 			if (token[0] == ':') {
@@ -104,7 +129,7 @@ namespace ir_codegen{
 				bool found_token_flag = false;
 				for (int i = 0; i < ir_bitcode_constant::parsable_count; i++)
 				{
-					if (simple_token_parser::str_match(
+					if (utils::str_match(
 						token,(char*)ir_bitcode_constant::parse_list[i]->string.c_str())) {
 						append_to_buffer(ir_bitcode_constant::parse_list[i]->val);
 						found_token_flag = true;
@@ -116,6 +141,9 @@ namespace ir_codegen{
 			}
 		}
 		else if (context == contexts::instruction && token[0] == ';') {
+			if (instruction_length_counter > longest_instruction)
+				longest_instruction = instruction_length_counter;
+			instruction_length_counter = 0;
 			append_to_buffer(END_INSTRUCTION.val);
 			instruction_buffer[pre_end_condition_location] = instruction_buffer_length;
 			context = contexts::condition;
@@ -124,18 +152,30 @@ namespace ir_codegen{
 		other_tokens:
 			append_to_buffer(tokens.get_ab_token_index(token));
 		}
+
+		if (utils::str_match(token, (char*)".")) {
+			int_parse_next_token = true;
+		}
 	}
 
 	
 	void finalise_token(int index) {
 		append_to_buffer(CODEGEN_END.val);
 
-		// Bitcode in SSBO format
+		// SSBO format
 		//		[0 -> 255]   : Addresses of codegen segment, the index is the token
 		//		[256 -> 256+contants_amount] : Constants
 		//		[256+contants_amount -> EOF] : Codegen segments
 		SSBO[index] = current_SSBO_length; // points to the first entry of codegen segment
 		
+		if (instruction_length_counter > longest_instruction)
+			longest_instruction = instruction_length_counter;
+		if (longest_instruction < 1)
+			longest_instruction = 1;
+		SSBO[current_SSBO_length] = instruction_buffer_length; // change to longest_instruction eventually
+		longest_instruction = 0;
+		instruction_length_counter = 0;
+		current_SSBO_length++;
 		// Note: May potentially be a good idea to scrap the buffer and just make it
 		//		 write directly to the SSBO array to avoid having to do this copying
 		for (int i = 0; i < instruction_buffer_length; i++) {
@@ -145,5 +185,99 @@ namespace ir_codegen{
 		current_SSBO_length += instruction_buffer_length;
 		instruction_buffer_length = 0;
 		context = contexts::condition;
+	}
+	
+	const char* fetch_token_from_source(int location) {
+		int len = compiler::token_length(source, location);
+		auto ret = new char[len + 1];
+		memcpy(ret, source + location, len);
+		ret[len] = '\0';
+		return ret;
+	}
+
+	int* register_reduction_buffer;
+#define REGISTER_REDUCTION_BUFFER_SIZE 1000
+	int real_register_count = 0;
+	int get_final_register(int fake_register) {
+		// This is scuffed don't do this fixed buffer stuff.
+		if(fake_register > REGISTER_REDUCTION_BUFFER_SIZE) {
+			print(PRINT_ERROR, "Register issue.");
+			throw;
+		}
+		if (register_reduction_buffer[fake_register] == 0) {
+			register_reduction_buffer[fake_register] = real_register_count;
+			real_register_count++;
+		}
+		return register_reduction_buffer[fake_register];
+	}
+
+	void dbg_printing(int* outp) {
+		int counter = 0;
+		register_reduction_buffer = new int[REGISTER_REDUCTION_BUFFER_SIZE] { 0 };
+		for (int i = 0; i < 1000; i++) {
+			switch (compiler::debugging_config) {
+			case compiler::_debugging_config::ir_printout:
+			{
+				int ind = utils::_char_designed((int)outp[i]);
+				if (!ir_codegen::tokens.token_list[ind].empty()) {
+					std::cout << ir_codegen::tokens.token_list[ind] << " (IR TOKEN)";
+				}
+				else {
+					if (ind == NEWLINE.val) {
+						std::cout << '\n';
+					}
+					else if (ind == REFERENCE_IDENTIFIER.val) {
+						std::cout << "%" << get_final_register(outp[i + 1]) << " " << " (" << outp[i + 1] << ")";
+						i++;
+					}
+					else if (ind == SELF_REGISTER_IDENTIFIER.val) {
+						std::cout << "%" << get_final_register(outp[i + 1]) << " (" << outp[i + 1] << ")";
+						i++;
+					}
+					else if (ind == SELF_LABEL_IDENTIFIER.val) {
+						std::cout << get_final_register(outp[i + 1]) << ":" << " ";
+						i++;
+					}
+					else if (ind == IDENTIFIER_IDENTIFIER.val) {
+						const char* token = fetch_token_from_source(outp[i + 1]);
+						std::cout << token << " (IDENTIFIER)";
+						delete[] token;
+						i++;
+					}
+				}
+				break;
+			}
+			case compiler::_debugging_config::ast_nodes_printout:
+				if (outp[i] > 90 && outp[i] < yacc_parser::tokens.ab_token_counter && !yacc_parser::tokens.token_list[outp[i]].empty())
+					cout << yacc_parser::tokens.token_list[outp[i]] << '\n';
+				break;
+			case compiler::_debugging_config::tokens_printout:
+				switch (counter)
+				{
+				case 0:
+					if (outp[i] > 0 && outp[i] < yacc_parser::tokens.ab_token_counter && !yacc_parser::tokens.token_list[outp[i]].empty())
+						cout << yacc_parser::tokens.token_list[outp[i]] << '\n';
+					break;
+				case 1:
+					cout << outp[i] << '\n';
+					break;
+				}
+
+				counter++;
+				if (counter > 2)
+					counter = 0;
+				break;
+			}
+		}
+	}
+
+	void post_process(int* outp) {
+		if (compiler::debugging_config != compiler::_debugging_config::none) {
+			printf(";DBG_OUTPUT_START");
+			dbg_printing(outp);
+			printf(";DBG_OUTPUT_END");
+		}
+		delete[] register_reduction_buffer;
+		printf("\n");
 	}
 }
