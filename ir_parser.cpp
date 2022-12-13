@@ -188,10 +188,16 @@ namespace ir_codegen{
 	}
 	
 	const char* fetch_token_from_source(int location) {
+		int max_len = strnlen_s(source, 600000); // NOTE: Temp limit
+			
 		int len = compiler::token_length(source, location);
 		auto ret = new char[len + 1];
-		memcpy(ret, source + location, len);
-		ret[len] = '\0';
+		if (location > max_len || location < 0)
+			memcpy(ret, "iir", 4);
+		else {
+			memcpy(ret, source + location, len);
+			ret[len] = '\0';
+		}
 		return ret;
 	}
 
@@ -220,18 +226,18 @@ namespace ir_codegen{
 			{
 				int ind = utils::_char_designed((int)outp[i]);
 				if (!ir_codegen::tokens.token_list[ind].empty()) {
-					std::cout << ir_codegen::tokens.token_list[ind] << " (IR TOKEN)";
+					std::cout << ir_codegen::tokens.token_list[ind] << " ";
 				}
 				else {
 					if (ind == NEWLINE.val) {
-						std::cout << '\n';
+						std::cout << "NEWLINE\n";
 					}
 					else if (ind == REFERENCE_IDENTIFIER.val) {
-						std::cout << "%" << get_final_register(outp[i + 1]) << " " << " (" << outp[i + 1] << ")";
+						std::cout << "%" << get_final_register(outp[i + 1]) << " ";
 						i++;
 					}
 					else if (ind == SELF_REGISTER_IDENTIFIER.val) {
-						std::cout << "%" << get_final_register(outp[i + 1]) << " (" << outp[i + 1] << ")";
+						std::cout << "%" << get_final_register(outp[i + 1]) << " ";
 						i++;
 					}
 					else if (ind == SELF_LABEL_IDENTIFIER.val) {
@@ -240,7 +246,7 @@ namespace ir_codegen{
 					}
 					else if (ind == IDENTIFIER_IDENTIFIER.val) {
 						const char* token = fetch_token_from_source(outp[i + 1]);
-						std::cout << token << " (IDENTIFIER)";
+						std::cout << token << " ";
 						delete[] token;
 						i++;
 					}

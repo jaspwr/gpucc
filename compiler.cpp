@@ -370,7 +370,7 @@ int * compiler::compile(GLuint source_vram)
     glGenBuffers(1, &atomics);
     glBindBuffer(GL_ATOMIC_COUNTER_BUFFER, atomics);
     glBufferData(GL_ATOMIC_COUNTER_BUFFER, sizeof(GLuint) * atomics_count, hi, GL_DYNAMIC_DRAW);
-    glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 6, atomics);
+    glBindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 3, atomics);
 
     GLuint __screenTex = create_ssbo(SCREEN_WIDTH * SCREEN_WIDTH * 3 * sizeof(int));
 

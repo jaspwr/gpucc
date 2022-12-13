@@ -42,7 +42,7 @@ struct ast_node
 	int final_position;
 };
 
-layout(binding=6)uniform atomic_uint ast_total_count;
+layout(binding=3)uniform atomic_uint ast_total_count;
 layout(std430,binding=4)writeonly buffer _w_ast
 {
 	ast_node w_ast_data[];

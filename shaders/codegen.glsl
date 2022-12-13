@@ -19,7 +19,8 @@
 
 
 layout(local_size_x = 8, local_size_y = 4, local_size_z = 1) in;
-layout(binding = 6) uniform atomic_uint ast_total_count;
+//layout(binding = 3) uniform atomic_uint ast_total_count;
+
 
 struct ast_node
 {
@@ -66,18 +67,22 @@ void main(){
     
 	int _token = 0;
 	int debug_bail = 0;
-	if(true){
+	if (true) {
         barrier();
 		int in_intruction_index = 0;
 		int codegen_pointer = codegen_data[own_node_token]+1;
 		_token = codegen_data[codegen_pointer];
 		int len = codegen_data[codegen_data[own_node_token]]-1;
-		while(codegen_data[codegen_pointer] > 0 && debug_bail < 300){
+		while(codegen_data[codegen_pointer] > 0 && debug_bail < 300) {
+	        barrier();
+
             int out_pos = ((pixel_coords.x + in_intruction_index) - len) + pixel_coords.y* dims.x;
 			int pre_token = _token;
             _token = codegen_data[codegen_pointer];
-			if(pre_token == REFERENCE_IDENTIFIER){
+
+			if (pre_token == REFERENCE_IDENTIFIER) {
                 int ori_pos = _pos;
+
                 while(debug_bail < 300){
 					int ast_loc = ast_data[organised_tree_data[_pos].own_organised_location].operands[_token-1];
 					if(ast_loc < 0){
@@ -85,31 +90,29 @@ void main(){
 						outp_data[out_pos - 1] = IDENTIFIER_IDENTIFIER;
 						outp_data[out_pos] = -ast_loc;
 						break;
+
 					}
                     int v = ast_data[ast_loc].final_position;
 
 
                     outp_data[out_pos] = v;
-                    if(codegen_data[codegen_pointer+1] == INTERNAL_ELEMENT)
-                    {
+                    if (codegen_data[codegen_pointer+1] == INTERNAL_ELEMENT) {
                         codegen_pointer += 2;
                         _token = codegen_data[codegen_pointer];
                         in_intruction_index += 2;
                         debug_bail += 2;
                         _pos = v;
-                    }else{
+                    } else {
                         break;
                     }
                 }
                 _pos = ori_pos;
 
-			}else if(_token == SELF_REGISTER_VALUE){
-                outp_data[out_pos]
-				    = _pos;
-
+			} else if (_token == SELF_REGISTER_VALUE) {
+                outp_data[out_pos] = _pos;
             }
-            else{
-				outp_data[out_pos]= _token;
+            else {
+				outp_data[out_pos] = _token;
 			}
 
 			in_intruction_index++;

@@ -16,7 +16,7 @@
 
 
 layout(local_size_x = 8, local_size_y = 4, local_size_z = 1) in;
-layout(binding = 6) uniform atomic_uint ast_total_count;
+layout(binding = 3) uniform atomic_uint ast_total_count;
 
 struct ast_node
 {
@@ -61,25 +61,47 @@ void main(){
 	bool found = false;
 	int _pos = int((pixel_coords.x + dims.x * pixel_coords.y));
 	uint entry_node = atomicCounter(ast_total_count) - 1;
+
+
+	uint biggest_volume = 0;
+	uint biggest_volume_index = entry_node;
+	while(entry_node > 0) {
+		if (ast_data[entry_node].volume > biggest_volume) {
+			biggest_volume = ast_data[entry_node].volume;
+			biggest_volume_index = entry_node;
+		}
+		entry_node--;
+	}
+	entry_node = biggest_volume_index;
+
+
 	int working_node = int(entry_node);
 	int oper = 0;
 	int oper_count = ast_data[working_node].operand_count;
 	int working_volume=_pos;
+
+	if (_pos >= biggest_volume) {
+		organised_tree_data[_pos].node_token = 0;
+		return;
+	}
+
 	int bottom = 0;
 	int top = ast_data[working_node].volume;
 	
 	int debug_bail = 0;
 	while(debug_bail < 400){
+		barrier();
+
 		if(working_volume < 0 || oper > oper_count)
 			break;
 
-		if(working_volume == top -1){
+		if (working_volume == top -1) {
 			//found
 			found = true;
 			working_node = ast_data[working_node].operands[oper];
 			break;
 		}
-		if(working_volume < top){
+		if (working_volume < top) {
 			// moves down a branch
 			working_node = ast_data[working_node].operands[oper];
 			oper_count = ast_data[working_node].operand_count;
@@ -97,12 +119,14 @@ void main(){
 		debug_bail++;
 	}
 
-	organised_tree_data[_pos].node_token = ast_data[working_node].node_token;
-	organised_tree_data[_pos].own_organised_location = working_node;
-	barrier();
-	ast_data[working_node].final_position = _pos;
-	if(!found)
-	organised_tree_data[_pos].node_token=0;
+	if (found){
+		organised_tree_data[_pos].node_token = ast_data[working_node].node_token;
+		organised_tree_data[_pos].own_organised_location = working_node;
+		barrier();
+		ast_data[working_node].final_position = _pos; // Works
+	} else {
+		organised_tree_data[_pos].node_token=0;
+	}
 
 	barrier();
 
