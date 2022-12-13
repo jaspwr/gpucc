@@ -2,9 +2,13 @@ const_load
     | $0 IDENTIFIER
     ; < %X = LOAD_LITERAL $0 #newline >
 
+var_load
+    | $0 CONSTANT
+    ; < %X = LOAD_VARIABLE $0 #newline >
+
 primary_expression
     : $0 const_load
-    | $0 CONSTANT
+    | $0 var_load
     | '(' $0 primary_expression ')'
     | $0 addition
     | $0 subtraction

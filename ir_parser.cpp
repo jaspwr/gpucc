@@ -189,12 +189,14 @@ namespace ir_codegen{
 	
 	const char* fetch_token_from_source(int location) {
 		int max_len = strnlen_s(source, 600000); // NOTE: Temp limit
-			
+
 		int len = compiler::token_length(source, location);
-		auto ret = new char[len + 1];
-		if (location > max_len || location < 0)
+		char* ret = nullptr;
+		if (location > max_len || location < 0) {
+			ret = new char[4];
 			memcpy(ret, "iir", 4);
-		else {
+		} else {
+			ret = new char[len + 1];
 			memcpy(ret, source + location, len);
 			ret[len] = '\0';
 		}
