@@ -3,7 +3,7 @@
 
 
 namespace ir_codegen{
-#define BUFFER_MAX_SIZE 256
+#define BUFFER_MAX_SIZE 512
 	enum contexts {
 		condition,
 		instruction
@@ -41,6 +41,7 @@ namespace ir_codegen{
 
 
 	void append_to_buffer(int value) {
+		printf("PUSHED: %i\n", value);
 		if (instruction_buffer_length >= BUFFER_MAX_SIZE)
 			throw "instruction length exceeded max buffer size";
 		instruction_buffer[instruction_buffer_length] = value;
@@ -92,25 +93,34 @@ namespace ir_codegen{
 		if (in_quotes) {
 			append_to_buffer(LANGUAGE_TOKEN_IDENTIFIER.val);
 			append_to_buffer(parse_token_with_tree(main_tt, token));
+			printf("TOKEN %s\n", token);
 		}
 		else if (int_parse_next_token) {
 			int_parse_next_token = false;
 			append_to_buffer(simple_int_parse(token) + 1);
+			printf("int %s\n", token);
+
 		}
 		else if (token[0] == '%') {
 			append_to_buffer(SELF_REGISTER_IDENTIFIER.val);
 			append_to_buffer(SELF_REGISTER_VALUE.val);
+			printf("%\n");
+
 		}
 		else if (utils::str_match(token, (char*)"Xl")) {
 			append_to_buffer(SELF_LABEL_IDENTIFIER.val);
 			append_to_buffer(SELF_REGISTER_VALUE.val);
+			printf("LAB\n");
+
 		}
 		else if (token[0] == '$') {
-			if(token[1] == 't') // string length will always be >= 2
-				append_to_buffer(REFERENCE_IMPLICIT_TYPE_IDENTIFIER.val);
-			else
-				append_to_buffer(REFERENCE_IDENTIFIER.val);
+			//if(token[1] == 't') // string length will always be >= 2
+			//	append_to_buffer(REFERENCE_IMPLICIT_TYPE_IDENTIFIER.val);
+			//else
+			append_to_buffer(REFERENCE_IDENTIFIER.val);
 			append_to_buffer(simple_int_parse(token)+1);
+			printf("$%s\n", token);
+
 		}
 		else if (token[0] == '!'){
 			if (token[1] == 't')
@@ -118,8 +128,10 @@ namespace ir_codegen{
 			else
 				append_to_buffer(INSERSION_IDENTIFIER.val);
 			append_to_buffer(simple_int_parse(token)+1);
+			printf("NO HERE 1\n");
 		}
 		else if (context == contexts::condition) {
+
 			if (token[0] == ':') {
 				context = contexts::instruction;
 				append_to_buffer(END_CONDITION.val);
@@ -150,7 +162,9 @@ namespace ir_codegen{
 		}
 		else {
 		other_tokens:
+			printf("OTHER TOKEN: %s\n", token);
 			append_to_buffer(tokens.get_ab_token_index(token));
+			printf("was assigned: %i\n", tokens.get_ab_token_index(token));
 		}
 
 		if (utils::str_match(token, (char*)".")) {
@@ -180,7 +194,10 @@ namespace ir_codegen{
 		//		 write directly to the SSBO array to avoid having to do this copying
 		for (int i = 0; i < instruction_buffer_length; i++) {
 			SSBO[current_SSBO_length + i] = instruction_buffer[i];
+			printf("COPIED: %i", instruction_buffer[i]);
 		}
+		printf("\n");
+
 
 		current_SSBO_length += instruction_buffer_length;
 		instruction_buffer_length = 0;
@@ -213,10 +230,14 @@ namespace ir_codegen{
 			throw;
 		}
 		if (register_reduction_buffer[fake_register] == 0) {
-			register_reduction_buffer[fake_register] = real_register_count;
+			register_reduction_buffer[fake_register] = real_register_count == 0 ? -1 : real_register_count;
 			real_register_count++;
 		}
-		return register_reduction_buffer[fake_register];
+		auto ret = register_reduction_buffer[fake_register];
+		if (ret == -1) { // For reg %0
+			ret = 0;
+		}
+		return ret;
 	}
 
 	void dbg_printing(int* outp) {
@@ -232,10 +253,18 @@ namespace ir_codegen{
 				}
 				else {
 					if (ind == NEWLINE.val) {
-						std::cout << "NEWLINE\n";
+						std::cout << "\n";
 					}
 					else if (ind == REFERENCE_IDENTIFIER.val) {
-						std::cout << "%" << get_final_register(outp[i + 1]) << " ";
+						int v = outp[i + 1];
+						if (v > 0) {
+							std::cout << "%" << get_final_register(outp[i + 1]) << " ";
+						}
+						else {
+							const char* token = fetch_token_from_source(-v);
+							std::cout << token << " ";
+							delete[] token;
+						}
 						i++;
 					}
 					else if (ind == SELF_REGISTER_IDENTIFIER.val) {
@@ -247,10 +276,14 @@ namespace ir_codegen{
 						i++;
 					}
 					else if (ind == IDENTIFIER_IDENTIFIER.val) {
+						// Unused
 						const char* token = fetch_token_from_source(outp[i + 1]);
 						std::cout << token << " ";
 						delete[] token;
 						i++;
+					}
+					else if(ind != 0){
+						printf("BROKEN TOKEN: %i\n", outp[i]);
 					}
 				}
 				break;

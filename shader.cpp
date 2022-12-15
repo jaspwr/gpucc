@@ -105,8 +105,11 @@ void shader::exec( GLuint dsp_x,
             }
         }
     }
+    glFinish();
+
     glDispatchCompute(dsp_x, dsp_y, dsp_z);
     //glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
     glMemoryBarrier(GL_ALL_BARRIER_BITS);
+    glFinish();
 }
 

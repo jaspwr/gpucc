@@ -21,6 +21,9 @@ class TermCols:
 PASS = True
 FAILED = False
 
+def remove_whitespace(str):
+    return str.replace(" ", "").replace("\t", "").replace("\r", "").replace("\n", "")
+
 def runTest(test):
     outCodeCorrect = open(test.outFile, "r").read()
     outCode = ""
@@ -42,11 +45,13 @@ def runTest(test):
             'out_code': outCode
         })
 
-    if outCodeCorrect != outCode:
+    if remove_whitespace(outCodeCorrect) != remove_whitespace(outCode):
         return (FAILED, "Output does not match expected output. Got:\n%(out_code)s Expected:\n%(out_code_correct)s" % {
             'out_code': outCode,
             'out_code_correct': outCodeCorrect
         })
+    else:
+        return (PASS, "")
 
 def status_string(status):
     return (TermCols.GREEN + "PASS" if status == PASS else TermCols.MAGENTA + "FAIL") + TermCols.RESET

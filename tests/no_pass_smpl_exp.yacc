@@ -9,21 +9,19 @@ var_load
 primary_expression
     : $0 const_load
     | $0 var_load
-    | '(' $0 addition ')'
-    | '(' $0 subtraction ')'
-    | '(' $0 subtraction ')'
+    | '(' $0 primary_expression ')'
     | $0 addition
     | $0 subtraction
     | $0 multiplication
-    ;
+    ; < %X = prim $0 #newline >
 
 addition
     : [ '*', '/', '%', '-', '+' } $0 primary_expression '+' $1 primary_expression
-    ; < %X = ADD $0.0 $1.0 >
+    ; < %X = ADD $0 $1 #newline >
 
 subtraction
     : [ '*', '/', '%', '-', '+' } $0 primary_expression '-' $1 primary_expression
-    ; < %X = SUB $0.0 $1.0 #newline >
+    ; < %X = SUB $0 $1 #newline >
 
 scope
     : $0 start_connected_terminating_expression '}'
@@ -41,4 +39,4 @@ start_connected_terminating_expression
 
 multiplication
     : $0 primary_expression '*' $1 primary_expression
-    ; < %X = MUL $0.0 $1.0 #newline >
+    ; < %X = MUL $0 $1 #newline >

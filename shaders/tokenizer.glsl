@@ -20,7 +20,7 @@ struct reimp_screen{
 	int _size;
 	int _ast_pointers;
 };
-layout(std430,binding=1)writeonly buffer screen_buffer
+layout(std430,binding=1)writeonly coherent buffer screen_buffer
 {
 	reimp_screen _w_screen[];
 };
@@ -177,7 +177,7 @@ void parse_tokens(in ivec2 pos,in ivec2 dims){
 				_w_screen[_pos]._screen=val;
 				
 				_w_screen[_pos]._size=i-rets;
-				_w_screen[_pos]._ast_pointers=-_pos;
+				_w_screen[_pos]._ast_pointers=-_pos; // BROKEN
 				
 				tree_row=0;
 				//rets++;

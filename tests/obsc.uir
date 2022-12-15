@@ -1,5 +1,7 @@
 %0 = LOAD_LITERAL 2
 %1 = LOAD_VARIABLE b
-%2 = ADD %1 %2
+%2 = ADD %0 %1
 %3 = LOAD_LITERAL 3
-%4 = SUB %2 %3
+%4 = LOAD_LITERAL 5
+%5 = MUL %3 %4
+%6 = SUB %2 %5

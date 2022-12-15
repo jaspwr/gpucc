@@ -30,6 +30,7 @@ GLuint create_ssbo(int size){
     glGenBuffers(1, &ssbo);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
     glBufferData(GL_SHADER_STORAGE_BUFFER, size * sizeof(int), _data, GL_DYNAMIC_COPY);
+	glFinish();
 	free(_data);
 	return ssbo;
 }
@@ -39,6 +40,8 @@ GLuint load_to_ssbo(int size, int type_size, int* data) {
 	glGenBuffers(1, &ssbo);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, size * type_size, data, GL_DYNAMIC_COPY);
+	glFinish();
+
 	return ssbo;
 }
 

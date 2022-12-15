@@ -1,6 +1,6 @@
 #version 460 core
 
-layout(local_size_x=8,local_size_y=4,local_size_z=1)in;
+layout(local_size_x=32,local_size_y=1,local_size_z=1)in;
 // layout(rgba32f, binding = 1) writeonly uniform image2D screen;
 // layout(rgba32f, binding = 2) readonly uniform image2D r_screen;
 // layout(rgba32f, binding = 4) writeonly uniform image2D size;
@@ -20,16 +20,16 @@ struct reimp_screen{
 	int _size;
 	int _ast_pointers;
 };
-layout(std430,binding=0)readonly buffer _screen_buffer
+layout(std430,binding=0)readonly coherent buffer _screen_buffer
 {
 	reimp_screen _r_screen[];
 };
-layout(std430,binding=1)writeonly buffer screen_buffer
+layout(std430,binding=1)writeonly coherent buffer screen_buffer
 {
 	reimp_screen _w_screen[];
 };
 
-layout(std430,binding=2)buffer codegen{
+layout(std430,binding=2)readonly buffer codegen{
 	int codegen_data[];
 };
 struct ast_node
@@ -174,9 +174,11 @@ void subtitute_tokens(in ivec2 pos,in ivec2 dims,in int i_offset){
 	if(final_val!=0){
 		int final_operands[4];
 		int depth=1;
-		int volume=1;
+		int volume=3;
+
 		if(codegen_data[final_val] != 0)
-			volume = codegen_data[codegen_data[final_val]];
+			volume += codegen_data[codegen_data[final_val]];
+
 		int largest_operand_position=0;
 		for(int i=0;i<10;i++){
 			int ind=ast_extra[final_alph].operand_order[i];
@@ -209,9 +211,10 @@ void subtitute_tokens(in ivec2 pos,in ivec2 dims,in int i_offset){
 }
 
 void main(){
+	barrier();
 	vec4 pixel=vec4(50./255.);
 	ivec2 pixel_coords=ivec2(gl_GlobalInvocationID.xy);
-	ivec2 dims=ivec2(500);
+	ivec2 dims=ivec2(16*32);
 
 	// float x = -(float(pixel_coords.x * 2 - dims.x) / dims.x); // transforms to [-1.0, 1.0]
 	// float y = -(float(pixel_coords.y * 2 - dims.y) / dims.y); // transforms to [-1.0, 1.0]

@@ -1,5 +1,4 @@
 #include "compiler.h"
-
 // TODO: Make this more flexible and not just hard coded for c
 
 enum preproc_context {
@@ -310,6 +309,7 @@ int compiler::token_length(const char* source, int start_position) {
 int * compiler::compile(GLuint source_vram)
 {
     const int bind_size = 8;
+    const int WORK_GROUP_COUNT = 16;
     shader_binding shader_bindings[bind_size];
     // shader_bindings[0] = {0,c,GL_READ_ONLY,GL_RG32F};
     // shader_bindings[1] = {1,screenTex,GL_WRITE_ONLY,GL_RG32F};
@@ -342,7 +342,7 @@ int * compiler::compile(GLuint source_vram)
 
 
     shader shad(shader_bindings, 6, "shaders/tokenizer.glsl");
-    shad.exec(std::ceil(SCREEN_WIDTH / 8), std::ceil(SCREEN_HEIGHT / 4), 1, true);
+    shad.exec(WORK_GROUP_COUNT, 1, 1, true);
 
     // GLuint pong_screen;
     // glCreateTextures(GL_TEXTURE_2D, 1, &pong_screen);
@@ -361,6 +361,7 @@ int * compiler::compile(GLuint source_vram)
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
     glBufferData(GL_SHADER_STORAGE_BUFFER, 12000 * sizeof(int), _data, GL_DYNAMIC_COPY); //sizeof(data) only works for statically sized C/C++ arrays.
     //glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
+    glFinish();
     delete[] _data;
     const int atomics_count = 3;
     GLuint hi[atomics_count];
@@ -389,7 +390,8 @@ int * compiler::compile(GLuint source_vram)
     GLuint extra_parse_tree_data;
     glGenBuffers(1, &extra_parse_tree_data);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, extra_parse_tree_data);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, 255 * sizeof(parse_tree_extra), lang::_parse_tree_extra, GL_DYNAMIC_COPY);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, 255 * sizeof(parse_tree_extra), lang::_parse_tree_extra, GL_STATIC_READ);
+    glFinish();
     shader_bindings[7].texture = extra_parse_tree_data;
     shader_bindings[7].type = shader_binding_type::ssbo;
     shader_bindings[2].texture = lang::vram_codegen;
@@ -412,19 +414,35 @@ int * compiler::compile(GLuint source_vram)
             shader_bindings[4].texture = ssbo;
         }
         ping_pong = !ping_pong;
-        ast_builder.exec(std::ceil(SCREEN_WIDTH / 8), std::ceil(SCREEN_HEIGHT / 4), 1, true);
+        ast_builder.exec(128, 1, 1, true);
     }
+    if (ping_pong) {
+        shader_bindings[1].texture = __screenTex;
+        shader_bindings[0].texture = pong_screen;
+        shader_bindings[4].texture = pong_ast_data;
+        shader_bindings[6].texture = ssbo;
+
+    }
+    else {
+        shader_bindings[1].texture = pong_screen;
+        shader_bindings[0].texture = __screenTex;
+        shader_bindings[6].texture = pong_ast_data;
+        shader_bindings[4].texture = ssbo;
+    }
+    shader_bindings[0].texture = __screenTex;
     GLuint organised = create_ssbo(12000 * sizeof(int));
-    shader_bindings[6].texture = organised;
-    shader_bindings[6].type = shader_binding_type::ssbo;
+    shader_bindings[4].texture = organised;
+    shader_bindings[4].type = shader_binding_type::ssbo;
     GLuint final_output = create_ssbo(8000 * sizeof(int));
     shader_bindings[5].texture = final_output;
     shader_bindings[5].type = shader_binding_type::ssbo;
 
     shader arranger(shader_bindings, 6, "shaders/arranger.glsl");
-    arranger.exec(std::ceil(SCREEN_WIDTH / 8), std::ceil(SCREEN_HEIGHT / 4), 1, true);
+    arranger.exec(WORK_GROUP_COUNT, 1, 1, true);
+
+
     shader codegen_shdr(shader_bindings, 6, "shaders/codegen.glsl");
-    codegen_shdr.exec(std::ceil(SCREEN_WIDTH / 8), std::ceil(SCREEN_HEIGHT / 4), 1, true);
+    codegen_shdr.exec(WORK_GROUP_COUNT, 1, 1, true);
 
     int* outp = new int[8000]; // freed in main
     GLuint return_output_ssbo = 0;
