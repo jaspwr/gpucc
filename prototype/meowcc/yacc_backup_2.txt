@@ -1,0 +1,148 @@
+STRING_LITERAL
+    : '"' ... '"'
+    ;
+
+CONSTANT
+    : CONSTANT '.' CONSTANT
+	;
+
+unary_operation
+    : { ')', expression, primary_expression, terminating_expression} $1 operator $0 primary_expression
+    ;
+
+primary_expression
+	: $0 IDENTIFIER
+	| $0 CONSTANT
+	| $0 STRING_LITERAL
+	| '(' $0 expression ')'
+    | '(' $0 primary_expression ')'
+    | $0 expression
+    | $0 type_specifier
+    | $0 function_call
+    | $0 array_call
+	;
+
+expression
+    : $0 primary_expression $1 operator $2 primary_expression
+    | $0 primary_expression $1 operator_then_unary_expression
+    | $0 cast_expression
+    | $0 lone_unary_expression
+    ;
+
+i1_branch
+    : 'if' $0 primary_expression $1 scope $2 scope
+    | 'if' $0 primary_expression $1 scope 'else' $2 scope
+    ; < br i1 $0, label $1, label $2 >
+
+
+start_connected_terminating_expression
+    : '{' terminating_expression
+    | $0 start_connected_terminating_expression $1 terminating_expression
+    | $0 start_connected_terminating_expression $1 primary_expression expression_terminator
+    ;
+
+
+
+scope
+    : $0 start_connected_terminating_expression '}'
+    | '{' '}'
+    ;
+
+cast_specifier
+    : '(' $0 type_specifier ')'
+    ;
+
+cast_expression
+    : $1 cast_specifier $0 primary_expression
+    ;
+
+type_specifier
+	: $0 'void'
+	| $0 'char'
+	| $0 'short'
+	| $0 'int'
+	| $0 'long'
+	| $0 'float'
+	| $0 'double'
+	| $0 'signed'
+	| $0 'unsigned'
+	| $0 'struct'
+	| $0 'union'
+	| $0 'enum'
+	| $0 TYPE_NAME
+	;< wee woo >
+
+terminating_expression
+    : expression expression_terminator
+    | expression terminating_expression
+    | primary_expression operator terminating_expression
+    | i1_branch
+    | assignment
+    ;
+
+assignment
+    : primary_expression assignment_operator terminating_expression
+    | primary_expression assignment_operator primary_expression expression_terminator 
+    ;
+
+function_call
+    : function_identifier ')'
+    | function_and_partial_argument_list ')'
+    | function_and_partial_argument_list primary_expression ')'
+    | function_identifier primary_expression ')'
+    ;
+
+array_call
+    : $1 primary_expression '[' $0 primary_expression ']'
+    ;
+
+function_identifier
+    : primary_expression '('
+    ;
+
+function_and_partial_argument_list
+    : function_identifier primary_expression ','
+    | function_and_partial_argument_list primary_expression ','
+    ;
+
+type_qualifier
+	: 'const'
+	| 'volatile'
+	;
+
+pointer
+    : type_specifier '*'
+    ;
+
+
+operator
+    : $0 '+'
+    | $0 '*'
+    | $0 '-'
+    | $0 '/'
+    | $0 '&'
+    | $0 '~'
+    | $0 '!'
+    ;
+
+assignment_operator
+	: $0 '='
+	| $0 '*='
+	| $0 '/='
+	| $0 '%='
+	| $0 '+='
+	| $0 '-='
+	| $0 '<<='
+	| $0 '>>='
+	| $0 '&='
+	| $0 '^='
+	| $0 '|='
+	;
+
+ret
+    : 'return' terminating_expression
+    ;
+
+expression_terminator
+    : ';'
+    ;
