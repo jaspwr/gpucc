@@ -10,6 +10,7 @@
 struct ast_ssbos {
     Ssbo* ast_parse_tree;
     Ssbo* ast_nodes;
+    Ssbo* ir_codegen;
 };
 
 ast_ssbos create_ast_ssbos(std::string grammar, ParseTree& lang_tokens_parse_tree);

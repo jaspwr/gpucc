@@ -12,6 +12,7 @@
 struct Token {
 	GLuint id;
 	GLuint len;
+    GLint ast_node_location;
 };
 
 Ssbo* tokenise(UintString& source, Shader* tokeniser) {
@@ -32,9 +33,15 @@ std::string load_source(std::vector<std::string> source_files) {
     return source;
 }
 
+struct ChildNode {
+    GLint ref;
+    GLuint codegenVolume;
+};
+
 struct AstNode {
 	GLuint nodeToken;
-	GLuint children[4];
+	ChildNode children[4];
+    GLuint volume;
 };
 
 #define MAX_AST_NODES 30
@@ -43,39 +50,47 @@ void compile(Job& job)
 {
     if (job.source_files.size() == 0) { throw "No source files specified."; }
     auto source = to_uint_string(load_source(job.source_files));
+    Shader tokeniser = Shader("shaders/tokeniser.glsl", GL_ALL_BARRIER_BITS);
+    Shader ast = Shader("shaders/ast.glsl", GL_ALL_BARRIER_BITS);
+    Shader codegen = Shader("shaders/codegen.glsl", GL_ALL_BARRIER_BITS);
 
     auto lang_tokens_parse_tree = tokens_list_to_parse_tree(tokens);
     auto pt_ssbo = lang_tokens_parse_tree->into_ssbo();
     pt_ssbo->bind(0);
 
-    auto tokeniser = new Shader("shaders/tokeniser.glsl", GL_ALL_BARRIER_BITS);
 
-    auto tokens = tokenise(source, tokeniser);
+
+
+    auto tokens = tokenise(source, &tokeniser);
     tokens->print_contents();
 
 
-    auto ast_ssbos = create_ast_ssbos("hello : ';' '}' ; mew : hello hello;", *lang_tokens_parse_tree);
+    auto ast_ssbos = create_ast_ssbos("piss: $0 fuck ; < meows > fuck : $1 ';' $0 '}' ; < meow endo 2 > mew : [piss} $0 piss $1 piss; mewmew: $0 mew $1 mew ;", *lang_tokens_parse_tree);
 
-    auto ast = new Shader("shaders/ast.glsl", GL_ALL_BARRIER_BITS);
 
-    ast_ssbos.ast_parse_tree->bind(0);
+    ast_ssbos.ast_parse_tree->bind(4);
     ast_ssbos.ast_nodes->bind(1);
 
-    auto ast_nodes = new Ssbo(MAX_AST_NODES * sizeof(AstNode));
-    ast_nodes->bind(3);
+    auto ast_nodes = Ssbo(MAX_AST_NODES * sizeof(AstNode));
+    ast_nodes.bind(3);
+    ast_ssbos.ir_codegen->bind(0);
 
     for (int i = 0; i < 10; i++)
-        ast->exec((tokens->size / 32) / 4 + 1);
+        ast.exec((tokens->size / 32) / 4 + 1);
 
     tokens->print_contents();
     printf("AST NODES:\n");
-    ast_nodes->print_contents();
+    ast_nodes.print_contents();
     
-    delete_ast_ssbos(ast_ssbos);
+    Ssbo output_buffer = Ssbo(100 * sizeof(GLuint));
+    output_buffer.bind(1);
 
+
+    codegen.exec(1);
+    output_buffer.print_contents();
+
+    delete_ast_ssbos(ast_ssbos);
     delete lang_tokens_parse_tree;
-    delete ast_nodes;
     delete[] source.data;
     delete tokens;
-    delete tokeniser;
 }

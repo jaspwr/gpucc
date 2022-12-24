@@ -7,6 +7,7 @@ GLuint get_next_row(ParseTreeItem* tree, GLuint row, GLuint column)
 }
 
 void ParseTree::append_entry(ParseTreeEntry entry) {
+    size++;
     GLuint row = 0;
 
     for (i32 i = 0; i < entry.matches.length - 1; i++)
@@ -40,6 +41,7 @@ ParseTree::ParseTree(std::vector<ParseTreeEntry> entries, bool non_fixed)
 {
     tree = new ParseTreeItem[COLUMNS * (non_fixed ? 700 : sum_lens(entries)) + 40];
     rows = 0;
+    size = 0;
     for (ParseTreeEntry entry : entries)
     {
         if (entry.matches.length == 0)

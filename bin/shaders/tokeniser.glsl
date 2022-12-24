@@ -10,6 +10,7 @@ struct ParseTreeItem {
 struct Token {
 	uint id;
 	uint len;
+	int astNodeLocation;
 };
 
 layout(std430, binding = 0) readonly buffer TokenParseTree {
@@ -20,7 +21,7 @@ layout(std430, binding = 1) readonly coherent buffer Source {
 	uint source[];
 };
 
-layout(std430, binding = 2) writeonly buffer Tokens {
+layout(std430, binding = 2) writeonly volatile buffer Tokens {
 	Token tokens[];
 };
 
@@ -113,19 +114,22 @@ void main() {
 		}
 		uint token = 0;
 		uint len = 0;
-		tryParse(start + i, token, len);
+		uint pos = start + i;
+		tryParse(pos, token, len);
 
-		barrier();
-		memoryBarrierBuffer();
+		
 
 		if (token != 0) {
-			tokens[start + i].id = token;
+			tokens[pos].id = token;
 		} else {
-			parseIdentifiersAndLiterals(start + i, len);
+			parseIdentifiersAndLiterals(pos, len);
 		}
 		// else if not whitespace insert an error token
-		tokens[start + i].len = len;
+		tokens[pos].len = len;
+		tokens[pos].astNodeLocation = -int(pos);
 		i += len > 0 ? len - 1: 0;
 	}
+	barrier();
+	memoryBarrierBuffer();
 
 }

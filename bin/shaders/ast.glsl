@@ -14,14 +14,21 @@ struct ParseTreeItem {
 struct Token {
 	uint id;
 	uint len;
+	int astNodeLocation;
+};
+
+struct ChildNode {
+    int ref;
+    uint codegenVolume;
 };
 
 struct AstNode {
 	uint nodeToken;
-	uint children[4];
+	ChildNode children[4];
+	uint volume;
 };
 
-layout(std430, binding = 0) readonly buffer AstParseTree {
+layout(std430, binding = 4) readonly buffer AstParseTree {
 	ParseTreeItem astParseTree[];
 };
 
@@ -37,7 +44,19 @@ layout(std430, binding = 3) coherent volatile buffer AstNodes {
 	AstNode astNodes[];
 };
 
-uint appendAstNode(uint nodeToken, uint children[4], uint pos) {
+layout(std430, binding = 0) readonly buffer IrCodegen {
+    uint irCodegen[];
+};
+
+uint codegenPointer(uint nodeToken) {
+	return irCodegen[nodeToken];
+}
+
+AstNode fetchAstNodeFromChildRef(int childRef) {
+	return astNodes[childRef - 1];
+}
+
+int appendAstNode(AstNode newNode, uint pos) {
 	int invocation_hash = int(pos * 7 + 1) % MAX_AST_NODES;
 	int offset = 0;
 	int sign_ = 1;
@@ -52,11 +71,12 @@ uint appendAstNode(uint nodeToken, uint children[4], uint pos) {
 			break;
 		}
 	}
-	uint index = uint(invocation_hash + offset * sign_);
+	int index = invocation_hash + offset * sign_;
 
-	astNodes[index] = AstNode(nodeToken, children);
+	astNodes[index] = newNode;
 	return index;
 }
+
 
 bool checkExcludes(ParseTreeItem pti, uint start, uint i, uint preToken, uint lastTokenLen) {
 	// Check pre exclusions
@@ -85,30 +105,76 @@ bool checkExcludes(ParseTreeItem pti, uint start, uint i, uint preToken, uint la
 	return false;
 }
 
-void tryParse(in uint start, out uint outToken, in uint preToken, out uint outLength) {
+uint getCodegenLength(uint nodeToken) {
+	uint ptr = codegenPointer(nodeToken);
+	if (ptr == 0) return 0;
+	return irCodegen[ptr + 4];
+}
+
+uint getNodeCodegenVolume(int childRef) {
+	AstNode node = fetchAstNodeFromChildRef(childRef);
+	uint volume = getCodegenLength(node.nodeToken);
+	for (uint i = 0; i < 4; i++) {
+		if (node.children[i].ref != 0)
+			volume += node.children[i].codegenVolume;
+	}
+	return volume;
+}
+
+void handleChildren(out ChildNode children[4], uint lastFinal, in uint matchBuffer[10], out uint volume) {
+	uint len1 = astTreeData[lastFinal + 1];
+	uint len2 = astTreeData[lastFinal + len1 + 2];
+	uint sigTokLoc = lastFinal + len1 + len2 + 3;
+	uint workingVolume = 1;
+
+	for (uint j = 0; j < 4; j++) {
+		uint childRef = astTreeData[sigTokLoc + j];
+		children[j].codegenVolume = 0;
+		if (childRef == 0) { 
+			children[j].ref = 0;
+		} else {
+			int loc = tokens[matchBuffer[childRef - 1]].astNodeLocation;
+			children[j].ref = loc;
+			if (loc > 0) {
+				workingVolume += fetchAstNodeFromChildRef(loc).volume;
+				children[j].codegenVolume = getNodeCodegenVolume(loc);
+			}
+		}
+	}
+	volume = workingVolume;
+}
+
+void tryParse(in uint start, out uint outToken, in uint preToken, 
+	out ChildNode children[4], out uint outLength, out uint volume) {
 	uint row = 0;
 	uint lastFinal = 0;
-	uint i;
-	for(i = 0; i < 3000; i++) {
+	uint lenAtFinal = 0;
+	uint matchBuffer[10];
+	uint matchBufferPointer = 0;
+	for(uint i = 0; i < 3000; i++) {
 		Token token = tokens[start + i];
 
         // TODO: break on end of buffer
 
-        if (token.id == 0) {
-            continue;
-        }
+        if (token.id == 0) continue;
+		
+		matchBuffer[matchBufferPointer++] = start + i;
 		ParseTreeItem pti = astParseTree[row * ROW_SIZE + token.id];
 		if ((pti.final != 0) && !checkExcludes(pti, start, i, preToken, token.len)) {
-			lastFinal = astTreeData[pti.final];
+			lastFinal = pti.final;
+			lenAtFinal = i;
 		}
-		if (pti.nextRow == 0) { 
-			break; 
-		}
+
+		if (pti.nextRow == 0) break;
+
 		row = pti.nextRow;
         i += token.len > 0 ? token.len - 1: 0;
 	}
-	outToken = lastFinal;
-	outLength = i;
+	if (lastFinal != 0) {
+		handleChildren(children, lastFinal, matchBuffer, volume);
+	}
+	outToken = astTreeData[lastFinal];
+	outLength = lenAtFinal + 1;
 }
 
 void main() {
@@ -128,20 +194,23 @@ void main() {
 
 		uint token = 0;
 		uint len = 0;
+		ChildNode children[4];
 		uint pos = uint(start + i + preTokenLen);
-		tryParse(pos, token, preToken, len);
+		uint volume = 0;
+		tryParse(pos, token, preToken, children, len, volume);
 
         barrier();
         
 		if (token != 0) {
-			appendAstNode(token, uint[](0, 0, 0, 0), pos);
+			AstNode newNode = AstNode(token, children, volume);
+			int astPos = appendAstNode(newNode, pos);
 			tokens[pos].id = token;
     		tokens[pos].len = len;
+			tokens[pos].astNodeLocation = int(astPos + 1);
 			// TODO: Find the smallest length of tokens that need to be cleared.
 			// 		 This will get really slow for higher nodes.
-			for (uint j = 1; j < len + 1; j++) {
+			for (uint j = 1; j < len; j++) {
 				tokens[pos + j].id = 0;
-				tokens[pos + j].len = 0;
 			}
 		}
         barrier();
