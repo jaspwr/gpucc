@@ -2,6 +2,7 @@
 
 #include "ssbo.h"
 #include "parse_tree.h"
+#include "ir_compiler.h"
 
 #include <string>
 
@@ -13,5 +14,5 @@ struct ast_ssbos {
     Ssbo* ir_codegen;
 };
 
-ast_ssbos create_ast_ssbos(std::string grammar, ParseTree& lang_tokens_parse_tree);
+ast_ssbos create_ast_ssbos(std::string grammar, ParseTree& lang_tokens_parse_tree, IrTokenList* ir_token_list);
 void delete_ast_ssbos(ast_ssbos ssbos);

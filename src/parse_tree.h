@@ -28,11 +28,14 @@ class ParseTree {
     private:
         ParseTreeItem* tree;
         GLuint rows;
+        u32 max_rows;
+        std::vector<ParseTreeEntry>* entries;
     public:
         u32 size;
         ParseTree(std::vector<ParseTreeEntry> entries, bool non_fixed);
         Ssbo* into_ssbo();
         GLuint exec(UintString input);
+        UintString from_id(GLuint id);
         void append_entry(ParseTreeEntry entry);
         ~ParseTree();
 };

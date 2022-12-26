@@ -10,6 +10,7 @@ Ssbo::Ssbo(GLuint size) // Zero-initialised
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, index);
     glBufferData(GL_SHADER_STORAGE_BUFFER, size, NULL, GL_DYNAMIC_COPY);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    glFinish();
 }
 
 Ssbo::Ssbo(GLuint size, void* data) // Initialised with data
@@ -19,22 +20,26 @@ Ssbo::Ssbo(GLuint size, void* data) // Initialised with data
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, index);
     glBufferData(GL_SHADER_STORAGE_BUFFER, size, data, GL_DYNAMIC_COPY);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    glFinish();
 }
 
 Ssbo::~Ssbo()
 {
     glDeleteBuffers(1, &index);
+    glFinish();
 }
 
 void Ssbo::bind(GLuint index)
 {
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, index, this->index);
+    glFinish();
 }
 
 void* Ssbo::dump()
 {
     void* data = malloc(size);
     glGetNamedBufferSubData(index, 0, size, data);
+    glFinish();
     return data;
 }
 

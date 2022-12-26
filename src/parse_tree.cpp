@@ -17,14 +17,19 @@ void ParseTree::append_entry(ParseTreeEntry entry) {
         if (next_row == 0)
         {
             rows++;
+            if (rows >= max_rows)
+                throw "Parse tree overflow.";
             tree[row * COLUMNS + c].next_row = rows;
             row = rows;
         } else
             row = next_row;
     }
 
+
     tree[row * COLUMNS + entry.matches.data[entry.matches.length - 1]]
         .final_pointer = entry.points_to;
+
+    entries->push_back(entry);
 }
 
 u32 sum_lens(std::vector<ParseTreeEntry>& entries)
@@ -37,9 +42,22 @@ u32 sum_lens(std::vector<ParseTreeEntry>& entries)
     return sum;
 }
 
+UintString ParseTree::from_id(GLuint id)
+{
+    for (ParseTreeEntry entry : *entries)
+    {
+        if (entry.points_to == id)
+            return entry.matches;
+    }
+    return to_uint_string("ERROR");
+}
+
 ParseTree::ParseTree(std::vector<ParseTreeEntry> entries, bool non_fixed)
 {
-    tree = new ParseTreeItem[COLUMNS * (non_fixed ? 700 : sum_lens(entries)) + 40];
+    this->entries = new std::vector<ParseTreeEntry>();
+
+    max_rows = non_fixed ? 400 : sum_lens(entries);
+    tree = new ParseTreeItem[COLUMNS * max_rows + 40];
     rows = 0;
     size = 0;
     for (ParseTreeEntry entry : entries)
@@ -48,7 +66,6 @@ ParseTree::ParseTree(std::vector<ParseTreeEntry> entries, bool non_fixed)
             throw "Tried to create parse tree with empty string. Is there a blank line in your token list?";
         append_entry(entry);
     }
-
 }
 
 Ssbo* ParseTree::into_ssbo()
@@ -75,6 +92,7 @@ GLuint ParseTree::exec(UintString input)
 
 ParseTree::~ParseTree()
 {
+    delete entries;
     delete[] tree;
 }
 

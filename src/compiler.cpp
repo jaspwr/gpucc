@@ -4,6 +4,7 @@
 #include "shader.h"
 #include "lang.h"
 #include "yacc.h"
+#include "ir_compiler.h"
 
 #include "c_tokens.cpp"
 
@@ -55,6 +56,7 @@ void compile(Job& job)
     Shader codegen = Shader("shaders/codegen.glsl", GL_ALL_BARRIER_BITS);
 
     auto lang_tokens_parse_tree = tokens_list_to_parse_tree(tokens);
+
     auto pt_ssbo = lang_tokens_parse_tree->into_ssbo();
     pt_ssbo->bind(0);
 
@@ -64,8 +66,9 @@ void compile(Job& job)
     auto tokens = tokenise(source, &tokeniser);
     tokens->print_contents();
 
-
-    auto ast_ssbos = create_ast_ssbos("piss: $0 fuck ; < meows > fuck : $1 ';' $0 '}' ; < meow endo 2 > mew : [piss} $0 piss $1 piss; mewmew: $0 mew $1 mew ;", *lang_tokens_parse_tree);
+    IrTokenList* ir_tokens = new IrTokenList();
+    
+    auto ast_ssbos = create_ast_ssbos("piss: $0 fuck ; <  ( ABOVE DA BASE ) > fuck : $1 ';' $0 '}' ; < ( DA BASE ) > mew : [piss} $0 piss $1 piss; < (DA JOIN) > mewmew: $0 mew $1 mew ; < (DA OTHER JOIN) >", *lang_tokens_parse_tree, ir_tokens);
 
 
     ast_ssbos.ast_parse_tree->bind(4);
@@ -82,14 +85,22 @@ void compile(Job& job)
     printf("AST NODES:\n");
     ast_nodes.print_contents();
     
-    Ssbo output_buffer = Ssbo(100 * sizeof(GLuint));
+    #define OUTPUT_BUFFER_SIZE 100
+
+    Ssbo output_buffer = Ssbo(OUTPUT_BUFFER_SIZE * sizeof(GLuint));
     output_buffer.bind(1);
 
 
     codegen.exec(1);
-    output_buffer.print_contents();
+    //output_buffer.print_contents();
+
+
+    GLuint* out_buf_dmp = (GLuint*)output_buffer.dump();
+    auto s = serialize_uir_to_readable(out_buf_dmp, OUTPUT_BUFFER_SIZE, *ir_tokens);
+    printf("OUTPUT:\n%s\n", s.c_str());
 
     delete_ast_ssbos(ast_ssbos);
+    delete ir_tokens;
     delete lang_tokens_parse_tree;
     delete[] source.data;
     delete tokens;

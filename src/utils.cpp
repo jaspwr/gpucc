@@ -47,6 +47,15 @@ UintString to_uint_string(std::string str) {
     return { data, (GLuint)length };
 }
 
+std::string uintstring_to_string(UintString str) {
+    std::string ret = "";
+    for (int i = 0; i < str.length; i++)
+    {
+        ret += (char)str.data[i];
+    }
+    return ret;
+}
+
 UintString to_uint_string(std::vector<GLuint> str) {
     u32 length = str.size();
     GLuint* data = new GLuint[length];

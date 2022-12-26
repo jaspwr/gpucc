@@ -1,5 +1,7 @@
 #include "yacc.h"
 
+#include "ir_compiler.h"
+
 #include <vector>
 
 struct AstParseData {
@@ -152,7 +154,7 @@ GLuint get_token_id(ParseTree& parse_tree, char* name) {
 }
 
 void append_codegen_ssbo_entry(GLuint* codegen_ssbo, GLuint& codegen_ssbo_len,
-GLuint node_token, std::vector<std::string>& ir, ParseTree& ir_pt) {
+GLuint node_token, std::vector<std::string>& ir, ParseTree& ir_pt, IrTokenList* ir_tokens) {
     if (ir.size() == 0) {
         //codegen_ssbo[node_token] = 0;
         return;
@@ -168,7 +170,10 @@ GLuint node_token, std::vector<std::string>& ir, ParseTree& ir_pt) {
     for (std::string& tok : ir) {
         char* token_name = (char*)tok.c_str();
         GLuint size = ir_pt.size;
+        GLuint pre_size = size;
         auto a = get_token_id(ir_pt, token_name, size);
+        if (a > pre_size)
+            ir_tokens->push_back({std::string(token_name), a});
 
         codegen_ssbo[codegen_ssbo_len++] = a;
         len++;
@@ -189,12 +194,12 @@ u32 parse_dollar_sign_number (char* str) {
 
 void handle_token(char* token_buffer, YaccContext& context, ParseTree& parse_tree, ParseTree& ast_parse_tree,
     GLuint* ast_nodes_buffer, GLuint& ast_nodes_len, GLuint& block_token, ParseTree& yacc_parse_tree, 
-    GLuint& yacc_tokens_last, AstParseData& ast_pt_data, GLuint* codegen_ssbo, GLuint& codegen_ssbo_len, ParseTree& ir_pt) {
+    GLuint& yacc_tokens_last, AstParseData& ast_pt_data, GLuint* codegen_ssbo, GLuint& codegen_ssbo_len, ParseTree& ir_pt, IrTokenList* ir_tokens) {
 
     if (context == YaccContext::Codegen) {
         if (strcmp(token_buffer, ">") == 0) {
             context = YaccContext::BlockName;
-            append_codegen_ssbo_entry(codegen_ssbo, codegen_ssbo_len, block_token, ast_pt_data.codegen, ir_pt);
+            append_codegen_ssbo_entry(codegen_ssbo, codegen_ssbo_len, block_token, ast_pt_data.codegen, ir_pt, ir_tokens);
             ast_pt_data.codegen.clear();
         } else {
             ast_pt_data.codegen.push_back(token_buffer);
@@ -303,7 +308,7 @@ void handle_token(char* token_buffer, YaccContext& context, ParseTree& parse_tre
 }
 
 void parse_yacc(ParseTree& parse_tree, ParseTree& ast_parse_tree, std::string grammar,
-    GLuint* ast_nodes_buffer, GLuint& ast_nodes_len, GLuint* ir_codegen, GLuint& ir_codegen_len) {
+    GLuint* ast_nodes_buffer, GLuint& ast_nodes_len, GLuint* ir_codegen, GLuint& ir_codegen_len, IrTokenList* ir_token_list) {
     char token_buffer[TOKEN_BUFFER_SIZE];
     token_buffer[0] = '\0';
     i32 token_buffer_index = 0;
@@ -311,9 +316,9 @@ void parse_yacc(ParseTree& parse_tree, ParseTree& ast_parse_tree, std::string gr
     bool in_string = false;
     GLuint block_token = 0;
     GLuint yacc_tokens_last = 90;
+    ParseTree ir_pt = ParseTree({}, true);
     ParseTree yacc_parse_tree = ParseTree({}, true);
     AstParseData ast_pt_data = AstParseData();
-    ParseTree ir_pt = ParseTree({}, true);
 
     // This has this weird previous character thing because it needs to deal with the final token
     for (i32 i = 0; fetch_char(grammar, i - 1) != '\0' || i == 0; i++) {
@@ -326,7 +331,7 @@ void parse_yacc(ParseTree& parse_tree, ParseTree& ast_parse_tree, std::string gr
             if (pre_cat != CharCatergory::Whitespace) {
                 handle_token( token_buffer, context, parse_tree, ast_parse_tree, ast_nodes_buffer,
                               ast_nodes_len, block_token, yacc_parse_tree, yacc_tokens_last, 
-                              ast_pt_data, ir_codegen, ir_codegen_len, ir_pt);
+                              ast_pt_data, ir_codegen, ir_codegen_len, ir_pt, ir_token_list);
             }
             flush_string_buffer(token_buffer, token_buffer_index);
         }
@@ -337,7 +342,7 @@ void parse_yacc(ParseTree& parse_tree, ParseTree& ast_parse_tree, std::string gr
     }
 }
 
-ast_ssbos create_ast_ssbos(std::string grammar, ParseTree& lang_tokens_parse_tree) {
+ast_ssbos create_ast_ssbos(std::string grammar, ParseTree& lang_tokens_parse_tree, IrTokenList* ir_token_list) {
     auto ssbos = ast_ssbos();
     auto ast_parse_tree = ParseTree({}, true);
     GLuint ast_nodes_len = 1;
@@ -345,7 +350,7 @@ ast_ssbos create_ast_ssbos(std::string grammar, ParseTree& lang_tokens_parse_tre
     GLuint ir_codegen[5000];
     memset(ir_codegen, 0, 5000*sizeof(GLuint));
     GLuint ir_codegen_len = 256;
-    parse_yacc(lang_tokens_parse_tree, ast_parse_tree, grammar, ast_nodes_buffer, ast_nodes_len, ir_codegen, ir_codegen_len);
+    parse_yacc(lang_tokens_parse_tree, ast_parse_tree, grammar, ast_nodes_buffer, ast_nodes_len, ir_codegen, ir_codegen_len, ir_token_list);
     ssbos.ast_parse_tree = ast_parse_tree.into_ssbo();
     ssbos.ast_nodes = new Ssbo(ast_nodes_len * sizeof(GLuint), ast_nodes_buffer);
     ssbos.ir_codegen = new Ssbo(ir_codegen_len * sizeof(GLuint), ir_codegen);
