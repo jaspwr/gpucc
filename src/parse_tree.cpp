@@ -106,3 +106,26 @@ bool unit_test_parse_tree_generator()
         && tree.exec(to_uint_string("hello")) == 99
         && tree.exec(to_uint_string("nothing")) == 0;
 }
+
+GLuint get_token_id(ParseTree& parse_tree, char* name, GLuint& last) {
+    auto _name = to_uint_string(name);
+
+    auto token = parse_tree.exec(_name);
+    if (token == 0) {
+        parse_tree.append_entry({_name, ++last});
+        token = last;
+    }
+    delete _name.data;
+    return token;
+}
+
+GLuint get_token_id(ParseTree& parse_tree, char* name) {
+    auto _name = to_uint_string(name);
+
+    auto token = parse_tree.exec(_name);
+    if (token == 0) {
+        throw "Token not found.";
+    }
+    delete _name.data;
+    return token;
+}

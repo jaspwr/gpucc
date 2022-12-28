@@ -1,6 +1,7 @@
 #include "yacc.h"
 
 #include "ir_compiler.h"
+#include "ir_ssbo_format.h"
 
 #include <vector>
 
@@ -129,58 +130,6 @@ void flush_string_buffer(char* token_buffer, i32& token_buffer_index) {
     token_buffer[0] = '\0';
     token_buffer_index = 0;
 }
-
-GLuint get_token_id(ParseTree& parse_tree, char* name, GLuint& last) {
-    auto _name = to_uint_string(name);
-
-    auto token = parse_tree.exec(_name);
-    if (token == 0) {
-        parse_tree.append_entry({_name, ++last});
-        token = last;
-    }
-    delete _name.data;
-    return token;
-}
-
-GLuint get_token_id(ParseTree& parse_tree, char* name) {
-    auto _name = to_uint_string(name);
-
-    auto token = parse_tree.exec(_name);
-    if (token == 0) {
-        throw "Token not found.";
-    }
-    delete _name.data;
-    return token;
-}
-
-void append_codegen_ssbo_entry(GLuint* codegen_ssbo, GLuint& codegen_ssbo_len,
-GLuint node_token, std::vector<std::string>& ir, ParseTree& ir_pt, IrTokenList* ir_tokens) {
-    if (ir.size() == 0) {
-        //codegen_ssbo[node_token] = 0;
-        return;
-    }
-    GLuint child_offsets[4] = {7, 7, 7, 7};
-
-    codegen_ssbo[node_token] = codegen_ssbo_len; // Set pointer to IR for that node token
-    for (i32 i = 0; i < 4; i++) {
-        codegen_ssbo[codegen_ssbo_len++] = child_offsets[i];
-    }
-    GLuint len_pos = codegen_ssbo_len++; // Set length of IR
-    GLuint len = 0;
-    for (std::string& tok : ir) {
-        char* token_name = (char*)tok.c_str();
-        GLuint size = ir_pt.size;
-        GLuint pre_size = size;
-        auto a = get_token_id(ir_pt, token_name, size);
-        if (a > pre_size)
-            ir_tokens->push_back({std::string(token_name), a});
-
-        codegen_ssbo[codegen_ssbo_len++] = a;
-        len++;
-    }
-    codegen_ssbo[len_pos] = len;
-}
-
 
 u32 parse_dollar_sign_number (char* str) {
     u32 n = 0;
@@ -350,7 +299,11 @@ ast_ssbos create_ast_ssbos(std::string grammar, ParseTree& lang_tokens_parse_tre
     GLuint ir_codegen[5000];
     memset(ir_codegen, 0, 5000*sizeof(GLuint));
     GLuint ir_codegen_len = 256;
-    parse_yacc(lang_tokens_parse_tree, ast_parse_tree, grammar, ast_nodes_buffer, ast_nodes_len, ir_codegen, ir_codegen_len, ir_token_list);
+    try {
+        parse_yacc(lang_tokens_parse_tree, ast_parse_tree, grammar, ast_nodes_buffer, ast_nodes_len, ir_codegen, ir_codegen_len, ir_token_list);
+    } catch (const char* msg) {
+        throw std::string("[YACC parse error]: " + std::string(msg));
+    }
     ssbos.ast_parse_tree = ast_parse_tree.into_ssbo();
     ssbos.ast_nodes = new Ssbo(ast_nodes_len * sizeof(GLuint), ast_nodes_buffer);
     ssbos.ir_codegen = new Ssbo(ir_codegen_len * sizeof(GLuint), ir_codegen);

@@ -39,3 +39,6 @@ class ParseTree {
         void append_entry(ParseTreeEntry entry);
         ~ParseTree();
 };
+
+GLuint get_token_id(ParseTree& parse_tree, char* name, GLuint& last);
+GLuint get_token_id(ParseTree& parse_tree, char* name);
