@@ -74,7 +74,7 @@ enum YaccContext {
 };
 
 bool is_whitespace(char c) {
-    return c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == '\0';
+    return c == ' ' || c == '\t' || c == '\r' || c == '\0';
 }
 
 bool is_alpha(char c) {
@@ -155,15 +155,17 @@ void handle_token(char* token_buffer, YaccContext& context, ParseTree& parse_tre
         }
         return;       
     }
+    if ((strcmp(token_buffer, "\n") == 0)) return;
+    
     // TODO: Make this a loop or something.
-    if(strcmp(token_buffer, ":") == 0) {
+    if (strcmp(token_buffer, ":") == 0) {
         if (context != YaccContext::BlockName) {
             throw "Unexpected colon. Did you forget a semicolon?";
         }
         context = YaccContext::Line;
         return;
     }
-    if(strcmp(token_buffer, ";") == 0) {
+    if (strcmp(token_buffer, ";") == 0) {
         if (context != YaccContext::Line) {
             throw "Unexpected semicolon. Are there any unbalanced brackets?";
         }
@@ -174,28 +176,28 @@ void handle_token(char* token_buffer, YaccContext& context, ParseTree& parse_tre
         context = YaccContext::BlockName;
         return;
     }
-    if(strcmp(token_buffer, "[") == 0) {
+    if (strcmp(token_buffer, "[") == 0) {
         if (context != YaccContext::Line) {
             throw "Cannot open exclusions block here.";
         }
         context = YaccContext::PreExclusions;
         return;
     }
-    if(strcmp(token_buffer, "]") == 0) {
+    if (strcmp(token_buffer, "]") == 0) {
         if (context != YaccContext::Line) {
             throw "Cannot open exclusions block here.";
         }
         context = YaccContext::PreExclusions;
         return;
     }
-    if(strcmp(token_buffer, "{") == 0) {
+    if (strcmp(token_buffer, "{") == 0) {
         if (context != YaccContext::Line) {
             throw "Cannot open exclusions block here.";
         }
         context = YaccContext::SymmetricExclusions;
         return;
     }
-    if(strcmp(token_buffer, "}") == 0) {
+    if (strcmp(token_buffer, "}") == 0) {
         if (context != YaccContext::PreExclusions 
         && context != YaccContext::PostExclusions
         && context != YaccContext::SymmetricExclusions) {
@@ -204,7 +206,7 @@ void handle_token(char* token_buffer, YaccContext& context, ParseTree& parse_tre
         context = YaccContext::Line;
         return;
     }
-    if(strcmp(token_buffer, "<") == 0) {
+    if (strcmp(token_buffer, "<") == 0) {
         if (context != YaccContext::BlockName) {
             throw "Cannot open codegen block here.";
         }
@@ -213,7 +215,7 @@ void handle_token(char* token_buffer, YaccContext& context, ParseTree& parse_tre
         return;
     }
 
-    if(strcmp(token_buffer, "|") == 0) {
+    if (strcmp(token_buffer, "|") == 0) {
         if (context != YaccContext::Line) {
             throw "Unexpected '|'.";
         }
@@ -224,7 +226,7 @@ void handle_token(char* token_buffer, YaccContext& context, ParseTree& parse_tre
         return;
     }
 
-    if(token_buffer[0] == '$') {
+    if (token_buffer[0] == '$') {
         if (context != YaccContext::Line) {
             throw "Unexpected '$'.";
         }
@@ -296,13 +298,13 @@ ast_ssbos create_ast_ssbos(std::string grammar, ParseTree& lang_tokens_parse_tre
     auto ast_parse_tree = ParseTree({}, true);
     GLuint ast_nodes_len = 1;
     GLuint ast_nodes_buffer[AST_BUFFER_SIZE];
-    GLuint ir_codegen[5000];
+    GLuint ir_codegen[5000]; // TODO: Store this size somewhere and check for overflows
     memset(ir_codegen, 0, 5000*sizeof(GLuint));
     GLuint ir_codegen_len = 256;
     try {
         parse_yacc(lang_tokens_parse_tree, ast_parse_tree, grammar, ast_nodes_buffer, ast_nodes_len, ir_codegen, ir_codegen_len, ir_token_list);
     } catch (const char* msg) {
-        throw std::string("[YACC parse error]: " + std::string(msg));
+        throw std::string("[YACC parse error]: " + std::string(msg)).c_str();
     }
     ssbos.ast_parse_tree = ast_parse_tree.into_ssbo();
     ssbos.ast_nodes = new Ssbo(ast_nodes_len * sizeof(GLuint), ast_nodes_buffer);

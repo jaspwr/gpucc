@@ -7,6 +7,8 @@
 #include "ir_compiler.h"
 
 #include "c_tokens.cpp"
+#include "c_grammar.cpp"
+
 
 #include "include/glad/glad.h"
 
@@ -27,7 +29,7 @@ Ssbo* tokenise(UintString& source, Shader* tokeniser) {
 
 std::string load_source(std::vector<std::string> source_files) {
     // TODO: separate files appropriately
-    std::string source = "";
+    std::string source = std::string();
     for (std::string _source : source_files) {
         source += load_file(_source.c_str());
     }
@@ -50,12 +52,16 @@ struct AstNode {
 void compile(Job& job)
 {
     if (job.source_files.size() == 0) { throw "No source files specified."; }
-    auto source = to_uint_string(load_source(job.source_files));
+
+    std::string source_str = load_source(job.source_files);
+    auto source = to_uint_string(source_str);
+
+
     Shader tokeniser = Shader("shaders/tokeniser.glsl", GL_ALL_BARRIER_BITS);
     Shader ast = Shader("shaders/ast.glsl", GL_ALL_BARRIER_BITS);
     Shader codegen = Shader("shaders/codegen.glsl", GL_ALL_BARRIER_BITS);
 
-    auto lang_tokens_parse_tree = tokens_list_to_parse_tree(tokens);
+    auto lang_tokens_parse_tree = tokens_list_to_parse_tree(c_tokens);
 
     auto pt_ssbo = lang_tokens_parse_tree->into_ssbo();
     pt_ssbo->bind(0);
@@ -67,8 +73,7 @@ void compile(Job& job)
     tokens->print_contents();
 
     IrTokenList* ir_tokens = new IrTokenList();
-    
-    auto ast_ssbos = create_ast_ssbos("piss: $0 fuck ; <  ( ABOVE DA BASE ) > fuck : $1 ';' $0 '}' ; < ( DA BASE ) > mew : [piss} $0 piss $1 piss; < (DA JOIN) > mewmew: $0 mew $1 mew ; < (DA OTHER JOIN) >", *lang_tokens_parse_tree, ir_tokens);
+    auto ast_ssbos = create_ast_ssbos(c_yacc, *lang_tokens_parse_tree, ir_tokens);
 
 
     ast_ssbos.ast_parse_tree->bind(4);
@@ -96,10 +101,12 @@ void compile(Job& job)
 
 
     GLuint* out_buf_dmp = (GLuint*)output_buffer.dump();
-    auto s = serialize_uir_to_readable(out_buf_dmp, OUTPUT_BUFFER_SIZE, *ir_tokens);
+    std::string a = std::string(";};} ;} ;}");
+    auto s = serialize_uir_to_readable(out_buf_dmp, OUTPUT_BUFFER_SIZE, *ir_tokens, a);
     printf("OUTPUT:\n%s\n", s.c_str());
 
     delete_ast_ssbos(ast_ssbos);
+    free(out_buf_dmp);
     delete ir_tokens;
     delete lang_tokens_parse_tree;
     delete[] source.data;

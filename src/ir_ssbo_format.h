@@ -12,6 +12,8 @@ GLuint node_token, std::vector<std::string>& ir, ParseTree& ir_pt, IrTokenList* 
 
 // Reserved IR tokens
 #define IR_REFERNCE 1
-#define IR_INSERSION 2
+#define IR_SELF_REFERENCE 2
+#define IR_INSERSION 3
+#define IR_SOURCE_POS_REF 4
 
-#define IR_OTHER_TOKENS_START 3
+#define IR_OTHER_TOKENS_START 5

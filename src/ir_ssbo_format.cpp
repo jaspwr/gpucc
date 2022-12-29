@@ -1,5 +1,7 @@
 #include "ir_ssbo_format.h"
 
+#include <iostream>
+
 void append_children_offsets(GLuint* codegen_ssbo, GLuint& start_pos, GLuint children_offsets[4]) {
     for (i32 i = 0; i < 4; i++) {
         codegen_ssbo[start_pos + i] = children_offsets[i];
@@ -23,13 +25,15 @@ std::string next_token(std::vector<std::string>& ir, u32& i, u32& len) {
     return ir[i];
 }
 
-void append_numeral(std::string number_str, GLuint* codegen_ssbo, GLuint& codegen_ssbo_len) {
+void append_numeral(std::string number_str, GLuint max_num, GLuint* codegen_ssbo, GLuint& codegen_ssbo_len) {
     GLuint num = 0;
     for (auto c : number_str) {
+        if (c == '$') continue;
         if (c < '0' || c > '9') throw "Expected a number in codegen reference.";
         num *= 10;
         num += c - '0';
     }
+    if (num > max_num) throw "Number was too large.";
     codegen_ssbo[codegen_ssbo_len++] = num;
 }
 
@@ -57,12 +61,19 @@ void append_codegen_ssbo_entry(GLuint* codegen_ssbo, GLuint& codegen_ssbo_len,
         switch (ir[i][0])
         {
         case '$':
-            
-            append_numeral(next_token(ir, i, len), codegen_ssbo, codegen_ssbo_len);
+            if (ir[i] == "$x" || ir[i] == "$X") {
+                // Self ref
+                codegen_ssbo[codegen_ssbo_len++] = IR_SELF_REFERENCE;
+                codegen_ssbo[codegen_ssbo_len++] = 0;
+                break;
+            }
+            codegen_ssbo[codegen_ssbo_len++] = IR_REFERNCE;
+            append_numeral(ir[i], 3, codegen_ssbo, codegen_ssbo_len);
+
             break;
         case '!':
+            codegen_ssbo[codegen_ssbo_len++] = IR_INSERSION;
             append_ir_token(ir[i], ir_pt, codegen_ssbo, codegen_ssbo_len, ir_tokens);
-            append_ir_token(next_token(ir, i, len), ir_pt, codegen_ssbo, codegen_ssbo_len, ir_tokens);
             break;
         default:
             append_ir_token(ir[i], ir_pt, codegen_ssbo, codegen_ssbo_len, ir_tokens);
