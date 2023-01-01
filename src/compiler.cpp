@@ -48,7 +48,7 @@ struct AstNode {
     GLuint volume;
 };
 
-#define MAX_AST_NODES 30
+#define MAX_AST_NODES 50
 
 void compile(Job& job)
 {

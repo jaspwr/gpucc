@@ -1,1 +1,5 @@
-meow  = 2+ -((((loooooooooooooooooooooooooooong + 2)))* +2) / 2;
+{
+    2 + 2 ;
+    meow  = (a) * 2 / 2;
+    
+}

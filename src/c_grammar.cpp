@@ -70,7 +70,17 @@ assignment_expression
     ; < STORE $0 $1 
     >
 
+partial_scope
+    : '{' $0 primary_expression ';'
+    | '{' $0 assignment_expression
+    | $0 partial_scope $1 primary_expression ';'
+    | $0 partial_scope $1 assignment_expression
+    ;
 
+scope
+    : $0 partial_scope '}'
+    ; < $x : 
+    >
 
 )";
 

@@ -4,7 +4,7 @@ layout(local_size_x = 32, local_size_y = 1, local_size_z = 1 ) in;
 
 #define CHARS_PER_INVOCATION 4
 #define ROW_SIZE 256
-#define MAX_AST_NODES 30
+#define MAX_AST_NODES 50
 
 struct ParseTreeItem {
 	uint nextRow;
