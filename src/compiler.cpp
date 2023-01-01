@@ -11,6 +11,7 @@
 
 
 #include "include/glad/glad.h"
+#include <math.h>
 
 struct Token {
 	GLuint id;
@@ -83,7 +84,7 @@ void compile(Job& job)
     ast_nodes.bind(3);
     ast_ssbos.ir_codegen->bind(0);
 
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < 200; i++)
         ast.exec((tokens->size / 32) / 4 + 1);
 
     tokens->print_contents();
@@ -101,8 +102,7 @@ void compile(Job& job)
 
 
     GLuint* out_buf_dmp = (GLuint*)output_buffer.dump();
-    std::string a = std::string(";};} ;} ;}");
-    auto s = serialize_uir_to_readable(out_buf_dmp, OUTPUT_BUFFER_SIZE, *ir_tokens, a);
+    auto s = serialize_uir_to_readable(out_buf_dmp, OUTPUT_BUFFER_SIZE, *ir_tokens, source_str);
     printf("OUTPUT:\n%s\n", s.c_str());
 
     delete_ast_ssbos(ast_ssbos);

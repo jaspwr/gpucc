@@ -10,14 +10,19 @@ std::string token_from_id(GLuint id, IrTokenList& tokens) {
     return "ERROR";
 }
 
-bool is_whitespace_or_newline(char c) {
-    return c == ' ' || c == '\t' || c == '\r' || c == '\n';
+bool is_alphanum(char c) {
+    return c >= 'a' && c <= 'z' 
+        || c >= 'A' && c <= 'Z' 
+        || c >= '0' && c <= '9' 
+        || c == '_'
+        ;
 }
+
 
 std::string extract_token_at(std::string& str, u32& pos) {
     std::string ret = "";
     if (pos >= str.length() || pos < 0 ) throw "Invalid source position reference from shaders.";
-    while (pos < str.length() && !is_whitespace_or_newline(str[pos])) {
+    while (pos < str.length() && is_alphanum(str[pos])) {
         ret += str[pos];
         pos++;
     }

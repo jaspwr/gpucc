@@ -1,9 +1,9 @@
 #include "shader.h"
-#include <Windows.h>
 #include <string>
 #include "utils.h"
 
-
+#ifdef WIN32
+#include <Windows.h>
 std::string get_bin_dir()
 {
     char buffer[MAX_PATH];
@@ -12,6 +12,17 @@ std::string get_bin_dir()
 
     return std::string(buffer).substr(0, pos);
 }
+#endif
+
+#ifdef __linux__
+#include <iostream>
+#include <filesystem> 
+
+std::string get_bin_dir()
+{
+    return std::filesystem::canonical( "/proc/self/exe");
+}
+#endif
 
 std::string readFile(const char* filePath) {
     std::string content;

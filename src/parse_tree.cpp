@@ -124,7 +124,7 @@ GLuint get_token_id(ParseTree& parse_tree, char* name) {
 
     auto token = parse_tree.exec(_name);
     if (token == 0) {
-        throw "Token not found.";
+        throw std::string("Token \"") + std::string(name) + std::string("\" not found.");
     }
     delete _name.data;
     return token;

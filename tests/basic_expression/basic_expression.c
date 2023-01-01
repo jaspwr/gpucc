@@ -1,6 +1,1 @@
-;};} ;} ;}
-
-++hiii++; intmain
-int main(){ ; ;}
-    return ((0));};
-}
+meow  = 2+ -((((loooooooooooooooooooooooooooong + 2)))* +2) / 2;

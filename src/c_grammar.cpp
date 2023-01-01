@@ -1,20 +1,77 @@
 const char* c_yacc = R"(
-piss: 
-    $0 fuck 
+
+primary_expression
+    : $0 { #identifier, type_specifier, type_qualifier } #identifier
+    | $0 #literal
+    | '(' $0 primary_expression ')'
+    | $0 addition
+    | $0 subtraction
+    | $0 multiplication
+    | $0 division
+    | $0 modulo
+    | $0 unary_minus
+    | $0 unary_plus
     ;
 
-fuck 
-    : $1 ';' $0 '}' 
-    ; < $x = ( DA $1 BASE )
+type_specifier
+    : $0 'int'
+    | $0 'float'
+    | $0 'void'
+    | $0 'char'
+    ;
+
+type_qualifier
+    : $0 'const'
+    | $0 'volatile'
+    ;
+
+qualifier_list
+    : ] type_qualifier } $0 type_qualifier
+    | $1 qualifier_list $0 type_qualifier
+    ; < $0 >
+
+
+addition
+    : { '*', '/', '-', '%' } ] '+' } $0 primary_expression '+' $1 primary_expression
+    ; < $x = ADD $0 $1 
     >
 
-mew 
-    : [piss} $0 piss $1 piss
-    ; < $x = (DA $0 $1 JOIN)
-    > 
-    
-mewmew
-    : $0 mew $1 mew 
-    ; < (DA OTHER JOIN $0 $1)
+subtraction
+    : { '*', '/', '%' } ] '-' } $0 primary_expression '-' $1 primary_expression
+    ; < $x = SUB $0 $1 
     >
+
+multiplication
+    : { '/', '%' } ] '*' } $0 primary_expression '*' $1 primary_expression
+    ; < $x = MUL $0 $1 
+    >
+
+division
+    : $0 primary_expression '/' $1 primary_expression
+    ; < $x = DIV $0 $1 
+    >
+
+modulo
+    : ] '%' } $0 primary_expression '%' $1 primary_expression
+    ; < $x = MOD $0 $1 
+    >
+
+unary_plus
+    : ] primary_expression , ')' } '+' $0 primary_expression
+    ;
+
+unary_minus
+    : ] primary_expression, ')' } '-' $0 primary_expression
+    ; < $x = SUB 0 $0 
+    >
+
+assignment_expression
+    : $0 primary_expression '=' $1 primary_expression ';'
+    ; < STORE $0 $1 
+    >
+
+
+
 )";
+
+

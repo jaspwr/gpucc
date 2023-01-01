@@ -30,8 +30,9 @@ layout(std430, binding = 2) writeonly volatile buffer Tokens {
 
 bool isAlpha(in uint c) {
 	return c >= 97 && c <= 122  // a-z
-	|| c >= 65 && c <= 90	    // A-Z
-	|| c == 95;				    // _
+		|| c >= 65 && c <= 90	// A-Z
+		|| c == 95 				// _
+		;
 }
 
 bool isNumeric(in uint c) {
@@ -52,6 +53,10 @@ uint preChar(in uint index) {
 
 bool beginsAlphanumToken(in uint index) {
 	return isAlphanum(source[index]) && !isAlphanum(preChar(index));
+}
+
+bool inbounds(in uint index, in uint len) {
+	return index < len;
 }
 
 uint enumerate_token_types(in uint c) {
@@ -76,7 +81,11 @@ void tryParse(in uint start, out uint outToken, out uint outLength) {
 	uint lastFinal = 0;
 	uint i;
 	for(i = 0; i < 3000; i++) {
-		uint token = source[start + i];
+		uint pos = start + i;
+		if (!inbounds(pos, source.length())) {
+			break;
+		}
+		uint token = source[pos];
 		ParseTreeItem pti = tokenParseTree[row * ROW_SIZE + token];
 		if (pti.final != 0) {
 			lastFinal = pti.final;
@@ -88,17 +97,18 @@ void tryParse(in uint start, out uint outToken, out uint outLength) {
 	}
 	if (beginsToken(start + i + 1)) {
 		outToken = lastFinal;
-		outLength = i + 1;	
+		outLength = i;	
 	} else {
 		outToken = 0;
 		outLength = 0;
 	}
 }
 
-void parseIdentifiersAndLiterals(in uint pos, out uint len) {
+void parseIdentifiersAndLiterals(in uint pos, inout uint token, out uint len) {
+	len = 0;
 	if (beginsAlphanumToken(pos)) {
-		tokens[pos].id = isNumeric(source[pos]) ? 1 : 2;
-		while (isAlphanum(source[pos + len]) && len < 3000) {
+		token = isNumeric(source[pos]) ? 1 : 2;
+		while (inbounds(pos + len, source.length()) && isAlphanum(source[pos + len]) && len < 30) {
 			// TODO: Check max source length
 			len++;
 		}
@@ -115,19 +125,24 @@ void main() {
 		uint token = 0;
 		uint len = 0;
 		uint pos = start + i;
+
+		if (!inbounds(pos, tokens.length())) {
+			continue;
+		}
+
 		tryParse(pos, token, len);
 
-		
 
-		if (token != 0) {
-			tokens[pos].id = token;
-		} else {
-			parseIdentifiersAndLiterals(pos, len);
+		if (token == 0) {
+			parseIdentifiersAndLiterals(pos, token, len);
 		}
 		// else if not whitespace insert an error token
+		if (token == 0) continue;
+		len = len > 0 ? len : 1;
+		tokens[pos].id = token;
 		tokens[pos].len = len;
 		tokens[pos].astNodeLocation = -int(pos);
-		i += len > 0 ? len - 1: 0;
+		i += len - 1;
 	}
 	barrier();
 	memoryBarrierBuffer();

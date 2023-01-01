@@ -9,10 +9,11 @@ typedef long i64;
 typedef float f32;
 typedef double f64;
 
-#include <Windows.h>
 #include <string>
 #include "gl.h"
 #include "parse_tree.h"
+
+#define MAX_PATH 260
 
 struct StrSplit {
     char** spl;

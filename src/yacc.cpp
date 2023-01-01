@@ -4,6 +4,7 @@
 #include "ir_ssbo_format.h"
 
 #include <vector>
+#include <string.h>
 
 struct AstParseData {
     std::vector<GLuint> match;
@@ -78,7 +79,7 @@ bool is_whitespace(char c) {
 }
 
 bool is_alpha(char c) {
-    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '#';
 }
 
 bool is_numeric(char c) {
@@ -141,6 +142,16 @@ u32 parse_dollar_sign_number (char* str) {
     return n;
 }
 
+GLuint yacc_constant(char* token) {
+    if (strcmp(token, "#identifier") == 0) {
+        return 2;
+    }
+    if (strcmp(token, "#literal") == 0) {
+        return 1;
+    }
+    throw std::string("Invalid constant \"") + std::string(token) + std::string("\".");
+}
+
 void handle_token(char* token_buffer, YaccContext& context, ParseTree& parse_tree, ParseTree& ast_parse_tree,
     GLuint* ast_nodes_buffer, GLuint& ast_nodes_len, GLuint& block_token, ParseTree& yacc_parse_tree, 
     GLuint& yacc_tokens_last, AstParseData& ast_pt_data, GLuint* codegen_ssbo, GLuint& codegen_ssbo_len, ParseTree& ir_pt, IrTokenList* ir_tokens) {
@@ -180,7 +191,7 @@ void handle_token(char* token_buffer, YaccContext& context, ParseTree& parse_tre
         if (context != YaccContext::Line) {
             throw "Cannot open exclusions block here.";
         }
-        context = YaccContext::PreExclusions;
+        context = YaccContext::PostExclusions;
         return;
     }
     if (strcmp(token_buffer, "]") == 0) {
@@ -240,9 +251,14 @@ void handle_token(char* token_buffer, YaccContext& context, ParseTree& parse_tre
         return;
     }
 
-    GLuint token = token_buffer[0] == '\''
-        ? get_token_id(parse_tree, strip_quote_marks(token_buffer))
-        : get_token_id(yacc_parse_tree, token_buffer, yacc_tokens_last);
+    GLuint token = 0;
+    if (token_buffer[0] == '#') {
+        token = yacc_constant(token_buffer);
+    } else  {
+        token = token_buffer[0] == '\''
+            ? get_token_id(parse_tree, strip_quote_marks(token_buffer))
+            : get_token_id(yacc_parse_tree, token_buffer, yacc_tokens_last);
+    }
 
     if (context == YaccContext::Line) {
         ast_pt_data.match.push_back(token);
@@ -254,8 +270,6 @@ void handle_token(char* token_buffer, YaccContext& context, ParseTree& parse_tre
         ast_pt_data.pre_exclusions.push_back(token);
         ast_pt_data.post_exclusions.push_back(token);
     }
-
-
 }
 
 void parse_yacc(ParseTree& parse_tree, ParseTree& ast_parse_tree, std::string grammar,
@@ -304,7 +318,9 @@ ast_ssbos create_ast_ssbos(std::string grammar, ParseTree& lang_tokens_parse_tre
     try {
         parse_yacc(lang_tokens_parse_tree, ast_parse_tree, grammar, ast_nodes_buffer, ast_nodes_len, ir_codegen, ir_codegen_len, ir_token_list);
     } catch (const char* msg) {
-        throw std::string("[YACC parse error]: " + std::string(msg)).c_str();
+        throw std::string("[YACC parse error]: " + std::string(msg));
+    } catch (std::string msg) {
+        throw std::string("[YACC parse error]: " + msg);
     }
     ssbos.ast_parse_tree = ast_parse_tree.into_ssbo();
     ssbos.ast_nodes = new Ssbo(ast_nodes_len * sizeof(GLuint), ast_nodes_buffer);

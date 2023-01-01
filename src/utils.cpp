@@ -28,6 +28,8 @@ const char* load_file (const char* path) {
     return file_buffer;
 }
 
+#ifdef WIN32
+#include <Windows.h>
 std::string get_bin_dir()
 {
     char buffer[MAX_PATH];
@@ -36,6 +38,24 @@ std::string get_bin_dir()
 
     return std::string(buffer).substr(0, pos);
 }
+#endif
+
+#ifdef __linux__
+#include <libgen.h>
+#include <unistd.h>
+#include <linux/limits.h>
+
+std::string get_bin_dir()
+{
+    char result[PATH_MAX];
+    ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
+    const char *path;
+    if (count != -1) {
+        path = dirname(result);
+    }
+    return std::string(path);
+}
+#endif
 
 UintString to_uint_string(std::string str) {
     u32 length = str.length();

@@ -12,7 +12,7 @@ Shader::Shader(const char* shader_source_path, GLuint _barrier_mode) {
     barrier_mode = _barrier_mode;
 
     shader_index = glCreateShader(GL_COMPUTE_SHADER);
-    auto path = get_bin_dir() + std::string("\\") + std::string(shader_source_path);
+    auto path = get_bin_dir() + std::string("/") + std::string(shader_source_path);
     const char* shader_source = load_file(path.c_str());
     glShaderSource(shader_index, 1, &shader_source, NULL);
     glCompileShader(shader_index);

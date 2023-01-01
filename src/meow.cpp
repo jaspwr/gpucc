@@ -12,7 +12,10 @@ int main(int argc, char** argv)
         Job job = parse_args(argc, argv);
         compile(job);
     } catch (const char* msg) {
-        printf("\033[1;31mError\033[0m %s", msg);
+        printf("\033[1;31mError\033[0m %s\n", msg);
+        return 1;
+    } catch (std::string msg) {
+        printf("\033[1;31mError\033[0m %s\n", msg.c_str());
         return 1;
     }
     return 0;

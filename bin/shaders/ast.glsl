@@ -52,6 +52,10 @@ uint codegenPointer(uint nodeToken) {
 	return irCodegen[nodeToken];
 }
 
+bool inbounds(in uint index, in uint len) {
+	return index < len;
+}
+
 AstNode fetchAstNodeFromChildRef(int childRef) {
 	return astNodes[childRef - 1];
 }
@@ -152,12 +156,12 @@ void tryParse(in uint start, out uint outToken, in uint preToken,
 	uint matchBuffer[10];
 	uint matchBufferPointer = 0;
 	for(uint i = 0; i < 3000; i++) {
+		if (!inbounds(start + i, tokens.length())) break;
 		Token token = tokens[start + i];
-
-        // TODO: break on end of buffer
 
         if (token.id == 0) continue;
 		
+		if (!inbounds(matchBufferPointer, matchBuffer.length())) break;
 		matchBuffer[matchBufferPointer++] = start + i;
 		ParseTreeItem pti = astParseTree[row * ROW_SIZE + token.id];
 		if ((pti.final != 0) && !checkExcludes(pti, start, i, preToken, token.len)) {
@@ -184,6 +188,7 @@ void main() {
 		// we have the length and don't have to iterate backwards to find it
 		uint preToken = 0;
 		int preTokenLen = 1;
+		// if (!inbounds(start + i, tokens.length())) continue;
 		if (start + i >= 0) {
 			preToken = tokens[start + i].id;
 			if (preToken == 0) {
@@ -200,8 +205,12 @@ void main() {
 		tryParse(pos, token, preToken, children, len, volume);
 
         barrier();
-        
-		if (token != 0) {
+	
+		// TODO: replace 90 with the number of language tokens and/or address following issue:
+		// Having "> 90" and not "!= 0" is sort of a bandaid fix for an issue where 
+		// random things where being parsed which needs to be properly addressed.
+		// Set "token > 90" back to "token != 0" and try get it to work. 
+		if (token > 90 && inbounds(pos, tokens.length())) {
 			AstNode newNode = AstNode(token, children, volume);
 			int astPos = appendAstNode(newNode, pos);
 			tokens[pos].id = token;
@@ -210,7 +219,12 @@ void main() {
 			// TODO: Find the smallest length of tokens that need to be cleared.
 			// 		 This will get really slow for higher nodes.
 			for (uint j = 1; j < len; j++) {
+				if (!inbounds(pos + j, tokens.length())) break;
 				tokens[pos + j].id = 0;
+
+				// These two are not needed but are here for readablilty when debugging
+				tokens[pos + j].len = 0;
+				tokens[pos + j].astNodeLocation = 0;
 			}
 		}
         barrier();
