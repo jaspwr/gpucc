@@ -7,7 +7,14 @@
 
 #include "shader.h"
 
+struct Shaders {
+    Shader tokeniser;
+    Shader ast;
+    Shader codegen;
+};
+
 class Gl {
     public:
         static void init();
+        static Shaders compile_shaders();
 };

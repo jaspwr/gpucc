@@ -1,5 +1,14 @@
 #include "gl.h"
 
+Shaders Gl::compile_shaders() {
+	// TODO: Make these annotated with the member names.
+	return Shaders {
+		Shader("shaders/tokeniser.glsl", GL_ALL_BARRIER_BITS),
+		Shader("shaders/ast.glsl", GL_ALL_BARRIER_BITS),
+		Shader("shaders/codegen.glsl", GL_ALL_BARRIER_BITS)
+	};
+}
+
 void GLAPIENTRY
 MessageCallback( GLenum source,
                  GLenum type,

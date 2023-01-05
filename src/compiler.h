@@ -1,5 +1,6 @@
 #pragma once
 
 #include "job.h"
+#include "gl.h"
 
-void compile(Job& job);
+std::string compile(Job& job, Shaders& shaders);

@@ -16,6 +16,8 @@ void consume_arg(int& argc, char**& argv, Job& job)
         job.output_file = get_next_arg(argc, argv);
     } else if (strcmp(*argv, "-y") == 0) {
         job.yacc = get_next_arg(argc, argv);
+    } else if (strcmp(*argv, "--dbg") == 0) {
+        job.dbg = true;
     } else if (strcmp(*argv, "-emit") == 0) {
         std::string emit = get_next_arg(argc, argv);
         if (emit == "mew-ir") {

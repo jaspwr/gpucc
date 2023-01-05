@@ -95,7 +95,7 @@ void tryParse(in uint start, out uint outToken, out uint outLength) {
 		}
 		row = pti.nextRow;
 	}
-	if (beginsToken(start + i + 1)) {
+	if (beginsToken(start + i)) {
 		outToken = lastFinal;
 		outLength = i;	
 	} else {

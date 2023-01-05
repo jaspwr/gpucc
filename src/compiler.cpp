@@ -36,17 +36,12 @@ std::string load_source(std::vector<std::string> source_files) {
 
 #define MAX_AST_NODES 50
 
-void compile(Job& job)
-{
+std::string compile(Job& job, Shaders& shaders) {
     if (job.source_files.size() == 0) { throw "No source files specified."; }
-
+    
     std::string source_str = load_source(job.source_files);
     auto source = to_uint_string(source_str);
 
-
-    Shader tokeniser = Shader("shaders/tokeniser.glsl", GL_ALL_BARRIER_BITS);
-    Shader ast = Shader("shaders/ast.glsl", GL_ALL_BARRIER_BITS);
-    Shader codegen = Shader("shaders/codegen.glsl", GL_ALL_BARRIER_BITS);
 
     auto lang_tokens_parse_tree = tokens_list_to_parse_tree(c_tokens);
 
@@ -56,8 +51,13 @@ void compile(Job& job)
 
 
 
-    auto tokens = tokenise(source, &tokeniser);
-    tokens->print_contents();
+    auto tokens = tokenise(source, &shaders.tokeniser);
+
+    if (job.dbg) tokens->print_contents();
+    
+    // IDK what the fuck is going on here 
+    tokens->dump();
+
     IrTokenList* ir_tokens = new IrTokenList();
     auto ast_ssbos = create_ast_ssbos(c_yacc, *lang_tokens_parse_tree, ir_tokens);
 
@@ -69,17 +69,29 @@ void compile(Job& job)
     ast_nodes.bind(3);
     ast_ssbos.ir_codegen->bind(0);
 
-    auto tokens_dmp = tokens->dump();
-    print_tokens(tokens_dmp, tokens->size, *lang_tokens_parse_tree, *lang_tokens_parse_tree);
-    free(tokens_dmp);
+    if (job.dbg) {
+        auto tokens_dmp = tokens->dump();
+        print_tokens(tokens_dmp, tokens->size, *lang_tokens_parse_tree, *lang_tokens_parse_tree);
+        free(tokens_dmp);
+    }
 
     for (int i = 0; i < 200; i++)
-        ast.exec((tokens->size / 32) / 4 + 1);
+        shaders.ast.exec((tokens->size / 32) / 4 + 1);
 
-    tokens->print_contents();
-    
-    printf("AST NODES:\n");
-    ast_nodes.print_contents();
+    if (job.dbg) {
+        tokens->print_contents();
+
+        auto tokens_dmp = tokens->dump();
+        print_tokens(tokens_dmp, tokens->size, *lang_tokens_parse_tree, *lang_tokens_parse_tree);
+        free(tokens_dmp);
+
+        printf("AST NODES:\n");
+        ast_nodes.print_contents();
+
+        // auto nodes = ast_nodes.dump();
+        // print_ast_nodes(nodes, ast_nodes.size);
+        // free(nodes);
+    }
     
     #define OUTPUT_BUFFER_SIZE 100
 
@@ -87,13 +99,13 @@ void compile(Job& job)
     output_buffer.bind(1);
 
 
-    codegen.exec(1);
-    //output_buffer.print_contents();
+    shaders.codegen.exec(1);
 
 
     GLuint* out_buf_dmp = (GLuint*)output_buffer.dump();
     auto s = serialize_uir_to_readable(out_buf_dmp, OUTPUT_BUFFER_SIZE, *ir_tokens, source_str);
-    printf("OUTPUT:\n%s\n", s.c_str());
+    
+    if (job.dbg) printf("OUTPUT:\n%s\n", s.c_str());
 
     delete_ast_ssbos(ast_ssbos);
     free(out_buf_dmp);
@@ -101,4 +113,6 @@ void compile(Job& job)
     delete lang_tokens_parse_tree;
     delete[] source.data;
     delete tokens;
+
+    return s;
 }

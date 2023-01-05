@@ -10,7 +10,8 @@ int main(int argc, char** argv)
     try {
         Gl::init();
         Job job = parse_args(argc, argv);
-        compile(job);
+        Shaders shaders = Gl::compile_shaders();
+        compile(job, shaders);
     } catch (const char* msg) {
         printf("\033[1;31mError\033[0m %s\n", msg);
         return 1;
