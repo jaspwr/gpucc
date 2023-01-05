@@ -15,12 +15,15 @@ enum TestResult {
     SUCCESS,
 };
 
+const char* result_string(TestResult status) {
+    return status == SUCCESS
+        ? "\033[1;32mPASS\033[0m"
+        : "\033[1;31mFAIL\033[0m"
+        ;
+}
+
 void print_result(TestResult status, std::string test_name) {
-    if (status == SUCCESS) { 
-        printf("\033[1;32mPASS\033[0m %s\n", test_name.c_str());
-    } else {
-        printf("\033[1;31mFAIL\033[0m %s\n", test_name.c_str());
-    }
+    printf("%s %s\n", result_string(status), test_name.c_str());
 }
 
 class Test {
@@ -85,12 +88,16 @@ std::vector<IntergrationTest> get_intergration_tests(const char* path) {
 }
 
 int main(int arcg, char** argv) {
-    Gl::init();
+    Gl::init(false);
     Shaders shaders = Gl::compile_shaders();
     i32 succeded = 0;
     i32 failed = 0;
+    std::cout << "\n\n\n";
     auto intergration_tests = get_intergration_tests(TEST_DIRECTORY);
     for (auto test : intergration_tests) {
         run_test(&test, shaders, succeded, failed);
     }
+    std::cout << "\n\n\n";
+    auto overall = failed == 0 ? SUCCESS : FAILURE;
+    printf("%s Succeded: %d, Failed: %d\n", result_string(overall), succeded, failed);
 }

@@ -27,7 +27,7 @@ MessageCallback( GLenum source,
 }
 
 
-void Gl::init() {
+void Gl::init(bool dbg_output) {
 	GLFWwindow* window;
     glfwInit();
 
@@ -51,8 +51,10 @@ void Gl::init() {
 	const unsigned int SCREEN_HEIGHT = 128;
 	glViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-    glEnable(GL_DEBUG_OUTPUT);
-	glDebugMessageCallback(MessageCallback, 0);
+	if (dbg_output) {
+		glEnable(GL_DEBUG_OUTPUT);
+		glDebugMessageCallback(MessageCallback, 0);
+	}
 
     const char* renderer = (char*)glGetString(GL_RENDERER);
 	printf("[i] Using GPU: %s\n", renderer);

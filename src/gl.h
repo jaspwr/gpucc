@@ -15,6 +15,6 @@ struct Shaders {
 
 class Gl {
     public:
-        static void init();
+        static void init(bool dbg_output);
         static Shaders compile_shaders();
 };

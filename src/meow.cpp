@@ -8,7 +8,7 @@
 int main(int argc, char** argv)
 {
     try {
-        Gl::init();
+        Gl::init(true);
         Job job = parse_args(argc, argv);
         Shaders shaders = Gl::compile_shaders();
         compile(job, shaders);

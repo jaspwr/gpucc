@@ -93,13 +93,13 @@ std::string compile(Job& job, Shaders& shaders) {
         // free(nodes);
     }
     
-    #define OUTPUT_BUFFER_SIZE 100
+    #define OUTPUT_BUFFER_SIZE 200
 
     Ssbo output_buffer = Ssbo(OUTPUT_BUFFER_SIZE * sizeof(GLuint));
     output_buffer.bind(1);
 
 
-    shaders.codegen.exec(1);
+    shaders.codegen.exec(2);
 
 
     GLuint* out_buf_dmp = (GLuint*)output_buffer.dump();

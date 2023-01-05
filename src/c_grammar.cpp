@@ -57,11 +57,11 @@ modulo
     >
 
 unary_plus
-    : ] primary_expression , ')' } '+' $0 primary_expression
+    : ] primary_expression , ')', addition, subtraction, multiplication, division, modulo } '+' $0 primary_expression
     ;
 
 unary_minus
-    : ] primary_expression, ')' } '-' $0 primary_expression
+    : ] primary_expression, ')', addition, subtraction, multiplication, division, modulo } '-' $0 primary_expression
     ; < $x = SUB 0 $0 
     >
 
@@ -83,5 +83,3 @@ scope
     >
 
 )";
-
-
