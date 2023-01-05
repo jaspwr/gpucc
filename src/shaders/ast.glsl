@@ -166,7 +166,7 @@ void tryParse(in uint start, out uint outToken, in uint preToken,
 		ParseTreeItem pti = astParseTree[row * ROW_SIZE + token.id];
 		if ((pti.final != 0) && !checkExcludes(pti, start, i, preToken, token.len)) {
 			lastFinal = pti.final;
-			lenAtFinal = i;
+			lenAtFinal = i + token.len;
 		}
 
 		if (pti.nextRow == 0) break;
@@ -178,7 +178,7 @@ void tryParse(in uint start, out uint outToken, in uint preToken,
 		handleChildren(children, lastFinal, matchBuffer, volume);
 	}
 	outToken = astTreeData[lastFinal];
-	outLength = lenAtFinal + 1;
+	outLength = lenAtFinal;
 }
 
 void main() {

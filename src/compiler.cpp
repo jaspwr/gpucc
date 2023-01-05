@@ -9,15 +9,12 @@
 #include "c_tokens.cpp"
 #include "c_grammar.cpp"
 
+#include "debug_printing.h"
+#include "shader_structures.h"
 
 #include "include/glad/glad.h"
 #include <math.h>
 
-struct Token {
-	GLuint id;
-	GLuint len;
-    GLint ast_node_location;
-};
 
 Ssbo* tokenise(UintString& source, Shader* tokeniser) {
     Ssbo source_ssbo = Ssbo(source.length * sizeof(GLuint), source.data);
@@ -36,17 +33,6 @@ std::string load_source(std::vector<std::string> source_files) {
     }
     return source;
 }
-
-struct ChildNode {
-    GLint ref;
-    GLuint codegenVolume;
-};
-
-struct AstNode {
-	GLuint nodeToken;
-	ChildNode children[4];
-    GLuint volume;
-};
 
 #define MAX_AST_NODES 50
 
@@ -72,7 +58,6 @@ void compile(Job& job)
 
     auto tokens = tokenise(source, &tokeniser);
     tokens->print_contents();
-
     IrTokenList* ir_tokens = new IrTokenList();
     auto ast_ssbos = create_ast_ssbos(c_yacc, *lang_tokens_parse_tree, ir_tokens);
 
@@ -84,10 +69,15 @@ void compile(Job& job)
     ast_nodes.bind(3);
     ast_ssbos.ir_codegen->bind(0);
 
+    auto tokens_dmp = tokens->dump();
+    print_tokens(tokens_dmp, tokens->size, *lang_tokens_parse_tree, *lang_tokens_parse_tree);
+    free(tokens_dmp);
+
     for (int i = 0; i < 200; i++)
         ast.exec((tokens->size / 32) / 4 + 1);
 
     tokens->print_contents();
+    
     printf("AST NODES:\n");
     ast_nodes.print_contents();
     

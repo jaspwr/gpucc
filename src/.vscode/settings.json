@@ -60,6 +60,12 @@
         "streambuf": "cpp",
         "thread": "cpp",
         "cinttypes": "cpp",
-        "typeinfo": "cpp"
+        "typeinfo": "cpp",
+        "cassert": "cpp",
+        "cerrno": "cpp",
+        "climits": "cpp",
+        "ios": "cpp",
+        "queue": "cpp",
+        "cstdbool": "cpp"
     }
 }

@@ -123,3 +123,12 @@ void free_str_split(StrSplit str_split) {
     }
     // TODO: delete the spl var
 }
+
+std::string repeated_char(u32 length, char c) {
+    // Surely there is a decrelative way to do this...
+    std::string ret = "";
+    for (u32 i = 0; i < length; i++) {
+        ret += c;
+    }
+    return ret;
+}

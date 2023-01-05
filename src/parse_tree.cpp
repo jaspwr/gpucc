@@ -90,10 +90,31 @@ GLuint ParseTree::exec(UintString input)
     return tree[row * COLUMNS + input.data[input.length - 1]].final_pointer;
 }
 
-ParseTree::~ParseTree()
-{
-    delete entries;
-    delete[] tree;
+// TODO: These overloads should be renamed to separate functions.
+
+GLuint get_token_id(ParseTree& parse_tree, char* name, GLuint& last) {
+    // Appends if not known
+    auto _name = to_uint_string(name);
+
+    auto token = parse_tree.exec(_name);
+    if (token == 0) {
+        parse_tree.append_entry({_name, ++last});
+        token = last;
+    }
+    delete _name.data;
+    return token;
+}
+
+GLuint get_token_id(ParseTree& parse_tree, char* name) {
+    // Throws in not known
+    auto _name = to_uint_string(name);
+
+    auto token = parse_tree.exec(_name);
+    if (token == 0) {
+        throw std::string("Token \"") + std::string(name) + std::string("\" not found.");
+    }
+    delete _name.data;
+    return token;
 }
 
 bool unit_test_parse_tree_generator()
@@ -107,25 +128,8 @@ bool unit_test_parse_tree_generator()
         && tree.exec(to_uint_string("nothing")) == 0;
 }
 
-GLuint get_token_id(ParseTree& parse_tree, char* name, GLuint& last) {
-    auto _name = to_uint_string(name);
-
-    auto token = parse_tree.exec(_name);
-    if (token == 0) {
-        parse_tree.append_entry({_name, ++last});
-        token = last;
-    }
-    delete _name.data;
-    return token;
-}
-
-GLuint get_token_id(ParseTree& parse_tree, char* name) {
-    auto _name = to_uint_string(name);
-
-    auto token = parse_tree.exec(_name);
-    if (token == 0) {
-        throw std::string("Token \"") + std::string(name) + std::string("\" not found.");
-    }
-    delete _name.data;
-    return token;
+ParseTree::~ParseTree()
+{
+    delete entries;
+    delete[] tree;
 }
