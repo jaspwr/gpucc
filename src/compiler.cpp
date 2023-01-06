@@ -59,7 +59,8 @@ std::string compile(Job& job, Shaders& shaders) {
     tokens->dump();
 
     IrTokenList* ir_tokens = new IrTokenList();
-    auto ast_ssbos = create_ast_ssbos(c_yacc, *lang_tokens_parse_tree, ir_tokens);
+    ParseTree yacc_parse_tree = ParseTree({}, true);
+    auto ast_ssbos = create_ast_ssbos(c_yacc, *lang_tokens_parse_tree, ir_tokens, yacc_parse_tree);
 
 
     ast_ssbos.ast_parse_tree->bind(4);
@@ -82,7 +83,7 @@ std::string compile(Job& job, Shaders& shaders) {
         tokens->print_contents();
 
         auto tokens_dmp = tokens->dump();
-        print_tokens(tokens_dmp, tokens->size, *lang_tokens_parse_tree, *lang_tokens_parse_tree);
+        print_tokens(tokens_dmp, tokens->size, *lang_tokens_parse_tree, yacc_parse_tree);
         free(tokens_dmp);
 
         printf("AST NODES:\n");

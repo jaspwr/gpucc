@@ -1,6 +1,7 @@
 %2 : 
 %25 = MUL 2 2 
-STORE a %25 
+%12 = %25 
+STORE a %12 
 %47 = DIV 2 2 
 %37 = MUL looooooooooooooooooooong %47 
 %34 = MUL %37 2 

@@ -252,6 +252,9 @@ void handle_token(char* token_buffer, YaccContext& context, ParseTree& parse_tre
     }
 
     GLuint token = 0;
+    if (token_buffer[0] == ',') {
+        return;
+    }
     if (token_buffer[0] == '#') {
         token = yacc_constant(token_buffer);
     } else  {
@@ -273,7 +276,8 @@ void handle_token(char* token_buffer, YaccContext& context, ParseTree& parse_tre
 }
 
 void parse_yacc(ParseTree& parse_tree, ParseTree& ast_parse_tree, std::string grammar,
-    GLuint* ast_nodes_buffer, GLuint& ast_nodes_len, GLuint* ir_codegen, GLuint& ir_codegen_len, IrTokenList* ir_token_list) {
+    GLuint* ast_nodes_buffer, GLuint& ast_nodes_len, GLuint* ir_codegen, GLuint& ir_codegen_len, 
+    IrTokenList* ir_token_list, ParseTree& yacc_parse_tree) {
     char token_buffer[TOKEN_BUFFER_SIZE];
     token_buffer[0] = '\0';
     i32 token_buffer_index = 0;
@@ -282,7 +286,6 @@ void parse_yacc(ParseTree& parse_tree, ParseTree& ast_parse_tree, std::string gr
     GLuint block_token = 0;
     GLuint yacc_tokens_last = 90;
     ParseTree ir_pt = ParseTree({}, true);
-    ParseTree yacc_parse_tree = ParseTree({}, true);
     AstParseData ast_pt_data = AstParseData();
 
     // This has this weird previous character thing because it needs to deal with the final token
@@ -307,7 +310,7 @@ void parse_yacc(ParseTree& parse_tree, ParseTree& ast_parse_tree, std::string gr
     }
 }
 
-ast_ssbos create_ast_ssbos(std::string grammar, ParseTree& lang_tokens_parse_tree, IrTokenList* ir_token_list) {
+ast_ssbos create_ast_ssbos(std::string grammar, ParseTree& lang_tokens_parse_tree, IrTokenList* ir_token_list, ParseTree& yacc_parse_tree) {
     auto ssbos = ast_ssbos();
     auto ast_parse_tree = ParseTree({}, true);
     GLuint ast_nodes_len = 1;
@@ -316,7 +319,7 @@ ast_ssbos create_ast_ssbos(std::string grammar, ParseTree& lang_tokens_parse_tre
     memset(ir_codegen, 0, 10000*sizeof(GLuint));
     GLuint ir_codegen_len = 256;
     try {
-        parse_yacc(lang_tokens_parse_tree, ast_parse_tree, grammar, ast_nodes_buffer, ast_nodes_len, ir_codegen, ir_codegen_len, ir_token_list);
+        parse_yacc(lang_tokens_parse_tree, ast_parse_tree, grammar, ast_nodes_buffer, ast_nodes_len, ir_codegen, ir_codegen_len, ir_token_list, yacc_parse_tree);
     } catch (const char* msg) {
         throw std::string("[YACC parse error]: " + std::string(msg));
     } catch (std::string msg) {

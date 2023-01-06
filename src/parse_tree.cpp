@@ -1,5 +1,6 @@
 #include "parse_tree.h"
 
+#include <string.h>
 
 GLuint get_next_row(ParseTreeItem* tree, GLuint row, GLuint column)
 {
@@ -29,6 +30,9 @@ void ParseTree::append_entry(ParseTreeEntry entry) {
     tree[row * COLUMNS + entry.matches.data[entry.matches.length - 1]]
         .final_pointer = entry.points_to;
 
+    auto new_data = new GLuint[entry.matches.length];
+    memcpy(new_data, entry.matches.data, entry.matches.length * sizeof(GLuint));
+    entry.matches.data = new_data;
     entries->push_back(entry);
 }
 
@@ -130,6 +134,8 @@ bool unit_test_parse_tree_generator()
 
 ParseTree::~ParseTree()
 {
+    for (ParseTreeEntry entry : *entries)
+        delete entry.matches.data;
     delete entries;
     delete[] tree;
 }

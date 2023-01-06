@@ -14,5 +14,5 @@ struct ast_ssbos {
     Ssbo* ir_codegen;
 };
 
-ast_ssbos create_ast_ssbos(std::string grammar, ParseTree& lang_tokens_parse_tree, IrTokenList* ir_token_list);
+ast_ssbos create_ast_ssbos(std::string grammar, ParseTree& lang_tokens_parse_tree, IrTokenList* ir_token_list, ParseTree& yacc_parse_tree);
 void delete_ast_ssbos(ast_ssbos ssbos);

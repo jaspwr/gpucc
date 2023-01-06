@@ -30,7 +30,7 @@ void print_tokens(void* tokens, u32 length,
     for (u32 i = 0; i < length / sizeof(Token); i++) {
         auto token_id = _tokens[i].id;
         if (token_id == 0) continue;
-        auto token_str = check_both_parse_trees(token_id, &lang_tokens, nullptr);
+        auto token_str = check_both_parse_trees(token_id, &lang_tokens, &abstract_tokens);
         i32 spacing = 15 - (i32)token_str.length() - std::to_string(i).length();
         if (spacing < 1) {
             spacing = 1;

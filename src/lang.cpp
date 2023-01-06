@@ -15,8 +15,8 @@ ParseTree* create_token_parse_tree(char** tokens, u32 token_count, u32 first_tok
         });
     }
     auto ret = new ParseTree(entries, false);
-    // for (ParseTreeEntry entry : entries) {
-    //     delete[] entry.matches.data;
-    // }
+    for (ParseTreeEntry entry : entries) {
+        delete[] entry.matches.data;
+    }
     return ret;
 }
