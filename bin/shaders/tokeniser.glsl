@@ -79,25 +79,27 @@ bool beginsToken(in uint index) {
 void tryParse(in uint start, out uint outToken, out uint outLength) {
 	uint row = 0;
 	uint lastFinal = 0;
+	uint lastLength = 0;
 	uint i;
 	for(i = 0; i < 3000; i++) {
 		uint pos = start + i;
 		if (!inbounds(pos, source.length())) {
-			break;
+			return;
 		}
 		uint token = source[pos];
 		ParseTreeItem pti = tokenParseTree[row * ROW_SIZE + token];
 		if (pti.final != 0) {
 			lastFinal = pti.final;
+			lastLength = i + 1;
 		}
 		if (pti.nextRow == 0) { 
 			break; 
 		}
 		row = pti.nextRow;
 	}
-	if (beginsToken(start + i)) {
+	if (beginsToken(start + lastLength)) {
 		outToken = lastFinal;
-		outLength = i;	
+		outLength = lastLength;	
 	} else {
 		outToken = 0;
 		outLength = 0;

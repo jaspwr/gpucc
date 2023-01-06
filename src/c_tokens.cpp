@@ -22,7 +22,7 @@ const char* c_tokens = R"((
 >
 >=
 ==
-!=	
+!=
 ^
 |
 &&
