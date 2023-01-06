@@ -1,1 +1,1 @@
-{a=(2)* (2);     looooooooooooooooooooong*2/2*2*2*(2+2);}
+a &= (asd | a) ^ 2 & 2;

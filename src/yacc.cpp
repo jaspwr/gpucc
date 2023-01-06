@@ -14,7 +14,7 @@ struct AstParseData {
     GLuint signigicant_toknes[4];
 };
 
-#define AST_BUFFER_SIZE 1000
+#define AST_BUFFER_SIZE 2000
 
 void append(GLuint* ast_nodes_buffer, GLuint& ast_nodes_len, GLuint value) {
     ast_nodes_buffer[ast_nodes_len] = value;
@@ -312,8 +312,8 @@ ast_ssbos create_ast_ssbos(std::string grammar, ParseTree& lang_tokens_parse_tre
     auto ast_parse_tree = ParseTree({}, true);
     GLuint ast_nodes_len = 1;
     GLuint ast_nodes_buffer[AST_BUFFER_SIZE];
-    GLuint ir_codegen[5000]; // TODO: Store this size somewhere and check for overflows
-    memset(ir_codegen, 0, 5000*sizeof(GLuint));
+    GLuint ir_codegen[10000]; // TODO: Store this size somewhere and check for overflows
+    memset(ir_codegen, 0, 10000*sizeof(GLuint));
     GLuint ir_codegen_len = 256;
     try {
         parse_yacc(lang_tokens_parse_tree, ast_parse_tree, grammar, ast_nodes_buffer, ast_nodes_len, ir_codegen, ir_codegen_len, ir_token_list);
