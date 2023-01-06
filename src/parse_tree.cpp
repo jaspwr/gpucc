@@ -53,14 +53,14 @@ UintString ParseTree::from_id(GLuint id)
         if (entry.points_to == id)
             return entry.matches;
     }
-    return to_uint_string("ERROR");
+    return to_uint_string("");
 }
 
 ParseTree::ParseTree(std::vector<ParseTreeEntry> entries, bool non_fixed)
 {
     this->entries = new std::vector<ParseTreeEntry>();
 
-    max_rows = non_fixed ? 400 : sum_lens(entries);
+    max_rows = non_fixed ? 500 : sum_lens(entries);
     tree = new ParseTreeItem[COLUMNS * max_rows + 40];
     rows = 0;
     size = 0;

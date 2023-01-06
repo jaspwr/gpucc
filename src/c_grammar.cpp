@@ -29,6 +29,10 @@ primary_expression
     | $0 prefix_increment
     | $0 prefix_decrement
     | $0 assign
+    | $0 bool_and
+    | $0 bool_or
+    | $0 bool_not
+    | $0 ternary_selection
     | $0 add_assign
     | $0 sub_assign
     | $0 mul_assign
@@ -160,7 +164,8 @@ unary_plus
         comparison_less_than, comparison_less_than_or_equal, comparison_greater_than_or_equal 
         comparison_equal, comparison_not_equal, bitwise_and, bitwise_xor, bitwise_or ,unary_not, 
         unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign, 
-        shl_assign, shr_assign, and_assign, xor_assign, or_assign }
+        shl_assign, shr_assign, and_assign, xor_assign, or_assign, prefix_increment, 
+        postfix_increment, prefix_decrement, postfix_decrement, bool_and, bool_or, ternary_selection }
         '+' $0 primary_expression
     ;
 
@@ -170,7 +175,8 @@ unary_minus
         comparison_less_than, comparison_less_than_or_equal, comparison_greater_than_or_equal 
         comparison_equal, comparison_not_equal, bitwise_and, bitwise_xor, bitwise_or ,unary_not, 
         unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign, 
-        shl_assign, shr_assign, and_assign, xor_assign, or_assign }
+        shl_assign, shr_assign, and_assign, xor_assign, or_assign, prefix_increment, 
+        postfix_increment, prefix_decrement, postfix_decrement, bool_and, bool_or, ternary_selection }
         '-' $0 primary_expression
     ; < $x = SUB 0 $0 
     >
@@ -181,7 +187,8 @@ unary_not
         comparison_less_than, comparison_less_than_or_equal, comparison_greater_than_or_equal 
         comparison_equal, comparison_not_equal, bitwise_and, bitwise_xor, bitwise_or ,unary_not, 
         unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign, 
-        shl_assign, shr_assign, and_assign, xor_assign, or_assign }
+        shl_assign, shr_assign, and_assign, xor_assign, or_assign, prefix_increment, 
+        postfix_increment, prefix_decrement, postfix_decrement, bool_and, bool_or, ternary_selection }
         '!' $0 primary_expression
     ; < $x = BOOL_NOT $0 
     >
@@ -192,7 +199,8 @@ unary_bitwise_not
         comparison_less_than, comparison_less_than_or_equal, comparison_greater_than_or_equal 
         comparison_equal, comparison_not_equal, bitwise_and, bitwise_xor, bitwise_or ,unary_not, 
         unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign, 
-        shl_assign, shr_assign, and_assign, xor_assign, or_assign }
+        shl_assign, shr_assign, and_assign, xor_assign, or_assign, prefix_increment, 
+        postfix_increment, prefix_decrement, postfix_decrement, bool_and, bool_or, ternary_selection }
         '~' $0 primary_expression
     ; < $x = XOR $0 -1
     >
@@ -203,7 +211,8 @@ prefix_increment
         comparison_less_than, comparison_less_than_or_equal, comparison_greater_than_or_equal 
         comparison_equal, comparison_not_equal, bitwise_and, bitwise_xor, bitwise_or ,unary_not, 
         unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign, 
-        shl_assign, shr_assign, and_assign, xor_assign, or_assign }
+        shl_assign, shr_assign, and_assign, xor_assign, or_assign, prefix_increment, 
+        postfix_increment, prefix_decrement, postfix_decrement, bool_and, bool_or, ternary_selection }
         '++' $0 primary_expression
     ; < $x = ADD $0 1
     STORE $0 $x
@@ -216,7 +225,8 @@ postfix_increment
         comparison_less_than, comparison_less_than_or_equal, comparison_greater_than_or_equal 
         comparison_equal, comparison_not_equal, bitwise_and, bitwise_xor, bitwise_or ,unary_not, 
         unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign, 
-        shl_assign, shr_assign, and_assign, xor_assign, or_assign }
+        shl_assign, shr_assign, and_assign, xor_assign, or_assign, prefix_increment, 
+        postfix_increment, prefix_decrement, postfix_decrement, bool_and, bool_or, ternary_selection }
         $0 primary_expression '++'
     ; < $x = ADD $0 1
     STORE $0 $x
@@ -228,7 +238,8 @@ prefix_decrement
         comparison_less_than, comparison_less_than_or_equal, comparison_greater_than_or_equal 
         comparison_equal, comparison_not_equal, bitwise_and, bitwise_xor, bitwise_or ,unary_not, 
         unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign, 
-        shl_assign, shr_assign, and_assign, xor_assign, or_assign }
+        shl_assign, shr_assign, and_assign, xor_assign, or_assign, prefix_increment, 
+        postfix_increment, prefix_decrement, postfix_decrement, bool_and, bool_or, ternary_selection }
         '--' $0 primary_expression
     ; < $x = SUB $0 1
     STORE $0 $x
@@ -241,16 +252,37 @@ postfix_decrement
         comparison_less_than, comparison_less_than_or_equal, comparison_greater_than_or_equal 
         comparison_equal, comparison_not_equal, bitwise_and, bitwise_xor, bitwise_or ,unary_not, 
         unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign, 
-        shl_assign, shr_assign, and_assign, xor_assign, or_assign }
+        shl_assign, shr_assign, and_assign, xor_assign, or_assign, prefix_increment, 
+        postfix_increment, prefix_decrement, postfix_decrement, bool_and, bool_or, ternary_selection }
         $0 primary_expression '--'
     ; < $x = SUB $0 1
     STORE $0 $x
     >
 
+bool_and
+    : { '*', '/', '%', '-', '+', '<<', '>>', '>', 
+    '<', '<=', '>=', '!=', '==', '&', '^', '++', '--' } ] '&&' }
+    $0 primary_expression '&&' $1 primary_expression
+    ; < $x = BOOL_AND $0 $1 
+    >
+
+bool_or
+    : { '*', '/', '%', '-', '+', '<<', '>>', '>', 
+    '<', '<=', '>=', '!=', '==', '&', '^', '++', '--', '&&' } ] '||' }
+    $0 primary_expression '||' $1 primary_expression
+    ; < $x = BOOL_OR $0 $1 
+    >
+
+ternary_selection
+    : { '*', '/', '%', '-', '+', '<<', '>>', '>', 
+    '<', '<=', '>=', '!=', '==', '&', '^', '++', '--', '&&', '||' } ] '?' }
+    $0 primary_expression '?' $1 primary_expression ':' $2 primary_expression
+    ; < $x = SELECT $0 $1 $2 
+    >
 
 assign
     : { '*', '/', '%', '-', '+', '<<', '>>', '>', 
-    '<', '<=', '>=', '!=', '==', '&', '^', '++', '--' } ] '=' } 
+    '<', '<=', '>=', '!=', '==', '&', '^', '++', '--', '&&', '||', '?', ':' } ] '=' }
     $0 primary_expression '=' $1 primary_expression
     ; < $x = $1
     STORE $0 $x 
@@ -258,7 +290,7 @@ assign
 
 add_assign
     : { '*', '/', '%', '-', '+', '<<', '>>', '>', 
-    '<', '<=', '>=', '!=', '==', '&', '^', '=', '++', '--' } ] '+=' } 
+    '<', '<=', '>=', '!=', '==', '&', '^', '=', '++', '--', '&&', '||', '?', ':' } ] '+=' } 
     $0 primary_expression '+=' $1 primary_expression
     ; < $x = ADD $0 $1 
     STORE $0 $x 
@@ -266,7 +298,7 @@ add_assign
 
 sub_assign
     : { '*', '/', '%', '-', '+', '<<', '>>', '>', 
-    '<', '<=', '>=', '!=', '==', '&', '^', '=', '+=', '++', '--' } ] '-=' } 
+    '<', '<=', '>=', '!=', '==', '&', '^', '=', '+=', '++', '--', '&&', '||', '?', ':' } ] '-=' } 
     $0 primary_expression '-=' $1 primary_expression
     ; < $x = SUB $0 $1 
     STORE $0 $x 
@@ -274,7 +306,7 @@ sub_assign
 
 mul_assign
     : { '*', '/', '%', '-', '+', '<<', '>>', '>', 
-    '<', '<=', '>=', '!=', '==', '&', '^', '=', '+=', '-=', '++', '--' } ] '*=' } 
+    '<', '<=', '>=', '!=', '==', '&', '^', '=', '+=', '-=', '++', '--', '&&', '||', '?', ':' } ] '*=' } 
     $0 primary_expression '*=' $1 primary_expression
     ; < $x = MUL $0 $1 
     STORE $0 $x 
@@ -282,7 +314,7 @@ mul_assign
 
 div_assign
     : { '*', '/', '%', '-', '+', '<<', '>>', '>', 
-    '<', '<=', '>=', '!=', '==', '&', '^', '=', '+=', '-=', '*=', '++', '--' } ] '/=' } 
+    '<', '<=', '>=', '!=', '==', '&', '^', '=', '+=', '-=', '*=', '++', '--', '&&', '||', '?', ':' } ] '/=' } 
     $0 primary_expression '/=' $1 primary_expression
     ; < $x = DIV $0 $1 
     STORE $0 $x 
@@ -290,7 +322,7 @@ div_assign
 
 mod_assign
     : { '*', '/', '%', '-', '+', '<<', '>>', '>', 
-    '<', '<=', '>=', '!=', '==', '&', '^', '=', '+=', '-=', '*=', '/=', '++', '--' } ] '%=' } 
+    '<', '<=', '>=', '!=', '==', '&', '^', '=', '+=', '-=', '*=', '/=', '++', '--', '&&', '||', '?', ':' } ] '%=' } 
     $0 primary_expression '%=' $1 primary_expression
     ; < $x = MOD $0 $1 
     STORE $0 $x 
@@ -298,7 +330,7 @@ mod_assign
 
 shl_assign
     : { '*', '/', '%', '-', '+', '<<', '>>', '>', 
-    '<', '<=', '>=', '!=', '==', '&', '^', '=', '+=', '-=', '*=', '/=', '%=', '++', '--' } ] '<<=' } 
+    '<', '<=', '>=', '!=', '==', '&', '^', '=', '+=', '-=', '*=', '/=', '%=', '++', '--', '&&', '||', '?', ':' } ] '<<=' } 
     $0 primary_expression '<<=' $1 primary_expression
     ; < $x = SHL $0 $1 
     STORE $0 $x 
@@ -306,7 +338,7 @@ shl_assign
 
 shr_assign 
     : { '*', '/', '%', '-', '+', '<<', '>>', '>', 
-    '<', '<=', '>=', '!=', '==', '&', '^', '=', '+=', '-=', '*=', '/=', '%=', '<<=', '++', '--' } ] '>>=' } 
+    '<', '<=', '>=', '!=', '==', '&', '^', '=', '+=', '-=', '*=', '/=', '%=', '<<=', '++', '--', '&&', '||', '?', ':' } ] '>>=' } 
     $0 primary_expression '>>=' $1 primary_expression
     ; < $x = SHR $0 $1 
     STORE $0 $x 
@@ -314,7 +346,7 @@ shr_assign
 
 and_assign
     : { '*', '/', '%', '-', '+', '<<', '>>', '>', 
-    '<', '<=', '>=', '!=', '==', '&', '^', '=', '+=', '-=', '*=', '/=', '%=', '<<=', '>>=', '++', '--' } ] '&=' } 
+    '<', '<=', '>=', '!=', '==', '&', '^', '=', '+=', '-=', '*=', '/=', '%=', '<<=', '>>=', '++', '--', '&&', '||', '?', ':' } ] '&=' } 
     $0 primary_expression '&=' $1 primary_expression
     ; < $x = AND $0 $1 
     STORE $0 $x 
@@ -322,7 +354,7 @@ and_assign
 
 xor_assign
     : { '*', '/', '%', '-', '+', '<<', '>>', '>', 
-    '<', '<=', '>=', '!=', '==', '&', '^', '=', '+=', '-=', '*=', '/=', '%=', '<<=', '>>=', '&=', '++', '--' } ] '^=' } 
+    '<', '<=', '>=', '!=', '==', '&', '^', '=', '+=', '-=', '*=', '/=', '%=', '<<=', '>>=', '&=', '++', '--', '&&', '||', '?', ':' } ] '^=' } 
     $0 primary_expression '^=' $1 primary_expression
     ; < $x = XOR $0 $1 
     STORE $0 $x 
@@ -330,7 +362,7 @@ xor_assign
 
 or_assign
     : { '*', '/', '%', '-', '+', '<<', '>>', '>', 
-    '<', '<=', '>=', '!=', '==', '&', '^', '=', '+=', '-=', '*=', '/=', '%=', '<<=', '>>=', '&=', '^=', '++', '--' } ] '|=' }
+    '<', '<=', '>=', '!=', '==', '&', '^', '=', '+=', '-=', '*=', '/=', '%=', '<<=', '>>=', '&=', '^=', '++', '--', '&&', '||', '?', ':' } ] '|=' }
     $0 primary_expression '|=' $1 primary_expression
     ; < $x = OR $0 $1 
     STORE $0 $x 
