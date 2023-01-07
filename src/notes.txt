@@ -1,0 +1,8 @@
+----------------- Notes -----------------
+ * Ast parser still has issues with whitespace
+    * Breakes with `{a = 2 == 2 ? asd :  0 - 123;}` and `x += 1 + 2`
+    * IT'S DEFINATLEY PRE EXCLUSIONS
+    * large amounts of whitespace may be messing up pre_excludes, offsets may not be correct. 
+
+ * Ambiguous syntax for `a = a == 2 ? somevar += 123 : 0;`. Currently just breaks.
+ * lengths of ssbos still need to be determined

@@ -26,8 +26,8 @@ primary_expression
     | $0 unary_bitwise_not
     | $0 postfix_increment
     | $0 postfix_decrement
-    | $0 prefix_increment
-    | $0 prefix_decrement
+    | $0 prefix_increment_second
+    | $0 prefix_decrement_second
     | $0 assign
     | $0 bool_and
     | $0 bool_or
@@ -165,7 +165,7 @@ unary_plus
         comparison_equal, comparison_not_equal, bitwise_and, bitwise_xor, bitwise_or ,unary_not, 
         unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign, 
         shl_assign, shr_assign, and_assign, xor_assign, or_assign, prefix_increment, 
-        postfix_increment, prefix_decrement, postfix_decrement, bool_and, bool_or, ternary_selection }
+        postfix_increment, prefix_decrement, postfix_decrement, prefix_increment_second, prefix_decrement_second bool_and, bool_or, ternary_selection }
         '+' $0 primary_expression
     ;
 
@@ -176,7 +176,7 @@ unary_minus
         comparison_equal, comparison_not_equal, bitwise_and, bitwise_xor, bitwise_or ,unary_not, 
         unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign, 
         shl_assign, shr_assign, and_assign, xor_assign, or_assign, prefix_increment, 
-        postfix_increment, prefix_decrement, postfix_decrement, bool_and, bool_or, ternary_selection }
+        postfix_increment, prefix_decrement, postfix_decrement, prefix_increment_second, prefix_decrement_second bool_and, bool_or, ternary_selection }
         '-' $0 primary_expression
     ; < $x = SUB 0 $0 
     >
@@ -188,7 +188,7 @@ unary_not
         comparison_equal, comparison_not_equal, bitwise_and, bitwise_xor, bitwise_or ,unary_not, 
         unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign, 
         shl_assign, shr_assign, and_assign, xor_assign, or_assign, prefix_increment, 
-        postfix_increment, prefix_decrement, postfix_decrement, bool_and, bool_or, ternary_selection }
+        postfix_increment, prefix_decrement, postfix_decrement, prefix_increment_second, prefix_decrement_second bool_and, bool_or, ternary_selection }
         '!' $0 primary_expression
     ; < $x = BOOL_NOT $0 
     >
@@ -200,7 +200,7 @@ unary_bitwise_not
         comparison_equal, comparison_not_equal, bitwise_and, bitwise_xor, bitwise_or ,unary_not, 
         unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign, 
         shl_assign, shr_assign, and_assign, xor_assign, or_assign, prefix_increment, 
-        postfix_increment, prefix_decrement, postfix_decrement, bool_and, bool_or, ternary_selection }
+        postfix_increment, prefix_decrement, postfix_decrement, prefix_increment_second, prefix_decrement_second bool_and, bool_or, ternary_selection }
         '~' $0 primary_expression
     ; < $x = XOR $0 -1
     >
@@ -212,11 +212,15 @@ prefix_increment
         comparison_equal, comparison_not_equal, bitwise_and, bitwise_xor, bitwise_or ,unary_not, 
         unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign, 
         shl_assign, shr_assign, and_assign, xor_assign, or_assign, prefix_increment, 
-        postfix_increment, prefix_decrement, postfix_decrement, bool_and, bool_or, ternary_selection }
+        postfix_increment, prefix_decrement, postfix_decrement, prefix_increment_second, prefix_decrement_second bool_and, bool_or, ternary_selection }
         '++' $0 primary_expression
     ; < $x = ADD $0 1
     STORE $0 $x
-    $x = $0
+    >
+
+prefix_increment_second
+    : $0 prefix_increment
+    ; < $x = SUB $0 1 
     >
 
 postfix_increment
@@ -226,10 +230,10 @@ postfix_increment
         comparison_equal, comparison_not_equal, bitwise_and, bitwise_xor, bitwise_or ,unary_not, 
         unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign, 
         shl_assign, shr_assign, and_assign, xor_assign, or_assign, prefix_increment, 
-        postfix_increment, prefix_decrement, postfix_decrement, bool_and, bool_or, ternary_selection }
+        postfix_increment, prefix_decrement, postfix_decrement, prefix_increment_second, prefix_decrement_second bool_and, bool_or, ternary_selection }
         $0 primary_expression '++'
-    ; < $x = ADD $0 1
-    STORE $0 $x
+    ; < $x = ADD $0 1 
+    STORE $0 $x 
     >
 
 prefix_decrement
@@ -239,11 +243,15 @@ prefix_decrement
         comparison_equal, comparison_not_equal, bitwise_and, bitwise_xor, bitwise_or ,unary_not, 
         unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign, 
         shl_assign, shr_assign, and_assign, xor_assign, or_assign, prefix_increment, 
-        postfix_increment, prefix_decrement, postfix_decrement, bool_and, bool_or, ternary_selection }
+        postfix_increment, prefix_decrement, postfix_decrement, prefix_increment_second, prefix_decrement_second bool_and, bool_or, ternary_selection }
         '--' $0 primary_expression
-    ; < $x = SUB $0 1
-    STORE $0 $x
-    $x = $0
+    ; < $x = SUB $0 1 
+    STORE $0 $x 
+    >
+
+prefix_decrement_second
+    : $0 prefix_decrement
+    ; < $x = ADD $0 1 
     >
 
 postfix_decrement
@@ -253,7 +261,7 @@ postfix_decrement
         comparison_equal, comparison_not_equal, bitwise_and, bitwise_xor, bitwise_or ,unary_not, 
         unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign, 
         shl_assign, shr_assign, and_assign, xor_assign, or_assign, prefix_increment, 
-        postfix_increment, prefix_decrement, postfix_decrement, bool_and, bool_or, ternary_selection }
+        postfix_increment, prefix_decrement, postfix_decrement, prefix_increment_second, prefix_decrement_second bool_and, bool_or, ternary_selection }
         $0 primary_expression '--'
     ; < $x = SUB $0 1
     STORE $0 $x

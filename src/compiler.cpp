@@ -5,12 +5,12 @@
 #include "lang.h"
 #include "yacc.h"
 #include "ir_compiler.h"
+#include "debug_printing.h"
+#include "shader_structures.h"
+#include "gl_atomic_counter.h"
 
 #include "c_tokens.cpp"
 #include "c_grammar.cpp"
-
-#include "debug_printing.h"
-#include "shader_structures.h"
 
 #include "include/glad/glad.h"
 #include <math.h>
@@ -34,7 +34,8 @@ std::string load_source(std::vector<std::string> source_files) {
     return source;
 }
 
-#define MAX_AST_NODES 50
+#define MAX_AST_NODES 100
+#define AST_NODES_OVERFLOW_BUFFER_SIZE 50
 
 std::string compile(Job& job, Shaders& shaders) {
     if (job.source_files.size() == 0) { throw "No source files specified."; }
@@ -48,8 +49,8 @@ std::string compile(Job& job, Shaders& shaders) {
     auto pt_ssbo = lang_tokens_parse_tree->into_ssbo();
     pt_ssbo->bind(0);
 
-
-
+    auto ast_overflow_atomic_counter = GLAtomicCounter(0);
+    ast_overflow_atomic_counter.bind(0);
 
     auto tokens = tokenise(source, &shaders.tokeniser);
 
@@ -66,7 +67,7 @@ std::string compile(Job& job, Shaders& shaders) {
     ast_ssbos.ast_parse_tree->bind(4);
     ast_ssbos.ast_nodes->bind(1);
 
-    auto ast_nodes = Ssbo(MAX_AST_NODES * sizeof(AstNode));
+    auto ast_nodes = Ssbo((AST_NODES_OVERFLOW_BUFFER_SIZE + source.length) * sizeof(AstNode));
     ast_nodes.bind(3);
     ast_ssbos.ir_codegen->bind(0);
 
@@ -94,7 +95,7 @@ std::string compile(Job& job, Shaders& shaders) {
         // free(nodes);
     }
     
-    #define OUTPUT_BUFFER_SIZE 200
+    #define OUTPUT_BUFFER_SIZE 500
 
     Ssbo output_buffer = Ssbo(OUTPUT_BUFFER_SIZE * sizeof(GLuint));
     output_buffer.bind(1);

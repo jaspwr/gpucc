@@ -4,7 +4,7 @@ layout(local_size_x = 32, local_size_y = 1, local_size_z = 1 ) in;
 
 #define CHARS_PER_INVOCATION 4
 #define ROW_SIZE 256
-#define MAX_AST_NODES 50
+#define MAX_AST_NODES 70
 
 struct ParseTreeItem {
 	uint nextRow;
@@ -27,6 +27,10 @@ struct AstNode {
 	ChildNode children[4];
 	uint volume;
 };
+
+
+#define AST_NODES_OVERFLOW_BUFFER_SIZE 50
+layout(binding = 0) uniform atomic_uint astNodesOverflowPointer;
 
 layout(std430, binding = 4) readonly buffer AstParseTree {
 	ParseTreeItem astParseTree[];
@@ -60,27 +64,52 @@ AstNode fetchAstNodeFromChildRef(int childRef) {
 	return astNodes[childRef - 1];
 }
 
-int appendAstNode(AstNode newNode, uint pos) {
-	int invocation_hash = int(pos * 7 + 1) % MAX_AST_NODES;
-	int offset = 0;
-	int sign_ = 1;
-	for (offset = 0; offset < 40; offset++) {
-		if (invocation_hash + offset < MAX_AST_NODES 
-		&& astNodes[invocation_hash + offset].nodeToken == 0) {
-			break;
-		}
-		if (invocation_hash > offset 
-		&& astNodes[invocation_hash - offset].nodeToken == 0) {
-			sign_ = -1;
-			break;
-		}
-	}
-	int index = invocation_hash + offset * sign_;
-
+int appendAstNodeToOverflowBuffer(AstNode newNode) {
+	uint index = atomicCounterIncrement(astNodesOverflowPointer);
+	if (index >= AST_NODES_OVERFLOW_BUFFER_SIZE) return 0;
 	astNodes[index] = newNode;
-	return index;
+	return int(index);
 }
 
+// int appendAstNode(AstNode newNode, uint pos) {
+// 	int invocation_hash = int(pos) % MAX_AST_NODES;
+// 	int offset = 0;
+// 	int sign_ = 1;
+// 	for (offset = 0; offset < 100; offset++) {
+// 		if (invocation_hash + offset < MAX_AST_NODES) {
+// 			if (astNodes[invocation_hash + offset].nodeToken == 0) {
+// 				break;
+// 			}
+// 		}
+
+// 		if (invocation_hash - offset > 0) {
+// 			if (astNodes[invocation_hash - offset].nodeToken == 0) {
+// 				sign_ = -1;
+// 				break;
+// 			}
+// 		}
+// 	}
+// 	int index = invocation_hash + offset * sign_;
+
+// 	astNodes[index] = newNode;
+// 	return index;
+// }
+
+int appendAstNode(AstNode newNode, uint pos, uint len) {
+	// Try find a slot in partition
+	for (uint i = 0; i < len; i++) {
+		// The overflow buffer size is first in the SSBO so it's size is added here
+		uint index = (pos + i + AST_NODES_OVERFLOW_BUFFER_SIZE);
+		if (!inbounds(index, astNodes.length())) return 0;
+		if (astNodes[index].nodeToken == 0) {
+			astNodes[index] = newNode;
+			return int(index);
+		}
+	}
+
+	// Partition was full, append to overflow buffer
+	return appendAstNodeToOverflowBuffer(newNode);
+}
 
 bool checkExcludes(ParseTreeItem pti, uint start, uint i, uint preToken, uint lastTokenLen) {
 	// Check pre exclusions
@@ -94,8 +123,11 @@ bool checkExcludes(ParseTreeItem pti, uint start, uint i, uint preToken, uint la
 
 	// Check post exclusions
 	uint postTokenPos = start + i + lastTokenLen;
-	while (tokens[postTokenPos].id == 0 && postTokenPos < 3000) {
+	while (tokens[postTokenPos].id == 0) {
 		postTokenPos++;
+		if (!inbounds(postTokenPos, tokens.length())) {
+			return false;
+		}
 	}
 	uint postToken = tokens[postTokenPos].id;
 
@@ -212,7 +244,7 @@ void main() {
 		// Set "token > 90" back to "token != 0" and try get it to work. 
 		if (token > 90 && inbounds(pos, tokens.length())) {
 			AstNode newNode = AstNode(token, children, volume);
-			int astPos = appendAstNode(newNode, pos);
+			int astPos = appendAstNode(newNode, pos, len);
 			tokens[pos].id = token;
     		tokens[pos].len = len;
 			tokens[pos].astNodeLocation = int(astPos + 1);

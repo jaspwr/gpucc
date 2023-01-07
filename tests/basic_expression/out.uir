@@ -1,10 +1,10 @@
-%2 : 
-%25 = MUL 2 2 
-%12 = %25 
-STORE a %12 
-%47 = DIV 2 2 
-%37 = MUL looooooooooooooooooooong %47 
-%34 = MUL %37 2 
-%33 = MUL %34 2 
-%11 = ADD 2 2 
-%32 = MUL %33 %11 
+%51 : 
+%56 = MUL 2 2 
+%53 = %56 
+STORE a %53 
+%94 = DIV 2 2 
+%64 = MUL looooooooooooooooooooong %94 
+%66 = MUL %64 2 
+%68 = MUL %66 2 
+%103 = ADD 2 2 
+%70 = MUL %68 %103 
