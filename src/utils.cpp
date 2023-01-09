@@ -132,3 +132,13 @@ std::string repeated_char(u32 length, char c) {
     }
     return ret;
 }
+
+u32 parse_int(char* str) {
+    u32 ret = 0;
+    while (*str >= '0' && *str <= '9') {
+        ret *= 10;
+        ret += *str - '0';
+        str++;
+    }
+    return ret;
+}

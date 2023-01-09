@@ -57,6 +57,10 @@ uint getCodegenLength(uint nodeToken) {
 	return irCodegen[ptr + 4];
 }
 
+uint getChildOffset(uint codegenPtr, uint childIndex) {
+    return irCodegen[codegenPtr + childIndex];
+}
+
 int fetch_ref (uint ref, AstNode node) {
     if (ref > 4) return 0;
     int pos = node.children[ref].ref;
@@ -77,6 +81,12 @@ void writeToOutput(uint pos, AstNode node, int nodePos) {
     uint ptr = codegenPointer(node.nodeToken) + 5;
     uint len = getCodegenLength(node.nodeToken);
     for (uint i = 0; i < len; i++) {
+        // Internal positions
+        for (int j = 0; j < 4; j++) {
+            if (getChildOffset(ptr - 5, j) == i)
+                pos += node.children[j].codegenVolume;
+        }
+
         uint token = irCodegen[ptr + i];
 
         // TODO: refactor into smaller fuctions
@@ -128,6 +138,11 @@ void main() {
             AstNode childNode = fetchAstNodeFromChildRef(newNodePos);
             uint childLength = currentNode.children[i].codegenVolume;
             if (workingVolume <= childNode.volume) {
+                // decend
+
+                uint codegenPtr = codegenPointer(currentNode.nodeToken);
+                wokringStartPos += getChildOffset(codegenPtr, i);
+
                 currentNodePos = newNodePos;
                 currentNode = childNode;
                 break;
@@ -139,11 +154,6 @@ void main() {
         maxOut++;
     }
     if (codegenPointer(currentNode.nodeToken) == 0) return;
-
-    // Internal positions
-    for (int i = 0; i < 4; i++) {
-        wokringStartPos += currentNode.children[i].codegenVolume;
-    }
 
     writeToOutput(wokringStartPos, currentNode, currentNodePos);
 }

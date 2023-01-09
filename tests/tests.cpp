@@ -19,7 +19,7 @@ const char* result_string(TestResult status) {
     return status == SUCCESS
         ? "\033[1;32mPASS\033[0m"
         : "\033[1;31mFAIL\033[0m"
-        ;
+    ;
 }
 
 void print_result(TestResult status, std::string test_name) {

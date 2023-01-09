@@ -33,8 +33,13 @@ std::string serialize_uir_to_readable(GLuint* ir, u32 ir_len,
     IrTokenList& ir_tokens, std::string& source) {
 
     std::string ret = "";
+    
+    // Ignore trailing whitespace
+    while (ir[ir_len - 1] == 0) {
+        ir_len--;
+    }
+
     for (int i = 0; i < ir_len; i++) {
-        if (ir[i] == 0) continue;
         std::string token = "";
         switch (ir[i]) {
         case IR_REFERNCE:
@@ -50,7 +55,10 @@ std::string serialize_uir_to_readable(GLuint* ir, u32 ir_len,
         case IR_SELF_REFERENCE:
             throw "Self reference tokens should not not end up in shader output.";
         default:
-            token = token_from_id(ir[i], ir_tokens);
+            token = ir[i] == 0 
+                ? "NULL"
+                : token_from_id(ir[i], ir_tokens)
+            ;
             break;
         }
         ret += token + (token != "\n" ? " " : "");

@@ -21,3 +21,4 @@ UintString to_uint_string(std::vector<GLuint> str);
 std::string uintstring_to_string(UintString str);
 StrSplit str_split(const char* str, char separator);
 void free_str_split(StrSplit str_split);
+u32 parse_int(char* str);

@@ -57,10 +57,12 @@ void append_codegen_ssbo_entry(GLuint* codegen_ssbo, GLuint& codegen_ssbo_len,
     GLuint init_codegen_ssbo_len = codegen_ssbo_len;
     GLuint children_offsets[4] = {0, 0, 0, 0};
     u32 len = ir.size();
+    GLuint current_block_size = 0;
     for (u32 i = 0; i < len; i++) {
         switch (ir[i][0])
         {
         case '$':
+            current_block_size += 2;
             if (ir[i] == "$x" || ir[i] == "$X") {
                 // Self ref
                 codegen_ssbo[codegen_ssbo_len++] = IR_SELF_REFERENCE;
@@ -71,11 +73,15 @@ void append_codegen_ssbo_entry(GLuint* codegen_ssbo, GLuint& codegen_ssbo_len,
             append_numeral(ir[i], 3, codegen_ssbo, codegen_ssbo_len);
 
             break;
-        case '!':
-            codegen_ssbo[codegen_ssbo_len++] = IR_INSERSION;
-            append_ir_token(ir[i], ir_pt, codegen_ssbo, codegen_ssbo_len, ir_tokens);
+        case '!': {
+            char* tok_str = (char*)ir[i].c_str();
+            children_offsets[parse_int(tok_str + 1)] = current_block_size;
+            // codegen_ssbo[codegen_ssbo_len++] = IR_INSERSION;
+            // append_ir_token(ir[i], ir_pt, codegen_ssbo, codegen_ssbo_len, ir_tokens);
             break;
+        }
         default:
+            current_block_size++;
             append_ir_token(ir[i], ir_pt, codegen_ssbo, codegen_ssbo_len, ir_tokens);
             break;
         }

@@ -84,7 +84,7 @@ bool is_alpha(char c) {
 }
 
 bool is_numeric(char c) {
-    return c >= '0' && c <= '9' || c == '$';
+    return c >= '0' && c <= '9' || c == '$' || c == '!'; // also includes prefixes
 }
 
 bool is_alphanumeric(char c) {
@@ -133,7 +133,7 @@ void flush_string_buffer(char* token_buffer, i32& token_buffer_index) {
     token_buffer_index = 0;
 }
 
-u32 parse_dollar_sign_number (char* str) {
+u32 parse_prefixed_number (char* str) {
     u32 n = 0;
     str++;
     while (*str >= '0' && *str <= '9') {
@@ -144,12 +144,8 @@ u32 parse_dollar_sign_number (char* str) {
 }
 
 GLuint yacc_constant(char* token) {
-    if (strcmp(token, "#identifier") == 0) {
-        return 2;
-    }
-    if (strcmp(token, "#literal") == 0) {
-        return 1;
-    }
+    if (strcmp(token, "#identifier") == 0) return 2;
+    if (strcmp(token, "#literal") == 0) return 1;
     throw std::string("Invalid constant \"") + std::string(token) + std::string("\".");
 }
 
@@ -242,9 +238,13 @@ void handle_token(char* token_buffer, YaccContext& context, ParseTree& parse_tre
         if (context != YaccContext::Line) {
             throw "Unexpected '$'.";
         }
-        u32 index = parse_dollar_sign_number(token_buffer);
+        u32 index = parse_prefixed_number(token_buffer);
         ast_pt_data.signigicant_toknes[index] = ast_pt_data.match.size() + 1;
         return;
+    }
+
+    if (token_buffer[0] == '!') {
+        throw "Unexpected insertion. Insertions must be in codegen blocks.";
     }
 
     if (context == YaccContext::BlockName) {

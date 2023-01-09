@@ -6,3 +6,5 @@
 
  * Ambiguous syntax for `a = a == 2 ? somevar += 123 : 0;`. Currently just breaks.
  * lengths of ssbos still need to be determined
+ * Definitly need insertions
+ * Rethink scopes and labels

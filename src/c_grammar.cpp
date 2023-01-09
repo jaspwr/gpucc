@@ -3,7 +3,7 @@ const char* c_yacc = R"(
 primary_expression
     : $0 { #identifier, type_specifier, type_qualifier } #identifier
     | $0 #literal
-    | '(' $0 primary_expression ')'
+    | ] 'if', 'switch', 'for' } '(' $0 primary_expression ')'
     | $0 addition
     | $0 subtraction
     | $0 multiplication
@@ -206,14 +206,7 @@ unary_bitwise_not
     >
 
 prefix_increment
-    : ] primary_expression , ')', addition, subtraction, multiplication, 
-        division, modulo, shift_right, shift_left, comparison_greater_than,
-        comparison_less_than, comparison_less_than_or_equal, comparison_greater_than_or_equal 
-        comparison_equal, comparison_not_equal, bitwise_and, bitwise_xor, bitwise_or ,unary_not, 
-        unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign, 
-        shl_assign, shr_assign, and_assign, xor_assign, or_assign, prefix_increment, 
-        postfix_increment, prefix_decrement, postfix_decrement, prefix_increment_second, prefix_decrement_second bool_and, bool_or, ternary_selection }
-        '++' $0 primary_expression
+    : '++' $0 primary_expression
     ; < $x = ADD $0 1
     STORE $0 $x
     >
@@ -224,27 +217,13 @@ prefix_increment_second
     >
 
 postfix_increment
-    : ] primary_expression , ')', addition, subtraction, multiplication, 
-        division, modulo, shift_right, shift_left, comparison_greater_than,
-        comparison_less_than, comparison_less_than_or_equal, comparison_greater_than_or_equal 
-        comparison_equal, comparison_not_equal, bitwise_and, bitwise_xor, bitwise_or ,unary_not, 
-        unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign, 
-        shl_assign, shr_assign, and_assign, xor_assign, or_assign, prefix_increment, 
-        postfix_increment, prefix_decrement, postfix_decrement, prefix_increment_second, prefix_decrement_second bool_and, bool_or, ternary_selection }
-        $0 primary_expression '++'
+    : $0 primary_expression '++'
     ; < $x = ADD $0 1 
     STORE $0 $x 
     >
 
 prefix_decrement
-    : ] primary_expression , ')', addition, subtraction, multiplication, 
-        division, modulo, shift_right, shift_left, comparison_greater_than,
-        comparison_less_than, comparison_less_than_or_equal, comparison_greater_than_or_equal 
-        comparison_equal, comparison_not_equal, bitwise_and, bitwise_xor, bitwise_or ,unary_not, 
-        unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign, 
-        shl_assign, shr_assign, and_assign, xor_assign, or_assign, prefix_increment, 
-        postfix_increment, prefix_decrement, postfix_decrement, prefix_increment_second, prefix_decrement_second bool_and, bool_or, ternary_selection }
-        '--' $0 primary_expression
+    : '--' $0 primary_expression
     ; < $x = SUB $0 1 
     STORE $0 $x 
     >
@@ -255,14 +234,7 @@ prefix_decrement_second
     >
 
 postfix_decrement
-    : ] primary_expression , ')', addition, subtraction, multiplication, 
-        division, modulo, shift_right, shift_left, comparison_greater_than,
-        comparison_less_than, comparison_less_than_or_equal, comparison_greater_than_or_equal 
-        comparison_equal, comparison_not_equal, bitwise_and, bitwise_xor, bitwise_or ,unary_not, 
-        unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign, 
-        shl_assign, shr_assign, and_assign, xor_assign, or_assign, prefix_increment, 
-        postfix_increment, prefix_decrement, postfix_decrement, prefix_increment_second, prefix_decrement_second bool_and, bool_or, ternary_selection }
-        $0 primary_expression '--'
+    : $0 primary_expression '--'
     ; < $x = SUB $0 1
     STORE $0 $x
     >
@@ -373,21 +345,129 @@ or_assign
     '<', '<=', '>=', '!=', '==', '&', '^', '=', '+=', '-=', '*=', '/=', '%=', '<<=', '>>=', '&=', '^=', '++', '--', '&&', '||', '?', ':' } ] '|=' }
     $0 primary_expression '|=' $1 primary_expression
     ; < $x = OR $0 $1 
-    STORE $0 $x 
-    >
-
-scope_opener
-    : '{'
-    ; < $x : 
+        STORE $0 $x 
     >
 
 partial_scope
-    : $0 scope_opener $1 primary_expression ';'
+    : $0 '{' $1 primary_expression ';'
+    | $0 '{' $1 statement
+    | $0 '{' $1 scope
     | $0 partial_scope $1 primary_expression ';'
+    | $0 partial_scope $1 statement
+    | $0 partial_scope $1 scope
     ;
 
 scope
     : $0 partial_scope '}'
+    ; < scope_start
+    !0 scope_end
+    >
+
+if_head
+    : 'if' '(' $0 primary_expression ')'
     ;
 
+if
+    : [ 'else', else } $0 if_head $1 primary_expression ';'
+    | [ 'else', else } $0 if_head $1 scope
+    ; < JZ $0 $x
+        !1 $x :
+    >
+
+else
+    : 'else' $0 primary_expression ';'
+    | 'else' $0 scope
+    ; < $x :
+    >
+
+if_else
+    : $0 if_head $1 primary_expression ';' $2 else
+    | $0 if_head $1 scope $2 else
+    ; < JZ $0 $x
+        !1 JMP $2
+        $x :
+        !2 >
+
+switch_head
+    : 'switch' '(' $0 primary_expression ')'
+    ;
+
+switch
+    : $0 switch_head $1 switch_body
+    ; < switch $0 switch_body_start
+        !1 switch_body_end
+        breakable $x :
+    >
+
+switch_case_opener
+    : 'case' $0 primary_expression ':'
+    ; < switch_case $0
+    >
+
+default_opener
+    : 'default' ':'
+    ; < switch_default
+    >
+
+switch_case
+    : $0 switch_case_opener $1 primary_expression ';'
+    | $0 switch_case_opener $1 statement
+    | $0 switch_case_opener $1 scope
+    | $0 default_opener $1 primary_expression ';'
+    | $0 default_opener $1 statement
+    | $0 default_opener $1 scope
+    | $0 switch_case $1 primary_expression ';'
+    | $0 switch_case $1 statement
+    | $0 switch_case $1 scope
+    ;
+
+parial_switch_body
+    : $0 switch_case '}'
+    | $0 switch_case $1 parial_switch_body
+    ;
+
+switch_body
+    : '{' $0 parial_switch_body
+    ;
+
+while_head
+    : 'while'
+    ; < $x:
+    >
+
+while
+    : $0 while_head $1 primary_expression $2 primary_expression ';'
+    | $0 while_head $1 primary_expression $2 scope
+    ; < !0 !1 JZ $1 $x 
+        !2 JMP $0
+        breakable $x :
+    >
+
+for_head
+    : 'for' '(' $0 primary_expression ';'
+    ; < $x:
+    >
+
+for
+    : $0 for_head $1 primary_expression ';' $3 primary_expression ')' $2 primary_expression ';'
+    | $0 for_head $1 primary_expression ';' $3 primary_expression ')' $2 statement
+    | $0 for_head $1 primary_expression ';' $3 primary_expression ')' $2 scope
+    ; < JZ $1 $x
+    !2 !3 JMP $0
+    breakable $x : 
+    >
+
+break
+    : 'break' ';'
+    ; < BREAK
+    >
+
+statement
+    : $0 if
+    | $0 if_else
+    | $0 while
+    | $0 break
+    | $0 switch
+    | $0 for
+    ;
 )";

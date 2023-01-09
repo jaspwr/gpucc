@@ -6,8 +6,8 @@
 #include <math.h>
 
 std::string check_both_parse_trees(GLuint token, ParseTree* lang_tokens, ParseTree* abstract_tokens) {
-    if (token == 1) { return "Literal"; }
-    if (token == 2) { return "Identifier"; }
+    if (token == 1) return "Literal";
+    if (token == 2) return "Identifier";
     if (abstract_tokens != nullptr) {
         auto abstract_tok = abstract_tokens->from_id(token);
         if (abstract_tok.length != 0) {
