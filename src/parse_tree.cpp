@@ -60,7 +60,7 @@ ParseTree::ParseTree(std::vector<ParseTreeEntry> entries, bool non_fixed)
 {
     this->entries = new std::vector<ParseTreeEntry>();
 
-    max_rows = non_fixed ? 500 : sum_lens(entries);
+    max_rows = non_fixed ? 700 : sum_lens(entries);
     tree = new ParseTreeItem[COLUMNS * max_rows + 40];
     rows = 0;
     size = 0;

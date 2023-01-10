@@ -1,0 +1,25 @@
+%56 = 0 
+STORE x %56 
+%51 : 
+%62 = CMP LT x 10 
+JZ %62 %52 
+scope_start 
+%85 = CMP EQ x 5 
+JZ %85 %77 
+scope_start 
+replace_with %115 
+%131 = MUL 2 20 
+%125 = GETELEMENTPTR meow %131 
+%126 = LOAD %125 
+%119 = ADD 2 2 
+replace_me = CALL meow ( %119 , %126 ) 
+%107 = ADD 2 %115 
+%94 = OR x %107 
+STORE x %94 
+scope_end 
+%77 : 
+scope_end 
+%70 = ADD x 1 
+STORE x %70 
+JMP %51 
+breakable %52 : 
