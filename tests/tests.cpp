@@ -45,9 +45,12 @@ class IntergrationTest : public Test {
         
         TestResult run(Shaders& shaders) {
             Job job = Job(source_path);
-            if (compile(job, shaders) == load_file(expected_output_path.c_str())) {
+            std::string output = compile(job, shaders);
+            if (output == load_file(expected_output_path.c_str())) {
                 return SUCCESS;
             } else {
+                std::cout << "Expected: " << load_file(expected_output_path.c_str()) << std::endl;
+                std::cout << "Got: " << output << std::endl;
                 return FAILURE;
             }
         }

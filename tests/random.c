@@ -1,5 +1,6 @@
-for(x = 0; x < 10; x++) {
-    if(x == 5) {
-        x |= 2 + (meow)(2 + 2, meow[2 * 20], 7);
-    }
+
+{meow:
+
+x = x == 2 ? fuck + you : 7;
+goto meow;
 }

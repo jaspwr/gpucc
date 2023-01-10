@@ -2,10 +2,10 @@ scope_start
 %56 = MUL 2 2 
 %53 = %56 
 STORE a %53 
-%94 = DIV 2 2 
-%64 = MUL looooooooooooooooooooong %94 
-%66 = MUL %64 2 
-%68 = MUL %66 2 
+%6 = DIV 2 2 
+%64 = MUL looooooooooooooooooooong %6 
+%67 = MUL %64 2 
+%73 = MUL %67 2 
 %103 = ADD 2 2 
-%70 = MUL %68 %103 
+%76 = MUL %73 %103 
 scope_end 
