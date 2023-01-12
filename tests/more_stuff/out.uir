@@ -1,6 +1,6 @@
 %56 = 0 
 STORE x %56 
-%51 : 
+continuable %51 : 
 %62 = CMP LT x 10 
 JZ %62 %52 
 scope_start 

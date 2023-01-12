@@ -1,6 +1,1 @@
-
-{meow:
-
-x = x == 2 ? fuck + you : 7;
-goto meow;
-}
+2 + hi +4

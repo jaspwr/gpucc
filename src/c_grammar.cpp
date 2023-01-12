@@ -1,7 +1,70 @@
+const char* c_pre_yacc = R"(
+primary_expression
+    : $0 { #identifier, type_specifier, type_qualifier, 
+    'int', 'float', 'char', 'void', 'double' 'long' 'struct' } #identifier
+    | $0 #literal
+    | ] 'if', 'switch', 'for' } '(' $0 primary_expression ')'
+    ;
+
+type_specifier
+    : $0 'int'
+    | $0 'float'
+    | $0 'void'
+    | $0 'char'
+    | $0 'double'
+    | $0 'long'
+    | $0 struct_union_type
+    ;
+
+struct_union_type
+    : 'struct' $0 #identifier
+    | 'union' $0 #identifier
+    ;
+
+type_qualifier
+    : $0 'const'
+    | $0 'volatile'
+    | $0 'unsigned'
+    | $0 'signed'
+    | $0 'short'
+    | $0 'register'
+    ;
+
+qualifier_list
+    : $1 qualifier_list $0 type_qualifier
+    | ] type_qualifier, qualifier_list } $0 type_qualifier
+    ; < $0 >
+
+
+declaration
+    : ] type_qualifier, qualifier_list, #identifier } $0 type_specifier $1 #identifier
+    | ] type_qualifier, qualifier_list, #identifier } $0 #identifier $1 #identifier
+    | ] type_qualifier, qualifier_list, #identifier } $2 qualifier_list $0 type_specifier $1 #identifier
+    | ] type_qualifier, qualifier_list, #identifier } $2 qualifier_list $0 #identifier $1 #identifier
+    ; < !2 $0 $1 >
+
+declaration_list
+    : $0 declaration_list $1 declaration ','
+    | ] ',', declaration_list } $0 declaration ','
+    ; < , >
+
+function_definition_head
+    : $0 declaration '(' $1 declaration_list $2 declaration ')'
+    | $0 declaration '(' $1 declaration ')'
+    | $0 declaration '(' ')'
+    ; < define !0 ( !1 !2 ) >
+
+method_call_head
+    : $0 primary_expression '('
+    ;
+
+)";
+
 const char* c_yacc = R"(
 
 primary_expression
-    : $0 { #identifier, type_specifier, type_qualifier } #identifier
+    : $0 { #identifier, type_specifier, type_qualifier, 
+    'int', 'float', 'char', 'void', 'double' 'long' 'struct' } #identifier
     | $0 #literal
     | ] 'if', 'switch', 'for' } '(' $0 primary_expression ')'
     | $0 addition
@@ -46,11 +109,19 @@ primary_expression
     | $0 method_call_no_args
     | $0 method_call
     | $0 array_access_wrapper
+    | $0 declaration_full
     ;
 
-method_call_head
-    : $0 primary_expression '('
-    ;
+function_definition
+    : $0 function_definition_head $1 scope
+    ; < !0 { 
+        !1}
+    >
+
+declaration_full
+    : $0 declaration
+    ; < $x = ALLOCA !0
+    >
 
 method_call_no_args
     : $0 method_call_head ')'
@@ -92,39 +163,6 @@ comma
     '<', '<=', '>=', '!=', '==', '&', '^', '=', '+=', '-=', '*=', '/=', '%=', '<<=', '>>=', '&=', '^=', '|=', '++', '--', '&&', '||', '?', ':' } 
      $0 primary_expression ',' $1 primary_expression
     ; < $x = COMMA $0 $1 
-    >
-
-type_specifier
-    : $0 'int'
-    | $0 'float'
-    | $0 'void'
-    | $0 'char'
-    | $0 'double'
-    | $0 'long'
-    | $0 struct_reference
-    ;
-
-struct_reference
-    : 'struct' $0 #identifier
-    ;
-
-type_qualifier
-    : $0 'const'
-    | $0 'volatile'
-    | $0 'unsigned'
-    | $0 'signed'
-    | $0 'short'
-    ;
-
-qualifier_list
-    : $1 qualifier_list $0 type_qualifier
-    | ] type_qualifier, qualifier_list } $0 type_qualifier
-    ; < $0 >
-
-declaration
-    : ] type_qualifier, qualifier_list } $0 type_specifier $1 #identifier
-    | ] type_qualifier, qualifier_list } $2 qualifier_list $0 type_specifier $1 #identifier
-    ; < $x $0 $1 
     >
 
 addition
@@ -401,9 +439,11 @@ partial_scope
     : $0 '{' $1 primary_expression ';'
     | $0 '{' $1 statement
     | $0 '{' $1 scope
+    | $0 '{' ';'
     | $0 partial_scope $1 primary_expression ';'
     | $0 partial_scope $1 statement
     | $0 partial_scope $1 scope
+    | $0 partial_scope ';'
     ;
 
 scope
@@ -419,6 +459,7 @@ if_head
 if
     : [ 'else', else } $0 if_head $1 primary_expression ';'
     | [ 'else', else } $0 if_head $1 scope
+    | [ 'else', else } $0 if_head ';'
     ; < JZ $0 $x
         !1 $x :
     >
@@ -426,12 +467,14 @@ if
 else
     : 'else' $0 primary_expression ';'
     | 'else' $0 scope
+    | 'else' ';'
     ; < $x :
     >
 
 if_else
     : $0 if_head $1 primary_expression ';' $2 else
     | $0 if_head $1 scope $2 else
+    | $0 if_head $1 ';' $2 else
     ; < JZ $0 $x
         !1 JMP $2
         $x :
@@ -450,7 +493,7 @@ switch
 
 switch_case_opener
     : 'case' $0 primary_expression ':'
-    ; < switch_case $0
+    ; < switch_case $0 $x :
     >
 
 default_opener
@@ -462,12 +505,15 @@ switch_case
     : $0 switch_case_opener $1 primary_expression ';'
     | $0 switch_case_opener $1 statement
     | $0 switch_case_opener $1 scope
+    | $0 switch_case_opener ';'
     | $0 default_opener $1 primary_expression ';'
     | $0 default_opener $1 statement
     | $0 default_opener $1 scope
+    | $0 default_opener ';'
     | $0 switch_case $1 primary_expression ';'
     | $0 switch_case $1 statement
     | $0 switch_case $1 scope
+    | $0 switch_case ';'
     ;
 
 parial_switch_body
@@ -481,13 +527,16 @@ switch_body
 
 while_head
     : 'while'
-    ; < $x:
+    ; < continuable $x:
     >
 
 while
     : $0 while_head $1 primary_expression $2 primary_expression ';'
+    | ] ';', '}', scope } $0 while_head $1 primary_expression ';'
     | $0 while_head $1 primary_expression $2 scope
-    ; < !0 !1 JZ $1 $x 
+    | 'do' $2 primary_expression ';' $0 while_head $1 primary_expression ';'
+    | 'do' $2 scope $0 while_head $1 primary_expression ';'
+    ; < JZ $1 $x 
         !2 JMP $0
         breakable $x :
     >
@@ -495,13 +544,14 @@ while
 for_head
     : 'for' '(' $0 primary_expression ';'
     | 'for' '(' ';'
-    ; < $x:
+    ; < continuable $x:
     >
 
 for
     : $0 for_head $1 primary_expression ';' $3 primary_expression ')' $2 primary_expression ';'
     | $0 for_head $1 primary_expression ';' $3 primary_expression ')' $2 statement
     | $0 for_head $1 primary_expression ';' $3 primary_expression ')' $2 scope
+    | $0 for_head $1 primary_expression ';' $3 primary_expression ')' ';'
     ; < JZ $1 $x
         !2 !3 JMP $0
         breakable $x : 
@@ -511,6 +561,7 @@ for_empty_condition
     : $0 for_head ';' $2 primary_expression ')' $1 primary_expression ';'
     | $0 for_head ';' $2 primary_expression ')' $1 statement
     | $0 for_head ';' $2 primary_expression ')' $1 scope
+    | $0 for_head ';' $2 primary_expression ')' ';'
     ; < JMP $0
         breakable $x :
     >
@@ -519,6 +570,7 @@ for_empty_final
     : $0 for_head $1 primary_expression ';' ')' $2 primary_expression ';'
     | $0 for_head $1 primary_expression ';' ')' $2 statement
     | $0 for_head $1 primary_expression ';' ')' $2 scope
+    | $0 for_head $1 primary_expression ';' ')' ';'
     ; < JZ $1 $x
         !2 JMP $0
         breakable $x :
@@ -528,6 +580,7 @@ for_empty_all
     : $0 for_head ';' ')' $1 primary_expression ';'
     | $0 for_head ';' ')' $1 statement
     | $0 for_head ';' ')' $1 scope
+    | $0 for_head ';' ')' ';'
     ; < JMP $0
         breakable $x :
     >
@@ -540,6 +593,21 @@ break
 goto
     : 'goto' $0 primary_expression ';'
     ; < JMP $0
+    >
+
+return
+    : 'return' $0 primary_expression ';'
+    ; < RET $0
+    >
+
+return_empty
+    : 'return' ';'
+    ; < RET void
+    >
+
+continue
+    : 'continue' ';'
+    ; < CONTINUE
     >
 
 label
@@ -561,5 +629,8 @@ statement
     | $0 for_empty_all
     | $0 goto
     | $0 label
+    | $0 return
+    | $0 return_empty
+    | $0 continue
     ;
 )";

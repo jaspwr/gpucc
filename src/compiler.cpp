@@ -61,10 +61,10 @@ std::string compile(Job& job, Shaders& shaders) {
 
     IrTokenList* ir_tokens = new IrTokenList();
     ParseTree yacc_parse_tree = ParseTree({}, true);
-    auto ast_ssbos = create_ast_ssbos(c_yacc, *lang_tokens_parse_tree, ir_tokens, yacc_parse_tree);
+    std::vector<std::string> grammars = { c_pre_yacc, c_yacc };
+    auto ast_ssbos = create_ast_ssbos(grammars, *lang_tokens_parse_tree, ir_tokens, yacc_parse_tree);
 
 
-    ast_ssbos.ast_parse_tree->bind(4);
     ast_ssbos.ast_nodes->bind(1);
 
     auto ast_nodes = Ssbo((AST_NODES_OVERFLOW_BUFFER_SIZE + source.length) * sizeof(AstNode));
@@ -77,6 +77,11 @@ std::string compile(Job& job, Shaders& shaders) {
         free(tokens_dmp);
     }
 
+    ast_ssbos.ast_parse_trees[0]->bind(4);
+    for (int i = 0; i < 200; i++)
+        shaders.ast.exec((tokens->size / 32) / 4 + 1);
+
+    ast_ssbos.ast_parse_trees[1]->bind(4);
     for (int i = 0; i < 200; i++)
         shaders.ast.exec((tokens->size / 32) / 4 + 1);
 

@@ -276,7 +276,7 @@ void handle_token(char* token_buffer, YaccContext& context, ParseTree& parse_tre
     }
 }
 
-void parse_yacc(ParseTree& parse_tree, ParseTree& ast_parse_tree, std::string grammar,
+void parse_yacc(ParseTree& parse_tree, std::vector<Ssbo*>& ast_parse_trees, std::vector<std::string>& grammars,
     GLuint* ast_nodes_buffer, GLuint& ast_nodes_len, GLuint* ir_codegen, GLuint& ir_codegen_len, 
     IrTokenList* ir_token_list, ParseTree& yacc_parse_tree) {
     char token_buffer[TOKEN_BUFFER_SIZE];
@@ -289,51 +289,59 @@ void parse_yacc(ParseTree& parse_tree, ParseTree& ast_parse_tree, std::string gr
     ParseTree ir_pt = ParseTree({}, true);
     AstParseData ast_pt_data = AstParseData();
 
-    // This has this weird previous character thing because it needs to deal with the final token
-    for (i32 i = 0; fetch_char(grammar, i - 1) != '\0' || i == 0; i++) {
-        auto c_cur = fetch_char(grammar, i);
-        auto c_pre = fetch_char(grammar, i - 1);
-        auto cur_cat = enumerate_char_category(c_cur);
-        auto pre_cat = enumerate_char_category(c_pre);
+    for(auto grammar : grammars) {
+        auto ast_parse_tree = ParseTree({}, true);
+        // This has this weird previous character thing because it needs to deal with the final token
+        for (i32 i = 0; fetch_char(grammar, i - 1) != '\0' || i == 0; i++) {
+            auto c_cur = fetch_char(grammar, i);
+            auto c_pre = fetch_char(grammar, i - 1);
+            auto cur_cat = enumerate_char_category(c_cur);
+            auto pre_cat = enumerate_char_category(c_pre);
 
-        if (!in_string && (cur_cat != pre_cat || pre_cat == 2)) {
-            if (pre_cat != CharCatergory::Whitespace) {
-                handle_token( token_buffer, context, parse_tree, ast_parse_tree, ast_nodes_buffer,
-                              ast_nodes_len, block_token, yacc_parse_tree, yacc_tokens_last, 
-                              ast_pt_data, ir_codegen, ir_codegen_len, ir_pt, ir_token_list);
+            if (!in_string && (cur_cat != pre_cat || pre_cat == 2)) {
+                if (pre_cat != CharCatergory::Whitespace) {
+                    handle_token( token_buffer, context, parse_tree, ast_parse_tree, ast_nodes_buffer,
+                                ast_nodes_len, block_token, yacc_parse_tree, yacc_tokens_last, 
+                                ast_pt_data, ir_codegen, ir_codegen_len, ir_pt, ir_token_list);
+                }
+                flush_string_buffer(token_buffer, token_buffer_index);
             }
-            flush_string_buffer(token_buffer, token_buffer_index);
+            if (c_cur == '\'') {
+                in_string = !in_string;
+            }
+            append_to_string_buffer(token_buffer, token_buffer_index, c_cur);
         }
-        if (c_cur == '\'') {
-            in_string = !in_string;
-        }
-        append_to_string_buffer(token_buffer, token_buffer_index, c_cur);
+        ast_parse_trees.push_back(ast_parse_tree.into_ssbo());
     }
+
 }
 
-ast_ssbos create_ast_ssbos(std::string grammar, ParseTree& lang_tokens_parse_tree, IrTokenList* ir_token_list, ParseTree& yacc_parse_tree) {
+ast_ssbos create_ast_ssbos(std::vector<std::string> grammars, ParseTree& lang_tokens_parse_tree, IrTokenList* ir_token_list, ParseTree& yacc_parse_tree) {
     auto ssbos = ast_ssbos();
-    auto ast_parse_tree = ParseTree({}, true);
     GLuint ast_nodes_len = 1;
     GLuint ast_nodes_buffer[AST_BUFFER_SIZE];
     GLuint ir_codegen[IR_CODEGEN_BUFFER_SIZE]; // TODO: Store this size somewhere and check for overflows
     memset(ir_codegen, 0, IR_CODEGEN_BUFFER_SIZE*sizeof(GLuint));
     GLuint ir_codegen_len = 256;
     try {
-        parse_yacc(lang_tokens_parse_tree, ast_parse_tree, grammar, ast_nodes_buffer, ast_nodes_len, ir_codegen, ir_codegen_len, ir_token_list, yacc_parse_tree);
+        parse_yacc(lang_tokens_parse_tree, ssbos.ast_parse_trees, grammars, ast_nodes_buffer, ast_nodes_len, ir_codegen, ir_codegen_len, ir_token_list, yacc_parse_tree);
+
+        ssbos.ast_nodes = new Ssbo(ast_nodes_len * sizeof(GLuint), ast_nodes_buffer);
+        ssbos.ir_codegen = new Ssbo(ir_codegen_len * sizeof(GLuint), ir_codegen);
+        return ssbos;
+    
     } catch (const char* msg) {
         throw std::string("[YACC parse error]: " + std::string(msg));
     } catch (std::string msg) {
         throw std::string("[YACC parse error]: " + msg);
     }
-    ssbos.ast_parse_tree = ast_parse_tree.into_ssbo();
-    ssbos.ast_nodes = new Ssbo(ast_nodes_len * sizeof(GLuint), ast_nodes_buffer);
-    ssbos.ir_codegen = new Ssbo(ir_codegen_len * sizeof(GLuint), ir_codegen);
-    return ssbos;
+
 }
 
 void delete_ast_ssbos(ast_ssbos ssbos) {
-    delete ssbos.ast_parse_tree;
+    for (auto ssbo : ssbos.ast_parse_trees) {
+        delete ssbo;
+    }
     delete ssbos.ast_nodes;
     delete ssbos.ir_codegen;
 }

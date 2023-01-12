@@ -2,9 +2,18 @@
  * Ast parser still has issues with whitespace
     * Breakes with `{a = 2 == 2 ? asd :  0 - 123;}` and `x += 1 + 2`
     * IT'S DEFINATLEY PRE EXCLUSIONS
-    * large amounts of whitespace may be messing up pre_excludes, offsets may not be correct. 
+    * large amounts of whitespace may be messing up pre_excludes, offsets may not be correct.
+    * VERY broken....
 
  * Ambiguous syntax for `a = a == 2 ? somevar += 123 : 0;`. Currently just breaks.
  * lengths of ssbos still need to be determined
- * Definitly need insertions
- * Rethink scopes and labels
+ * Null bodys for 'for' loop ect. 
+
+
+ * To be done in postproc
+    * continue replaces, replaces to JMP to previous continuable label
+    * goto replacements
+    * break replacements, replaces to JMP to next breakable label
+    * switch cases replacement.
+
+* Multiple passes is difinitley the go.

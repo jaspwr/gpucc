@@ -78,9 +78,4 @@ union
 unsigned
 void
 volatile
-while
-_Alignas
-_Alignof
-_Atomic
-_Bool
-_Complex)";
+while)";
