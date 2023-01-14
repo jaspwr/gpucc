@@ -22,3 +22,9 @@ std::string uintstring_to_string(UintString str);
 StrSplit str_split(const char* str, char separator);
 void free_str_split(StrSplit str_split);
 u32 parse_int(char* str);
+
+namespace char_utils {
+    bool is_alpha(char c);
+    bool is_numeric(char c);
+    bool is_alpha_numeric_or_underscore(char c);
+}

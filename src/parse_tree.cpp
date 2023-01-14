@@ -1,9 +1,9 @@
 #include "parse_tree.h"
+#include "exception.h"
 
 #include <string.h>
 
-GLuint get_next_row(ParseTreeItem* tree, GLuint row, GLuint column)
-{
+GLuint get_next_row(ParseTreeItem* tree, GLuint row, GLuint column) {
     return tree[row * COLUMNS + column].next_row;
 }
 
@@ -19,7 +19,7 @@ void ParseTree::append_entry(ParseTreeEntry entry) {
         {
             rows++;
             if (rows >= max_rows)
-                throw "Parse tree overflow.";
+                throw Exception("Parse tree overflow.");
             tree[row * COLUMNS + c].next_row = rows;
             row = rows;
         } else
@@ -36,8 +36,7 @@ void ParseTree::append_entry(ParseTreeEntry entry) {
     entries->push_back(entry);
 }
 
-u32 sum_lens(std::vector<ParseTreeEntry>& entries)
-{
+u32 sum_lens(std::vector<ParseTreeEntry>& entries) {
     u32 sum = 0;
     for (ParseTreeEntry entry : entries)
     {
@@ -46,8 +45,7 @@ u32 sum_lens(std::vector<ParseTreeEntry>& entries)
     return sum;
 }
 
-UintString ParseTree::from_id(GLuint id)
-{
+UintString ParseTree::from_id(GLuint id) {
     for (ParseTreeEntry entry : *entries)
     {
         if (entry.points_to == id)
@@ -56,8 +54,7 @@ UintString ParseTree::from_id(GLuint id)
     return to_uint_string("");
 }
 
-ParseTree::ParseTree(std::vector<ParseTreeEntry> entries, bool non_fixed)
-{
+ParseTree::ParseTree(std::vector<ParseTreeEntry> entries, bool non_fixed) {
     this->entries = new std::vector<ParseTreeEntry>();
 
     max_rows = non_fixed ? 700 : sum_lens(entries);
@@ -67,19 +64,17 @@ ParseTree::ParseTree(std::vector<ParseTreeEntry> entries, bool non_fixed)
     for (ParseTreeEntry entry : entries)
     {
         if (entry.matches.length == 0)
-            throw "Tried to create parse tree with empty string. Is there a blank line in your token list?";
+            throw Exception("Tried to create parse tree with empty string. Is there a blank line in your token list?");
         append_entry(entry);
     }
 }
 
-Ssbo* ParseTree::into_ssbo()
-{
+Ssbo* ParseTree::into_ssbo() {
     Ssbo* ssbo = new Ssbo((rows + 1) * COLUMNS * sizeof(ParseTreeItem), tree);
     return ssbo;
 }
 
-GLuint ParseTree::exec(UintString input)
-{
+GLuint ParseTree::exec(UintString input) {
     GLuint row = 0;
     for (u32 i = 0; i < input.length - 1; i++)
     {
@@ -121,8 +116,7 @@ GLuint get_token_id(ParseTree& parse_tree, char* name) {
     return token;
 }
 
-bool unit_test_parse_tree_generator()
-{
+bool unit_test_parse_tree_generator() {
     // Leaks a little
     ParseTreeEntry entry1 = {to_uint_string("meow"), 20};
     ParseTreeEntry entry2 = {to_uint_string("hello"), 99};
@@ -132,8 +126,7 @@ bool unit_test_parse_tree_generator()
         && tree.exec(to_uint_string("nothing")) == 0;
 }
 
-ParseTree::~ParseTree()
-{
+ParseTree::~ParseTree() {
     for (ParseTreeEntry entry : *entries)
         delete entry.matches.data;
     delete entries;

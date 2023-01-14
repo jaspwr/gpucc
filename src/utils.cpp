@@ -1,10 +1,11 @@
 #include "utils.h"
+#include "exception.h"
 
 #include <iostream>
 #include <fstream>
 #include <string>
 
-#define BAD_FILE_MSG "Unable to read file."
+#define BAD_FILE_MSG "Unable to read file \""
 
 const char* load_file (const char* path) {
     u64 size;
@@ -20,18 +21,17 @@ const char* load_file (const char* path) {
         file.close();
         file_buffer[size] = '\0';
     } else 
-        throw BAD_FILE_MSG;
+        throw Exception(ExceptionType::File, BAD_FILE_MSG + std::string(path) + "\".");
     
     if (file_buffer == nullptr)
-        throw BAD_FILE_MSG;
+        throw Exception(ExceptionType::File, BAD_FILE_MSG + std::string(path) + "\".");
     
     return file_buffer;
 }
 
 #ifdef WIN32
 #include <Windows.h>
-std::string get_bin_dir()
-{
+std::string get_bin_dir() {
     char buffer[MAX_PATH];
     GetModuleFileNameA(NULL, buffer, MAX_PATH);
     std::string::size_type pos = std::string(buffer).find_last_of("\\/");
@@ -45,8 +45,7 @@ std::string get_bin_dir()
 #include <unistd.h>
 #include <linux/limits.h>
 
-std::string get_bin_dir()
-{
+std::string get_bin_dir() {
     char result[PATH_MAX];
     ssize_t count = readlink("/proc/self/exe", result, PATH_MAX);
     const char *path;
@@ -141,4 +140,18 @@ u32 parse_int(char* str) {
         str++;
     }
     return ret;
+}
+
+namespace char_utils {
+    bool is_alpha(char c) {
+        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+    }
+
+    bool is_numeric(char c) {
+        return (c >= '0' && c <= '9');
+    }
+
+    bool is_alpha_numeric_or_underscore(char c) {
+        return is_alpha(c) || is_numeric(c) || c == '_';
+    }
 }

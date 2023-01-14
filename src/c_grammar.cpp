@@ -1,10 +1,31 @@
 const char* c_pre_yacc = R"(
 primary_expression
-    : $0 { #identifier, type_specifier, type_qualifier, 
-    'int', 'float', 'char', 'void', 'double' 'long' 'struct' } #identifier
+    : $0 { #identifier, type_specifier, type_qualifier, struct_union_type
+    'int', 'float', 'char', 'void', 'double' 'long' 'struct', 'union' } #identifier
     | $0 #literal
     | ] 'if', 'switch', 'for' } '(' $0 primary_expression ')'
+    | $0 sizeof
     ;
+
+switch_case_opener
+    : 'case' $0 primary_expression ':'
+    ; < switch_case $0 $x :
+    >
+
+default_opener
+    : 'default' ':'
+    ; < switch_default
+    >
+
+sizeof
+    : 'sizeof' '(' $0 qualifier_list $1 type_specifier ')'
+    | 'sizeof' '(' $1 type_specifier ')'
+    | 'sizeof' '(' $0 qualifier_list $1 pointer ')'
+    | 'sizeof' '(' $1 pointer ')'
+    | 'sizeof' '(' $0 qualifier_list $1 struct_union_type ')'
+    | 'sizeof' '(' $1 struct_union_type ')'
+    ; < $x = sizeof !0 !1
+    >
 
 type_specifier
     : $0 'int'
@@ -13,13 +34,26 @@ type_specifier
     | $0 'char'
     | $0 'double'
     | $0 'long'
-    | $0 struct_union_type
-    ;
+    ; < $0 >
+
+pointer
+    : $0 type_specifier '*'
+    | $0 pointer '*'
+    | $0 struct_union_type '*'
+    ; < !0 ptr >
 
 struct_union_type
-    : 'struct' $0 #identifier
-    | 'union' $0 #identifier
+    : $0 union_type
+    | $0 struct_type
     ;
+
+struct_type
+    : 'struct' $1 #identifier
+    ; < struct $1 >
+
+union_type
+    : 'union' $1 #identifier
+    ; < union $1 >
 
 type_qualifier
     : $0 'const'
@@ -35,13 +69,27 @@ qualifier_list
     | ] type_qualifier, qualifier_list } $0 type_qualifier
     ; < $0 >
 
+cast_operator
+    : ] 'sizeof' } '(' $0 qualifier_list $1 type_specifier ')'
+    | ] 'sizeof' } '(' $1 type_specifier ')'
+    | ] 'sizeof' } '(' $0 qualifier_list $1 pointer ')'
+    | ] 'sizeof' } '(' $1 pointer ')'
+    | ] 'sizeof' } '(' $0 qualifier_list $1 struct_union_type ')'
+    | ] 'sizeof' } '(' $1 struct_union_type ')'
+    ; < !0 !1 >
 
 declaration
-    : ] type_qualifier, qualifier_list, #identifier } $0 type_specifier $1 #identifier
-    | ] type_qualifier, qualifier_list, #identifier } $0 #identifier $1 #identifier
-    | ] type_qualifier, qualifier_list, #identifier } $2 qualifier_list $0 type_specifier $1 #identifier
-    | ] type_qualifier, qualifier_list, #identifier } $2 qualifier_list $0 #identifier $1 #identifier
-    ; < !2 $0 $1 >
+    : ] type_qualifier, qualifier_list, #identifier } $1 type_specifier $2 #identifier
+    | ] type_qualifier, qualifier_list, #identifier } $1 type_specifier $2 primary_expression
+    | ] type_qualifier, qualifier_list, #identifier } $1 struct_union_type $2 #identifier
+    | ] type_qualifier, qualifier_list, #identifier } $1 struct_union_type $2 primary_expression
+    | ] type_qualifier, qualifier_list, #identifier } $1 pointer $2 primary_expression
+    | ] type_qualifier, qualifier_list, #identifier } $0 qualifier_list $1 type_specifier $2 #identifier
+    | ] type_qualifier, qualifier_list, #identifier } $0 qualifier_list $1 struct_union_type $2 #identifier
+    | ] type_qualifier, qualifier_list, #identifier } $0 qualifier_list $1 type_specifier $2 primary_expression
+    | ] type_qualifier, qualifier_list, #identifier } $0 qualifier_list $1 struct_union_type $2 primary_expression
+    | ] type_qualifier, qualifier_list, #identifier } $0 qualifier_list $1 pointer $2 primary_expression
+    ; < !0 !1 $2 >
 
 declaration_list
     : $0 declaration_list $1 declaration ','
@@ -110,6 +158,9 @@ primary_expression
     | $0 method_call
     | $0 array_access_wrapper
     | $0 declaration_full
+    | $0 dereference
+    | $0 address_of
+    | $0 cast_expression
     ;
 
 function_definition
@@ -137,7 +188,7 @@ method_call
 
 array_access
     : $0 primary_expression '[' $1 primary_expression ']'
-    ; < $x = GETELEMENTPTR $0 $1
+    ; < $x = GETELEMENTPTR $0 loadable $1
     >
 
 array_access_wrapper
@@ -149,100 +200,106 @@ argument_list_open
     : [ '(', '['} { '.', '->' } [ '*', '/', '%', '-', '+', '<<', '>>', '>', 
     '<', '<=', '>=', '!=', '==', '&', '^', '=', '+=', '-=', '*=', '/=', '%=', '<<=', '>>=', '&=', '^=', '|=', '++', '--', '&&', '||', '?', ':' }
     $0 method_call_head $1 primary_expression
-    ; < replace_me = CALL $0 ( $1 >
+    ; < replace_me = CALL $0 ( loadable $1 >
 
 argument_list
     : [ '(', '['} { '.', '->' } [ '*', '/', '%', '-', '+', '<<', '>>', '>', 
     '<', '<=', '>=', '!=', '==', '&', '^', '=', '+=', '-=', '*=', '/=', '%=', '<<=', '>>=', '&=', '^=', '|=', '++', '--', '&&', '||', '?', ':' }
     $1 argument_list_open ',' $0 primary_expression
     | $1 argument_list ',' $0 primary_expression
-    ; < , $0 >
+    ; < , loadable $0 >
 
 comma
-    : ] ',', method_call_head } [ '(', '['} { '.', '->' } { '*', '/', '%', '-', '+', '<<', '>>', '>', 
+    : ] ',', method_call_head } [ '(', '['} { '.', '->' } { cast_operator, '*', '/', '%', '-', '+', '<<', '>>', '>', 
     '<', '<=', '>=', '!=', '==', '&', '^', '=', '+=', '-=', '*=', '/=', '%=', '<<=', '>>=', '&=', '^=', '|=', '++', '--', '&&', '||', '?', ':' } 
      $0 primary_expression ',' $1 primary_expression
-    ; < $x = COMMA $0 $1 
-    >
+    ; < $x = COMMA loadable $0 loadable $1  
+    >   
 
 addition
     : [ '(', '['} { '.', '->' } { '*', '/', '-', '%', '++', '--' } ] '+' } $0 primary_expression '+' $1 primary_expression
-    ; < $x = ADD $0 $1 
+    ; < $x = ADD loadable $0 loadable $1  
     >
 
 subtraction
     : [ '(', '['} { '.', '->' } { '*', '/', '%', '++', '--' } ] '-' } $0 primary_expression '-' $1 primary_expression
-    ; < $x = SUB $0 $1 
+    ; < $x = SUB loadable $0 loadable $1  
     >
 
 multiplication
     : [ '(', '['} { '.', '->' } { '/', '%', '++', '--' } ] '*' } $0 primary_expression '*' $1 primary_expression
-    ; < $x = MUL $0 $1 
+    ; < $x = MUL loadable $0 loadable $1  
     >
 
 division
     : [ '(', '['} { '.', '->' } [ '++', '--' } ] '/' } $0 primary_expression '/' $1 primary_expression
-    ; < $x = DIV $0 $1 
+    ; < $x = DIV loadable $0 loadable $1  
     >
 
 modulo
     : [ '(', '['} { '.', '->' } ] '%', '++', '--' } $0 primary_expression '%' $1 primary_expression
-    ; < $x = MOD $0 $1 
+    ; < $x = MOD loadable $0 loadable $1 
     >
 
 shift_right
-    : [ '(', '['} { '.', '->' } { '*', '/', '%', '-', '+', '<<', '++', '--' } ] '>>' } $0 primary_expression '>>' $1 primary_expression
-    ; < $x = SHR $0 $1 
+    : [ '(', '['} { '.', '->' } { cast_operator, '*', '/', '%', '-', '+', '<<', '++', '--' } ] '>>' } $0 primary_expression '>>' $1 primary_expression
+    ; < $x = SHR loadable $0 loadable $1  
     >
 
 shift_left
-    : [ '(', '['} { '.', '->' } { '*', '/', '%', '-', '+', '++', '--' } ] '<<' } $0 primary_expression '<<' $1 primary_expression
-    ; < $x = SHL $0 $1 
+    : [ '(', '['} { '.', '->' } { cast_operator, '*', '/', '%', '-', '+', '++', '--' } ] '<<' } $0 primary_expression '<<' $1 primary_expression
+    ; < $x = SHL loadable $0 loadable $1  
     >
 
 comparison_less_than
-    : [ '(', '['} { '.', '->' } { '*', '/', '%', '-', '+', '<<', '>>', '>', '++', '--' } ] '<' } $0 primary_expression '<' $1 primary_expression
-    ; < $x = CMP LT $0 $1 
+    : [ '(', '['} { '.', '->' } { cast_operator, '*', '/', '%', '-', '+', '<<', '>>', '>', '++', '--' } ] '<' } $0 primary_expression '<' $1 primary_expression
+    ; < $x = CMP LT loadable $0 loadable $1  
     >
 
 comparison_greater_than
-    : [ '(', '['} { '.', '->' } { '*', '/', '%', '-', '+', '<<', '>>', '++', '--' } ] '>' } $0 primary_expression '>' $1 primary_expression
-    ; < $x = CMP GT $0 $1 
+    : [ '(', '['} { '.', '->' } { cast_operator, '*', '/', '%', '-', '+', '<<', '>>', '++', '--' } ] '>' } $0 primary_expression '>' $1 primary_expression
+    ; < $x = CMP GT loadable $0 loadable $1  
     >
 
 comparison_less_than_or_equal
-    : [ '(', '['} { '.', '->' } { '*', '/', '%', '-', '+', '<<', '>>', '>', '<', '>=', '++', '--' } ] '<=' } $0 primary_expression '<=' $1 primary_expression
-    ; < $x = CMP LTE $0 $1 
+    : [ '(', '['} { '.', '->' } { cast_operator, '*', '/', '%', '-', '+', '<<', '>>', '>', '<', '>=', '++', '--' } ] '<=' } $0 primary_expression '<=' $1 primary_expression
+    ; < $x = CMP LTE loadable $0 loadable $1  
     >
 
 comparison_greater_than_or_equal
-    : [ '(', '['} { '.', '->' } { '*', '/', '%', '-', '+', '<<', '>>', '>', '<', '++', '--' } ] '>=' } $0 primary_expression '>=' $1 primary_expression
-    ; < $x = CMP GTE $0 $1 
+    : [ '(', '['} { '.', '->' } { cast_operator, '*', '/', '%', '-', '+', '<<', '>>', '>', '<', '++', '--' } ] '>=' } $0 primary_expression '>=' $1 primary_expression
+    ; < $x = CMP GTE loadable $0 loadable $1 
     >
 
 comparison_equal
-    : [ '(', '['} { '.', '->' } { '*', '/', '%', '-', '+', '<<', '>>', '>', '<', '<=', '>=', '!=', '++', '--' } ] '==' } $0 primary_expression '==' $1 primary_expression
-    ; < $x = CMP EQ $0 $1 
+    : [ '(', '['} { '.', '->' } { cast_operator, '*', '/', '%', '-', '+', '<<', '>>', '>', '<', '<=', '>=', '!=', '++', '--' } ] '==' } $0 primary_expression '==' $1 primary_expression
+    ; < $x = CMP EQ loadable $0 loadable $1 
     >
 
 comparison_not_equal
-    : [ '(', '['} { '.', '->' } { '*', '/', '%', '-', '+', '<<', '>>', '>', '<', '<=', '>=', '++', '--' } ] '!=' } $0 primary_expression '!=' $1 primary_expression
-    ; < $x = CMP NE $0 $1 
+    : [ '(', '['} { '.', '->' } { cast_operator, '*', '/', '%', '-', '+', '<<', '>>', '>', '<', '<=', '>=', '++', '--' } ] '!=' } $0 primary_expression '!=' $1 primary_expression
+    ; < $x = CMP NE loadable $0 loadable $1  
     >
 
 bitwise_and
-    : [ '(', '['} { '.', '->' } { '*', '/', '%', '-', '+', '<<', '>>', '>', '<', '<=', '>=', '!=', '==', '++', '--' } ] '&' } $0 primary_expression '&' $1 primary_expression
-    ; < $x = AND $0 $1 
+    : [ '(', '['} { '.', '->' } { cast_operator, '*', '/', '%', '-', '+', '<<', '>>', '>', '<', '<=', '>=', '!=', '==', '++', '--' } ] '&' } $0 primary_expression '&' $1 primary_expression
+    ; < $x = AND loadable $0 loadable $1 
     >
 
 bitwise_xor
-    : [ '(', '['} { '.', '->' } { '*', '/', '%', '-', '+', '<<', '>>', '>', '<', '<=', '>=', '!=', '==', '&', '++', '--' } ] '^' } $0 primary_expression '^' $1 primary_expression
-    ; < $x = XOR $0 $1
+    : [ '(', '['} { '.', '->' } { cast_operator, '*', '/', '%', '-', '+', '<<', '>>', '>', '<', '<=', '>=', '!=', '==', '&', '++', '--' } ] '^' } $0 primary_expression '^' $1 primary_expression
+    ; < $x = XOR loadable $0 loadable $1
     >
 
 bitwise_or
-    : [ '(', '['} { '.', '->' } { '*', '/', '%', '-', '+', '<<', '>>', '>', '<', '<=', '>=', '!=', '==', '&', '^', '++', '--' } ] '|' } $0 primary_expression '|' $1 primary_expression
-    ; < $x = OR $0 $1 
+    : [ '(', '['} { '.', '->' } { cast_operator, '*', '/', '%', '-', '+', '<<', '>>', '>', '<', '<=', '>=', '!=', '==', '&', '^', '++', '--' } ] '|' } $0 primary_expression '|' $1 primary_expression
+    ; < $x = OR loadable $0 loadable $1 
+    >
+
+cast_expression
+    : [ '(', '['} { '.', '->' } [ '++', '--' }
+    $1 cast_operator $0 primary_expression
+    ; < $x = CAST !1 loadable $0
     >
 
 unary_plus
@@ -251,7 +308,7 @@ unary_plus
         comparison_less_than, comparison_less_than_or_equal, comparison_greater_than_or_equal 
         comparison_equal, comparison_not_equal, bitwise_and, bitwise_xor, bitwise_or ,unary_not, 
         unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign, 
-        shl_assign, shr_assign, and_assign, xor_assign, or_assign, prefix_increment, 
+        shl_assign, shr_assign, and_assign, xor_assign, or_assign, prefix_increment, dereference, address_of,
         postfix_increment, prefix_decrement, postfix_decrement, prefix_increment_second, prefix_decrement_second bool_and, bool_or, ternary_selection }
         '+' $0 primary_expression
     ;
@@ -262,10 +319,10 @@ unary_minus
         comparison_less_than, comparison_less_than_or_equal, comparison_greater_than_or_equal 
         comparison_equal, comparison_not_equal, bitwise_and, bitwise_xor, bitwise_or ,unary_not, 
         unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign, 
-        shl_assign, shr_assign, and_assign, xor_assign, or_assign, prefix_increment, 
+        shl_assign, shr_assign, and_assign, xor_assign, or_assign, prefix_increment, dereference, address_of,
         postfix_increment, prefix_decrement, postfix_decrement, prefix_increment_second, prefix_decrement_second bool_and, bool_or, ternary_selection }
         '-' $0 primary_expression
-    ; < $x = SUB 0 $0 
+    ; < $x = SUB 0 loadable $0 
     >
 
 unary_not
@@ -274,10 +331,10 @@ unary_not
         comparison_less_than, comparison_less_than_or_equal, comparison_greater_than_or_equal 
         comparison_equal, comparison_not_equal, bitwise_and, bitwise_xor, bitwise_or ,unary_not, 
         unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign, 
-        shl_assign, shr_assign, and_assign, xor_assign, or_assign, prefix_increment, 
+        shl_assign, shr_assign, and_assign, xor_assign, or_assign, prefix_increment, dereference, address_of,
         postfix_increment, prefix_decrement, postfix_decrement, prefix_increment_second, prefix_decrement_second bool_and, bool_or, ternary_selection }
         '!' $0 primary_expression
-    ; < $x = BOOL_NOT $0 
+    ; < $x = XOR loadable $0 1 
     >
 
 unary_bitwise_not
@@ -286,152 +343,176 @@ unary_bitwise_not
         comparison_less_than, comparison_less_than_or_equal, comparison_greater_than_or_equal 
         comparison_equal, comparison_not_equal, bitwise_and, bitwise_xor, bitwise_or ,unary_not, 
         unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign, 
-        shl_assign, shr_assign, and_assign, xor_assign, or_assign, prefix_increment, 
+        shl_assign, shr_assign, and_assign, xor_assign, or_assign, prefix_increment, dereference, address_of,
         postfix_increment, prefix_decrement, postfix_decrement, prefix_increment_second, prefix_decrement_second bool_and, bool_or, ternary_selection }
         '~' $0 primary_expression
-    ; < $x = XOR $0 -1
+    ; < $x = XOR loadable $0 -1
+    >
+
+dereference
+    : [ '(', '['} { '.', '->' } ] primary_expression , ')', addition, subtraction, multiplication, method_call_no_args, method_call,
+        division, modulo, shift_right, shift_left, comparison_greater_than, array_access, array_access_wrapper,
+        comparison_less_than, comparison_less_than_or_equal, comparison_greater_than_or_equal 
+        comparison_equal, comparison_not_equal, bitwise_and, bitwise_xor, bitwise_or ,unary_not, 
+        unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign, 
+        shl_assign, shr_assign, and_assign, xor_assign, or_assign, prefix_increment, dereference, address_of,
+        postfix_increment, prefix_decrement, postfix_decrement, prefix_increment_second, prefix_decrement_second bool_and, bool_or, ternary_selection }
+        '*' $0 primary_expression
+    ; < $x = LOAD $0
+    >
+
+address_of
+    : [ '(', '['} { '.', '->' } ] primary_expression , ')', addition, subtraction, multiplication, method_call_no_args, method_call,
+        division, modulo, shift_right, shift_left, comparison_greater_than, array_access, array_access_wrapper,
+        comparison_less_than, comparison_less_than_or_equal, comparison_greater_than_or_equal 
+        comparison_equal, comparison_not_equal, bitwise_and, bitwise_xor, bitwise_or ,unary_not, 
+        unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign, 
+        shl_assign, shr_assign, and_assign, xor_assign, or_assign, prefix_increment, dereference, address_of,
+        postfix_increment, prefix_decrement, postfix_decrement, prefix_increment_second, prefix_decrement_second bool_and, bool_or, ternary_selection }
+        '&' $0 primary_expression
+    ; < $x = $0
     >
 
 prefix_increment
     : [ '(', '['} { '.', '->' } '++' $0 primary_expression
-    ; < $x = ADD $0 1
+    ; < $x = ADD loadable $0 1
     STORE $0 $x
     >
 
 prefix_increment_second
     : [ '(', '['} { '.', '->' } $0 prefix_increment
-    ; < $x = SUB $0 1 
+    ; < $x = SUB loadable $0 1 
     >
 
 postfix_increment
     : [ '(', '['} { '.', '->' } $0 primary_expression '++'
-    ; < $x = ADD $0 1 
+    ; < $x = ADD loadable $0 1 
     STORE $0 $x 
     >
 
 prefix_decrement
     : [ '(', '['} { '.', '->' } '--' $0 primary_expression
-    ; < $x = SUB $0 1 
+    ; < $x = SUB loadable $0 1 
     STORE $0 $x 
     >
 
 prefix_decrement_second
     : [ '(', '['} { '.', '->' } $0 prefix_decrement
-    ; < $x = ADD $0 1 
+    ; < $x = ADD loadable $0 1 
     >
 
 postfix_decrement
     : [ '(', '['} { '.', '->' } $0 primary_expression '--'
-    ; < $x = SUB $0 1
+    ; < $x = SUB loadable $0 1
     STORE $0 $x
     >
 
 bool_and
-    : [ '(', '['} { '.', '->' } { '*', '/', '%', '-', '+', '<<', '>>', '>', 
+    : [ '(', '['} { '.', '->' } { cast_operator, '*', '/', '%', '-', '+', '<<', '>>', '>', 
     '<', '<=', '>=', '!=', '==', '&', '^', '++', '--' } ] '&&' }
     $0 primary_expression '&&' $1 primary_expression
-    ; < $x = BOOL_AND $0 $1 
+    ; < $x = BOOL_AND loadable $0 loadable $1 
     >
 
 bool_or
-    : [ '(', '['} { '.', '->' } { '*', '/', '%', '-', '+', '<<', '>>', '>', 
+    : [ '(', '['} { '.', '->' } { cast_operator, '*', '/', '%', '-', '+', '<<', '>>', '>', 
     '<', '<=', '>=', '!=', '==', '&', '^', '++', '--', '&&' } ] '||' }
     $0 primary_expression '||' $1 primary_expression
-    ; < $x = BOOL_OR $0 $1 
+    ; < $x = BOOL_OR loadable $0 loadable $1 
     >
 
 ternary_selection
-    : [ '(', '['} { '.', '->' } { '*', '/', '%', '-', '+', '<<', '>>', '>', 
+    : [ '(', '['} { '.', '->' } { cast_operator, '*', '/', '%', '-', '+', '<<', '>>', '>', 
     '<', '<=', '>=', '!=', '==', '&', '^', '++', '--', '&&', '||' } ] '?' }
     $0 primary_expression '?' $1 primary_expression ':' $2 primary_expression
-    ; < $x = SELECT $0 $1 $2 
+    ; < $x = SELECT loadable $0 loadable $1 loadable $2 
     >
 
 assign
-    : [ '(', '['} { '.', '->' } { '*', '/', '%', '-', '+', '<<', '>>', '>', 
+    : [ '(', '['} { '.', '->' } { cast_operator, '*', '/', '%', '-', '+', '<<', '>>', '>', 
     '<', '<=', '>=', '!=', '==', '&', '^', '++', '--', '&&', '||', '?', ':' } ] '=' }
     $0 primary_expression '=' $1 primary_expression
-    ; < $x = $1
+    ; < $x = loadable $1
     STORE $0 $x 
     >
 
 add_assign
-    : [ '(', '['} { '.', '->' } { '*', '/', '%', '-', '+', '<<', '>>', '>', 
+    : [ '(', '['} { '.', '->' } { cast_operator, '*', '/', '%', '-', '+', '<<', '>>', '>', 
     '<', '<=', '>=', '!=', '==', '&', '^', '=', '++', '--', '&&', '||', '?', ':' } ] '+=' } 
     $0 primary_expression '+=' $1 primary_expression
-    ; < $x = ADD $0 $1 
+    ; < $x = ADD loadable $0 loadable $1 
     STORE $0 $x 
     >
 
 sub_assign
-    : [ '(', '['} { '.', '->' } { '*', '/', '%', '-', '+', '<<', '>>', '>', 
+    : [ '(', '['} { '.', '->' } { cast_operator, '*', '/', '%', '-', '+', '<<', '>>', '>', 
     '<', '<=', '>=', '!=', '==', '&', '^', '=', '+=', '++', '--', '&&', '||', '?', ':' } ] '-=' } 
     $0 primary_expression '-=' $1 primary_expression
-    ; < $x = SUB $0 $1 
+    ; < $x = SUB loadable $0 loadable $1 
     STORE $0 $x 
     >
 
 mul_assign
-    : [ '(', '['} { '.', '->' } { '*', '/', '%', '-', '+', '<<', '>>', '>', 
+    : [ '(', '['} { '.', '->' } { cast_operator, '*', '/', '%', '-', '+', '<<', '>>', '>', 
     '<', '<=', '>=', '!=', '==', '&', '^', '=', '+=', '-=', '++', '--', '&&', '||', '?', ':' } ] '*=' } 
     $0 primary_expression '*=' $1 primary_expression
-    ; < $x = MUL $0 $1 
+    ; < $x = MUL loadable $0 loadable $1 
     STORE $0 $x 
     >
 
 div_assign
-    : [ '(', '['} { '.', '->' } { '*', '/', '%', '-', '+', '<<', '>>', '>', 
+    : [ '(', '['} { '.', '->' } { cast_operator, '*', '/', '%', '-', '+', '<<', '>>', '>', 
     '<', '<=', '>=', '!=', '==', '&', '^', '=', '+=', '-=', '*=', '++', '--', '&&', '||', '?', ':' } ] '/=' } 
     $0 primary_expression '/=' $1 primary_expression
-    ; < $x = DIV $0 $1 
+    ; < $x = DIV loadable $0 loadable $1 
     STORE $0 $x 
     >
 
 mod_assign
-    : [ '(', '['} { '.', '->' } { '*', '/', '%', '-', '+', '<<', '>>', '>', 
+    : [ '(', '['} { '.', '->' } { cast_operator, '*', '/', '%', '-', '+', '<<', '>>', '>', 
     '<', '<=', '>=', '!=', '==', '&', '^', '=', '+=', '-=', '*=', '/=', '++', '--', '&&', '||', '?', ':' } ] '%=' } 
     $0 primary_expression '%=' $1 primary_expression
-    ; < $x = MOD $0 $1 
+    ; < $x = MOD loadable $0 loadable $1 
     STORE $0 $x 
     >
 
 shl_assign
-    : [ '(', '['} { '.', '->' } { '*', '/', '%', '-', '+', '<<', '>>', '>', 
+    : [ '(', '['} { '.', '->' } { cast_operator, '*', '/', '%', '-', '+', '<<', '>>', '>', 
     '<', '<=', '>=', '!=', '==', '&', '^', '=', '+=', '-=', '*=', '/=', '%=', '++', '--', '&&', '||', '?', ':' } ] '<<=' } 
     $0 primary_expression '<<=' $1 primary_expression
-    ; < $x = SHL $0 $1 
+    ; < $x = SHL loadable $0 loadable $1 
     STORE $0 $x 
     >
 
 shr_assign 
-    : [ '(', '['} { '.', '->' } { '*', '/', '%', '-', '+', '<<', '>>', '>', 
+    : [ '(', '['} { '.', '->' } { cast_operator, '*', '/', '%', '-', '+', '<<', '>>', '>', 
     '<', '<=', '>=', '!=', '==', '&', '^', '=', '+=', '-=', '*=', '/=', '%=', '<<=', '++', '--', '&&', '||', '?', ':' } ] '>>=' } 
     $0 primary_expression '>>=' $1 primary_expression
-    ; < $x = SHR $0 $1 
+    ; < $x = SHR loadable $0 loadable $1 
     STORE $0 $x 
     >
 
 and_assign
-    : [ '(', '['} { '.', '->' } { '*', '/', '%', '-', '+', '<<', '>>', '>', 
+    : [ '(', '['} { '.', '->' } { cast_operator, '*', '/', '%', '-', '+', '<<', '>>', '>', 
     '<', '<=', '>=', '!=', '==', '&', '^', '=', '+=', '-=', '*=', '/=', '%=', '<<=', '>>=', '++', '--', '&&', '||', '?', ':' } ] '&=' } 
     $0 primary_expression '&=' $1 primary_expression
-    ; < $x = AND $0 $1 
+    ; < $x = AND loadable $0 loadable $1 
     STORE $0 $x 
     >
 
 xor_assign
-    : [ '(', '['} { '.', '->' } { '*', '/', '%', '-', '+', '<<', '>>', '>', 
+    : [ '(', '['} { '.', '->' } { cast_operator, '*', '/', '%', '-', '+', '<<', '>>', '>', 
     '<', '<=', '>=', '!=', '==', '&', '^', '=', '+=', '-=', '*=', '/=', '%=', '<<=', '>>=', '&=', '++', '--', '&&', '||', '?', ':' } ] '^=' } 
     $0 primary_expression '^=' $1 primary_expression
-    ; < $x = XOR $0 $1 
+    ; < $x = XOR loadable $0 loadable $1 
     STORE $0 $x 
     >
 
 or_assign
-    : [ '(', '['} { '.', '->' } { '*', '/', '%', '-', '+', '<<', '>>', '>', 
+    : [ '(', '['} { '.', '->' } { cast_operator, '*', '/', '%', '-', '+', '<<', '>>', '>', 
     '<', '<=', '>=', '!=', '==', '&', '^', '=', '+=', '-=', '*=', '/=', '%=', '<<=', '>>=', '&=', '^=', '++', '--', '&&', '||', '?', ':' } ] '|=' }
     $0 primary_expression '|=' $1 primary_expression
-    ; < $x = OR $0 $1 
+    ; < $x = OR loadable $0 loadable $1 
         STORE $0 $x 
     >
 
@@ -460,7 +541,7 @@ if
     : [ 'else', else } $0 if_head $1 primary_expression ';'
     | [ 'else', else } $0 if_head $1 scope
     | [ 'else', else } $0 if_head ';'
-    ; < JZ $0 $x
+    ; < JZ loadable $0 $x
         !1 $x :
     >
 
@@ -475,7 +556,7 @@ if_else
     : $0 if_head $1 primary_expression ';' $2 else
     | $0 if_head $1 scope $2 else
     | $0 if_head $1 ';' $2 else
-    ; < JZ $0 $x
+    ; < JZ loadable $0 $x
         !1 JMP $2
         $x :
         !2 >
@@ -489,16 +570,6 @@ switch
     ; < switch $0 switch_body_start
         !1 switch_body_end
         breakable $x :
-    >
-
-switch_case_opener
-    : 'case' $0 primary_expression ':'
-    ; < switch_case $0 $x :
-    >
-
-default_opener
-    : 'default' ':'
-    ; < switch_default
     >
 
 switch_case
@@ -536,7 +607,7 @@ while
     | $0 while_head $1 primary_expression $2 scope
     | 'do' $2 primary_expression ';' $0 while_head $1 primary_expression ';'
     | 'do' $2 scope $0 while_head $1 primary_expression ';'
-    ; < JZ $1 $x 
+    ; < JZ loadable $1 $x 
         !2 JMP $0
         breakable $x :
     >
@@ -552,7 +623,7 @@ for
     | $0 for_head $1 primary_expression ';' $3 primary_expression ')' $2 statement
     | $0 for_head $1 primary_expression ';' $3 primary_expression ')' $2 scope
     | $0 for_head $1 primary_expression ';' $3 primary_expression ')' ';'
-    ; < JZ $1 $x
+    ; < JZ loadable $1 $x
         !2 !3 JMP $0
         breakable $x : 
     >
@@ -571,7 +642,7 @@ for_empty_final
     | $0 for_head $1 primary_expression ';' ')' $2 statement
     | $0 for_head $1 primary_expression ';' ')' $2 scope
     | $0 for_head $1 primary_expression ';' ')' ';'
-    ; < JZ $1 $x
+    ; < JZ loadable $1 $x
         !2 JMP $0
         breakable $x :
     >
@@ -611,7 +682,7 @@ continue
     >
 
 label
-    : [ '(', '['} { '.', '->' } { '*', '/', '%', '-', '+', '<<', '>>', '>', 
+    : [ '(', '['} { '.', '->' } { cast_operator, '*', '/', '%', '-', '+', '<<', '>>', '>', 
     '<', '<=', '>=', '!=', '==', '&', '^', '=', '+=', '-=', '*=', '/=', '%=', '<<=', '>>=', '&=', '^=', '|=', '++', '--', '&&', '||', '?', ':' } 
     $0 primary_expression ':'
     ; < $0 :

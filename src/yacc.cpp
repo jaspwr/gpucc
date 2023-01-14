@@ -1,4 +1,5 @@
 #include "yacc.h"
+#include "exception.h"
 
 #include "ir_compiler.h"
 #include "ir_ssbo_format.h"
@@ -66,7 +67,7 @@ GLuint append_ast_parse_data( AstParseData& data, GLuint* ast_nodes_buffer,
     return start_index;
 }
 
-enum YaccContext {
+enum class YaccContext: u32 {
     BlockName,
     Line,
     PreExclusions,
@@ -91,13 +92,13 @@ bool is_alphanumeric(char c) {
     return is_alpha(c) || is_numeric(c);
 }
 
-enum CharCatergory {
+enum class CharCatergory: u32 {
     Alphanumeric,
     Whitespace,
     Other,
 };
 
-u8 enumerate_char_category(char c) {
+CharCatergory enumerate_char_category(char c) {
     if (is_alphanumeric(c))
         return CharCatergory::Alphanumeric;
     if (is_whitespace(c))
@@ -123,7 +124,7 @@ void append_to_string_buffer(char* token_buffer, i32& token_buffer_index, char c
     token_buffer[token_buffer_index] = c;
     token_buffer_index++;
     if (token_buffer_index >= TOKEN_BUFFER_SIZE) {
-        throw "Token buffer overflow. Increase TOKEN_BUFFER_SIZE in yacc.h.";
+        throw Exception("Token buffer overflow. Increase TOKEN_BUFFER_SIZE in yacc.h.");
     }
     token_buffer[token_buffer_index] = '\0';
 }
@@ -146,7 +147,7 @@ u32 parse_prefixed_number (char* str) {
 GLuint yacc_constant(char* token) {
     if (strcmp(token, "#identifier") == 0) return 2;
     if (strcmp(token, "#literal") == 0) return 1;
-    throw std::string("Invalid constant \"") + std::string(token) + std::string("\".");
+    throw Exception(std::string("Invalid constant \"") + std::string(token) + std::string("\"."));
 }
 
 void handle_token(char* token_buffer, YaccContext& context, ParseTree& parse_tree, ParseTree& ast_parse_tree,
@@ -168,17 +169,17 @@ void handle_token(char* token_buffer, YaccContext& context, ParseTree& parse_tre
     // TODO: Make this a loop or something.
     if (strcmp(token_buffer, ":") == 0) {
         if (context != YaccContext::BlockName) {
-            throw "Unexpected colon. Did you forget a semicolon?";
+            throw Exception("Unexpected colon. Did you forget a semicolon?");
         }
         context = YaccContext::Line;
         return;
     }
     if (strcmp(token_buffer, ";") == 0) {
         if (context != YaccContext::Line) {
-            throw "Unexpected semicolon. Are there any unbalanced brackets?";
+            throw Exception("Unexpected semicolon. Are there any unbalanced brackets?");
         }
         if (ast_pt_data.match.size() == 0) {
-            throw "Empty match case.";
+            throw Exception("Empty match case.");
         }
         append_ast_parse_data(ast_pt_data, ast_nodes_buffer, ast_nodes_len, ast_parse_tree, block_token);
         context = YaccContext::BlockName;
@@ -186,21 +187,21 @@ void handle_token(char* token_buffer, YaccContext& context, ParseTree& parse_tre
     }
     if (strcmp(token_buffer, "[") == 0) {
         if (context != YaccContext::Line) {
-            throw "Cannot open exclusions block here.";
+            throw Exception("Cannot open exclusions block here.");
         }
         context = YaccContext::PostExclusions;
         return;
     }
     if (strcmp(token_buffer, "]") == 0) {
         if (context != YaccContext::Line) {
-            throw "Cannot open exclusions block here.";
+            throw Exception("Cannot open exclusions block here.");
         }
         context = YaccContext::PreExclusions;
         return;
     }
     if (strcmp(token_buffer, "{") == 0) {
         if (context != YaccContext::Line) {
-            throw "Cannot open exclusions block here.";
+            throw Exception("Cannot open exclusions block here.");
         }
         context = YaccContext::SymmetricExclusions;
         return;
@@ -209,14 +210,14 @@ void handle_token(char* token_buffer, YaccContext& context, ParseTree& parse_tre
         if (context != YaccContext::PreExclusions 
         && context != YaccContext::PostExclusions
         && context != YaccContext::SymmetricExclusions) {
-            throw "Found '}', but no exclusions block was opened.";
+            throw Exception("Found '}', but no exclusions block was opened.");
         }
         context = YaccContext::Line;
         return;
     }
     if (strcmp(token_buffer, "<") == 0) {
         if (context != YaccContext::BlockName) {
-            throw "Cannot open codegen block here.";
+            throw Exception("Cannot open codegen block here.");
         }
         ast_pt_data.codegen.clear();
         context = YaccContext::Codegen;
@@ -225,10 +226,10 @@ void handle_token(char* token_buffer, YaccContext& context, ParseTree& parse_tre
 
     if (strcmp(token_buffer, "|") == 0) {
         if (context != YaccContext::Line) {
-            throw "Unexpected '|'.";
+            throw Exception("Unexpected '|'.");
         }
         if (ast_pt_data.match.size() == 0) {
-            throw "Empty match case.";
+            throw Exception("Empty match case.");
         }
         append_ast_parse_data(ast_pt_data, ast_nodes_buffer, ast_nodes_len, ast_parse_tree, block_token);
         return;
@@ -236,7 +237,7 @@ void handle_token(char* token_buffer, YaccContext& context, ParseTree& parse_tre
 
     if (token_buffer[0] == '$') {
         if (context != YaccContext::Line) {
-            throw "Unexpected '$'.";
+            throw Exception("Unexpected '$'.");
         }
         u32 index = parse_prefixed_number(token_buffer);
         ast_pt_data.signigicant_toknes[index] = ast_pt_data.match.size() + 1;
@@ -244,7 +245,7 @@ void handle_token(char* token_buffer, YaccContext& context, ParseTree& parse_tre
     }
 
     if (token_buffer[0] == '!') {
-        throw "Unexpected insertion. Insertions must be in codegen blocks.";
+        throw Exception("Unexpected insertion. Insertions must be in codegen blocks.");
     }
 
     if (context == YaccContext::BlockName) {
@@ -298,7 +299,7 @@ void parse_yacc(ParseTree& parse_tree, std::vector<Ssbo*>& ast_parse_trees, std:
             auto cur_cat = enumerate_char_category(c_cur);
             auto pre_cat = enumerate_char_category(c_pre);
 
-            if (!in_string && (cur_cat != pre_cat || pre_cat == 2)) {
+            if (!in_string && (cur_cat != pre_cat || pre_cat == CharCatergory::Other)) {
                 if (pre_cat != CharCatergory::Whitespace) {
                     handle_token( token_buffer, context, parse_tree, ast_parse_tree, ast_nodes_buffer,
                                 ast_nodes_len, block_token, yacc_parse_tree, yacc_tokens_last, 
@@ -323,18 +324,18 @@ ast_ssbos create_ast_ssbos(std::vector<std::string> grammars, ParseTree& lang_to
     GLuint ir_codegen[IR_CODEGEN_BUFFER_SIZE]; // TODO: Store this size somewhere and check for overflows
     memset(ir_codegen, 0, IR_CODEGEN_BUFFER_SIZE*sizeof(GLuint));
     GLuint ir_codegen_len = 256;
+
     try {
         parse_yacc(lang_tokens_parse_tree, ssbos.ast_parse_trees, grammars, ast_nodes_buffer, ast_nodes_len, ir_codegen, ir_codegen_len, ir_token_list, yacc_parse_tree);
-
-        ssbos.ast_nodes = new Ssbo(ast_nodes_len * sizeof(GLuint), ast_nodes_buffer);
-        ssbos.ir_codegen = new Ssbo(ir_codegen_len * sizeof(GLuint), ir_codegen);
-        return ssbos;
-    
-    } catch (const char* msg) {
-        throw std::string("[YACC parse error]: " + std::string(msg));
-    } catch (std::string msg) {
-        throw std::string("[YACC parse error]: " + msg);
+    } catch (Exception& e) {
+        // This just saves having to add `ExceptionType::Yacc` to every throw
+        e.type = ExceptionType::Yacc;
+        throw e;
     }
+
+    ssbos.ast_nodes = new Ssbo(ast_nodes_len * sizeof(GLuint), ast_nodes_buffer);
+    ssbos.ir_codegen = new Ssbo(ir_codegen_len * sizeof(GLuint), ir_codegen);
+    return ssbos;
 
 }
 

@@ -2,8 +2,9 @@
 
 #include <string>
 #include <vector>
+#include "types.h"
 
-enum Emit {
+enum class Emit: u32 {
     none,
     mew_ir,
     llvm_ir,
@@ -11,6 +12,8 @@ enum Emit {
 };
 
 struct Job {
+    static std::string libc_path;
+
     std::vector<std::string> source_files;
     std::string output_file;
     std::string yacc;

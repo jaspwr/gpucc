@@ -2,8 +2,9 @@
 
 #include <string>
 #include "utils.h"
+#include "types.h"
 
-enum DebugPrintFn {
+enum class DebugPrintFn: u32 {
     None,
     Tokens,
     ASTNodes

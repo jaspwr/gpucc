@@ -15,5 +15,8 @@
     * goto replacements
     * break replacements, replaces to JMP to next breakable label
     * switch cases replacement.
+    * identifier loading
 
 * Multiple passes is difinitley the go.
+
+* swap postfix and prefix increment and decrementer

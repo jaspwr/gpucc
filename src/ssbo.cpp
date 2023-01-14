@@ -23,20 +23,17 @@ Ssbo::Ssbo(GLuint size, void* data) // Initialised with data
     glFinish();
 }
 
-Ssbo::~Ssbo()
-{
+Ssbo::~Ssbo() {
     glDeleteBuffers(1, &index);
     glFinish();
 }
 
-void Ssbo::bind(GLuint index)
-{
+void Ssbo::bind(GLuint index) {
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, index, this->index);
     glFinish();
 }
 
-void* Ssbo::dump()
-{
+void* Ssbo::dump() {
     void* data = malloc(size);
     glGetNamedBufferSubData(index, 0, size, data);
     glFinish();

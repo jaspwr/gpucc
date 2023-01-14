@@ -8,6 +8,8 @@
 #include "debug_printing.h"
 #include "shader_structures.h"
 #include "gl_atomic_counter.h"
+#include "exception.h"
+#include "preprocessor.h"
 
 #include "c_tokens.cpp"
 #include "c_grammar.cpp"
@@ -25,11 +27,11 @@ Ssbo* tokenise(UintString& source, Shader* tokeniser) {
     return tokens;
 }
 
-std::string load_source(std::vector<std::string> source_files) {
+std::string load_source(std::vector<std::string> source_files, VariableRegistry& var_reg) {
     // TODO: separate files appropriately
     std::string source = std::string();
     for (std::string _source : source_files) {
-        source += load_file(_source.c_str());
+        source += preprocess(_source, var_reg);
     }
     return source;
 }
@@ -38,9 +40,11 @@ std::string load_source(std::vector<std::string> source_files) {
 #define AST_NODES_OVERFLOW_BUFFER_SIZE 50
 
 std::string compile(Job& job, Shaders& shaders) {
-    if (job.source_files.size() == 0) { throw "No source files specified."; }
+    if (job.source_files.size() == 0) { throw Exception("No source files specified."); }
     
-    std::string source_str = load_source(job.source_files);
+    VariableRegistry var_reg = VariableRegistry();
+
+    std::string source_str = load_source(job.source_files, var_reg);
     auto source = to_uint_string(source_str);
 
 

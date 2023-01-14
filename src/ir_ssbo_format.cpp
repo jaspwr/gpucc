@@ -1,4 +1,5 @@
 #include "ir_ssbo_format.h"
+#include "exception.h"
 
 #include <iostream>
 
@@ -21,7 +22,7 @@ void append_ir_token(std::string token, ParseTree& ir_pt, GLuint* codegen_ssbo, 
 
 std::string next_token(std::vector<std::string>& ir, u32& i, u32& len) {
     i++;
-    if (i >= len) throw "Expected antoher IR token in codegen. Is there a malfomed reference?";
+    if (i >= len) throw Exception("Expected antoher IR token in codegen. Is there a malfomed reference?");
     return ir[i];
 }
 
@@ -29,11 +30,11 @@ void append_numeral(std::string number_str, GLuint max_num, GLuint* codegen_ssbo
     GLuint num = 0;
     for (auto c : number_str) {
         if (c == '$') continue;
-        if (c < '0' || c > '9') throw "Expected a number in codegen reference.";
+        if (c < '0' || c > '9') throw Exception("Expected a number in codegen reference.");
         num *= 10;
         num += c - '0';
     }
-    if (num > max_num) throw "Number was too large.";
+    if (num > max_num) throw Exception("Number was too large.");
     codegen_ssbo[codegen_ssbo_len++] = num;
 }
 

@@ -3,6 +3,7 @@
 #include "../src/utils.h"
 #include "../src/compiler.h"
 #include "../src/gl.h"
+#include "../src/exception.h"
 
 #include <string>
 #include <iostream>
@@ -61,9 +62,7 @@ void run_test(Test* test, Shaders& shaders, i32& succeded, i32& failed) {
 
     try {
         res = test->run(shaders);
-    } catch(char* e) {
-        res = FAILURE;
-    } catch (std::string e) {
+    } catch(Exception e) {
         res = FAILURE;
     }
 

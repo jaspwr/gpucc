@@ -3,6 +3,7 @@
 #include "ssbo.h"
 #include "parse_tree.h"
 #include "ir_compiler.h"
+#include "types.h"
 
 #include <string>
 

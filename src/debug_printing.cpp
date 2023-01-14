@@ -5,7 +5,9 @@
 #include <iostream>
 #include <math.h>
 
-std::string check_both_parse_trees(GLuint token, ParseTree* lang_tokens, ParseTree* abstract_tokens) {
+std::string check_both_parse_trees(GLuint token, ParseTree* lang_tokens, 
+    ParseTree* abstract_tokens) {
+        
     if (token == 1) return "Literal";
     if (token == 2) return "Identifier";
     if (abstract_tokens != nullptr) {
@@ -41,7 +43,6 @@ void print_tokens(void* tokens, u32 length,
 }
 
 void print_ast_nodes(void* nodes, u32 length) {
-
     AstNode* _nodes = (AstNode*)_nodes;
     for (u32 i = 0; i < floor(length / sizeof(AstNode)); i++) {
         //if (_nodes[i].nodeToken == 0) continue;

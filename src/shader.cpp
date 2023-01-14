@@ -1,4 +1,5 @@
 #include "shader.h"
+#include "exception.h"
 
 #include <vector>
 #include <string>
@@ -28,7 +29,7 @@ Shader::Shader(const char* shader_source_path, GLuint _barrier_mode) {
             printf("%c",(char)errorLog[i]);
         
         glDeleteShader(shader_index);
-        throw (std::string("Failed to compile ") + std::string(shader_source_path)).c_str();
+        throw Exception(std::string("Failed to compile ") + std::string(shader_source_path));
     }
     shader_bin_index = glCreateProgram();
     glAttachShader(shader_bin_index, shader_index);
@@ -44,8 +45,8 @@ Shader::~Shader() {
 void Shader::exec(u32 work_groups_x) {
     glFinish();
 
-    if (work_groups_x == 0) throw "Work group count not set.";
-    if (work_groups_x > GL_MAX_COMPUTE_WORK_GROUP_COUNT) throw "Tried to dispatch too many work groups.";
+    if (work_groups_x == 0) throw Exception("Work group count not set.");
+    if (work_groups_x > GL_MAX_COMPUTE_WORK_GROUP_COUNT) throw Exception("Tried to dispatch too many work groups.");
     glUseProgram(shader_bin_index);
     glDispatchCompute(work_groups_x, 1, 1);
     glMemoryBarrier(barrier_mode);

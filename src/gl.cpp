@@ -1,4 +1,5 @@
 #include "gl.h"
+#include "exception.h"
 
 Shaders Gl::compile_shaders() {
 	// TODO: Make these annotated with the member names.
@@ -16,8 +17,7 @@ MessageCallback( GLenum source,
                  GLenum severity,
                  GLsizei length,
                  const GLchar* message,
-                 const void* userParam )
-{
+                 const void* userParam ) {
 	if(severity != GL_DEBUG_SEVERITY_NOTIFICATION){
 	    fprintf( stderr, "[%s] GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
 			type == GL_DEBUG_TYPE_ERROR ? "E" : "i",
@@ -37,15 +37,13 @@ void Gl::init(bool dbg_output) {
 	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 	window = glfwCreateWindow(1, 1, "Null Window", NULL, NULL);
-	if (!window)
-	{
-		throw "Failed to create the GLFW window.";
+	if (!window) {
+		throw Exception("Failed to create the GLFW window.");
 		glfwTerminate();
 	}
 	glfwMakeContextCurrent(window);
-	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-	{
-		throw "Failed to initialize OpenGL context";
+	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+		throw Exception("Failed to initialize OpenGL context");
 	}
 	const unsigned int SCREEN_WIDTH = 256;
 	const unsigned int SCREEN_HEIGHT = 128;
