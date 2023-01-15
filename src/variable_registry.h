@@ -16,6 +16,8 @@ struct TypedValue {
     Scope scope;
     CompilerType type;
 
+    u32 register_;
+
     void* data;
     u32 size;
 
@@ -25,8 +27,10 @@ struct TypedValue {
 class VariableRegistry {
     private:
         u32 string_literal_count;
-        //std::unordered_map<std::string, TypedValue> variables;
+        std::unordered_map<std::string, TypedValue*> variables;
     public:
         std::string append_string_literal(char* data, u32 start, u32 length);
-        void add_variable(TypedValue value);
+        void add_variable(TypedValue* value);
+
+        ~VariableRegistry();
 };

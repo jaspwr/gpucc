@@ -2,6 +2,9 @@
 
 layout(local_size_x = 32, local_size_y = 1, local_size_z = 1 ) in;
 
+#define CHARS_PER_INVOCATION 4
+#define ROW_SIZE 256
+
 struct ParseTreeItem {
 	uint nextRow;
 	uint final;
@@ -24,9 +27,6 @@ layout(std430, binding = 1) readonly coherent buffer Source {
 layout(std430, binding = 2) writeonly volatile buffer Tokens {
 	Token tokens[];
 };
-
-#define CHARS_PER_INVOCATION 4
-#define ROW_SIZE 256
 
 bool isAlpha(in uint c) {
 	return c >= 97 && c <= 122  // a-z
@@ -81,7 +81,7 @@ void tryParse(in uint start, out uint outToken, out uint outLength) {
 	uint lastFinal = 0;
 	uint lastLength = 0;
 	uint i;
-	for(i = 0; i < 3000; i++) {
+	for(i = 0; i < 1024; i++) {
 		uint pos = start + i;
 		if (!inbounds(pos, source.length())) {
 			return;

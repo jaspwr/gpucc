@@ -78,4 +78,5 @@ union
 unsigned
 void
 volatile
-while)";
+while
+0EOF)";

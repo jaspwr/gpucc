@@ -8,6 +8,7 @@ enum class ExceptionType: u32 {
     Misc,
     File,
     Preprocessor,
+    Postprocessor,
     Yacc,
 };
 

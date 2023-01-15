@@ -6,14 +6,10 @@
     * VERY broken....
 
  * Ambiguous syntax for `a = a == 2 ? somevar += 123 : 0;`. Currently just breaks.
- * lengths of ssbos still need to be determined
  * Null bodys for 'for' loop ect. 
 
 
- * To be done in postproc
-    * continue replaces, replaces to JMP to previous continuable label
-    * goto replacements
-    * break replacements, replaces to JMP to next breakable label
+ * To be done in postprocs
     * switch cases replacement.
     * identifier loading
 

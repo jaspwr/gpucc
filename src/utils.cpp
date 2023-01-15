@@ -155,3 +155,13 @@ namespace char_utils {
         return is_alpha(c) || is_numeric(c) || c == '_';
     }
 }
+
+std::string extract_token_at(std::string& str, u32& pos) {
+    std::string ret = "";
+    if (pos >= str.length() || pos < 0 ) throw Exception("Invalid source position reference from shaders.");
+    while (pos < str.length() && char_utils::is_alpha_numeric_or_underscore(str[pos])) {
+        ret += str[pos];
+        pos++;
+    }
+    return ret;
+}

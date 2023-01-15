@@ -35,6 +35,9 @@ void Exception::print() {
     case ExceptionType::Preprocessor:
         printf("\033[1;31mPreprocessor error\033[0m %s\n", message.c_str());
         break;
+    case ExceptionType::Postprocessor:
+        printf("\033[1;31mPreprocessor error\033[0m %s\n", message.c_str());
+        break;
     }
     
 }

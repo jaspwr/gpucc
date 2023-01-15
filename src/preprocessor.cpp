@@ -9,11 +9,11 @@
 
 // Public interface
 std::string preprocess(std::string filename, VariableRegistry& var_reg) {
-    ExtendableBuffer buffer = ExtendableBuffer(1024);
+    ExtendableBuffer<u8> buffer = ExtendableBuffer<u8>(1024);
     auto pre_proc_tokens = std::unordered_map<std::string, std::string>();
-    pre_proc_tokens["__FILE__"] = filename;
-    pre_proc_tokens["TESTTTT"] = "break";
+    pre_proc_tokens["__BASE_FILE__"] = filename;
     auto included = std::vector<std::string>();
+
     try {
         preprocessor::preprocess(filename.c_str(), &buffer, included, var_reg, pre_proc_tokens);
     } catch (Exception& e) {
@@ -21,10 +21,11 @@ std::string preprocess(std::string filename, VariableRegistry& var_reg) {
             e.type = ExceptionType::Preprocessor;
         throw e;
     }
-    buffer.append('\0');
-    auto ret = std::string((char*)buffer.flattern());
-    printf("PREPROC OUT:\n%s\n", ret.c_str());
-    return ret;
+    
+    buffer.add((u8*)" 0EOF\0", 6);
+
+    // FIXME: either free `buffer` after its a string or just don't use an `std::string` so it's not copied.
+    return std::string((char*)buffer.flattern());
 }
 
 namespace preprocessor {
@@ -73,19 +74,24 @@ namespace preprocessor {
     }
 
     void handle_token_buffer(u32& token_buffer_ptr, char* token_buffer,
-        ExtendableBuffer* buffer, PreProcTokensMap& pre_proc_tokens) {
+        ExtendableBuffer<u8>* buffer, PreProcTokensMap& pre_proc_tokens) {
         
         if (token_buffer_ptr > 0) {
             token_buffer[token_buffer_ptr] = '\0';
             auto token = std::string(token_buffer);
 
+            if (token == "typedef") {
+                // TODO
+                throw Exception("typedef not supported yet.");
+            }
+
             // FIXME: use the map properly I think it's being queried twice or something.
             if (pre_proc_tokens.find(token) == pre_proc_tokens.end()) {
-                buffer->add((void*)token_buffer, token_buffer_ptr * sizeof(char));
+                buffer->add((u8*)token_buffer, token_buffer_ptr * sizeof(char));
             } else {
                 // FIXME: variadic macros https://gcc.gnu.org/onlinedocs/cpp/Variadic-Macros.html#Variadic-Macros
                 auto repl = pre_proc_tokens[token];
-                buffer->add((void*)repl.c_str(), repl.length() * sizeof(char));
+                buffer->add((u8*)repl.c_str(), repl.length() * sizeof(char));
             }
 
             flush_token_buffer(token_buffer_ptr);
@@ -114,7 +120,7 @@ namespace preprocessor {
     };
 
     void handle_include(u32& i, const char* source, char* token_buffer,
-        u32& token_buffer_ptr, ExtendableBuffer* buffer,
+        u32& token_buffer_ptr, ExtendableBuffer<u8>* buffer,
         VariableRegistry& var_reg, PreProcTokensMap& pre_proc_tokens, const char* filename, std::vector<std::string>& included) {
 
         skip_space(source, i); // FIXME: newlines and stuff
@@ -144,10 +150,13 @@ namespace preprocessor {
     }
 
     void handle_define(u32& i, const char* source, char* token_buffer, 
-        u32& token_buffer_ptr, ExtendableBuffer* buffer,
+        u32& token_buffer_ptr, ExtendableBuffer<u8>* buffer,
         VariableRegistry& var_reg, PreProcTokensMap& pre_proc_tokens, const char* filename) {
 
         auto macro_name = next_token(i, source, token_buffer, token_buffer_ptr);
+        if (source[i] == '(') {
+            throw Exception("Function-like macros not supported yet.");
+        }
         auto macro_repl = std::string();
         while(source[i] != '\0') {
             if (source[i] == '\\' && source[i + 1] == '\n' || source[i + 1] == '\r' ) {
@@ -155,6 +164,7 @@ namespace preprocessor {
                     i += 3;
                 else
                     i += 2;
+                buffer->append('\n');
                 continue;
             }
             if (source[i] == '\r' || source[i] == '\n') break;
@@ -164,7 +174,7 @@ namespace preprocessor {
     }
 
     void handle_pre_proc_directive(u32& i, const char* source, char* token_buffer, 
-        u32& token_buffer_ptr, ExtendableBuffer* buffer, i32& if_depth,
+        u32& token_buffer_ptr, ExtendableBuffer<u8>* buffer, i32& if_depth,
         VariableRegistry& var_reg, PreProcTokensMap& pre_proc_tokens, const char* filename, std::vector<std::string>& included) {
 
         auto name = next_token(i, source, token_buffer, token_buffer_ptr);
@@ -204,25 +214,30 @@ namespace preprocessor {
             return;
         } else
         if ("if" == name) {
+            // TODO
             throw Exception("#if is not supported yet.");
         } else
         if ("elif" == name) {
+            // TODO
             throw Exception("#elif is not supported yet.");
         } else
         if ("else" == name) {
+            // TODO
             throw Exception("#else is not supported yet.");
         } else 
         if ("pragma" == name) {
+            // TODO
             throw Exception("#pragma is not supported yet.");
         } else {
             throw Exception("Unknown preprocessor directive \"#" + name + "\".");
         }
     }
 
-    void preprocess(const char* filename, ExtendableBuffer* buffer, std::vector<std::string>& included,
+    void preprocess(const char* filename, ExtendableBuffer<u8>* buffer, std::vector<std::string>& included,
         VariableRegistry& var_reg, PreProcTokensMap& pre_proc_tokens) {
 
-        included.push_back(filename);    
+        included.push_back(filename);
+        pre_proc_tokens["__FILE__"] = filename;
         auto source = load_file(filename);
         
         #define TOKEN_BUFFER_SIZE 1024
@@ -241,7 +256,7 @@ namespace preprocessor {
             if (c == '"') {
                 std::string string_literal_identifier = consume_string_literal(source, i, '"', var_reg);
                 if (if_depth == 0)
-                    buffer->add((void*)string_literal_identifier.c_str(), 
+                    buffer->add((u8*)string_literal_identifier.c_str(), 
                         string_literal_identifier.length() * sizeof(char));
                 goto flush_continue;
             }

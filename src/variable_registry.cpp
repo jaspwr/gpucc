@@ -15,10 +15,10 @@ std::string VariableRegistry::append_string_literal(char* data, u32 start, u32 l
     char* buffer = new char[length + 1];
     memcpy(buffer, data + start, length);
     buffer[length] = '\0';
-    auto name = "str" + std::to_string(string_literal_count++);
+    auto name = "0str" + std::to_string(string_literal_count++);
     
     add_variable(
-        TypedValue(
+        new TypedValue(
             name,
             Scope::Global,
             const_string_type(length + 1),
@@ -29,6 +29,12 @@ std::string VariableRegistry::append_string_literal(char* data, u32 start, u32 l
     return name;
 }
 
-void VariableRegistry::add_variable(TypedValue value) {
-    //variables[value.name] = value;
+void VariableRegistry::add_variable(TypedValue* value) {
+    variables[value->name] = value;
+}
+
+VariableRegistry::~VariableRegistry() {
+    for (auto& pair: variables) {
+        delete pair.second;
+    }
 }

@@ -187,7 +187,8 @@ void tryParse(in uint start, out uint outToken, in uint preToken,
 	uint lenAtFinal = 0;
 	uint matchBuffer[10];
 	uint matchBufferPointer = 0;
-	for(uint i = 0; i < 3000; i++) {
+	uint iterations = 0;
+	for(uint i = 0; iterations < 1024; i++) {
 		if (!inbounds(start + i, tokens.length())) break;
 		Token token = tokens[start + i];
 
@@ -205,6 +206,7 @@ void tryParse(in uint start, out uint outToken, in uint preToken,
 
 		row = pti.nextRow;
         i += token.len > 0 ? token.len - 1: 0;
+		iterations++;
 	}
 	if (lastFinal != 0) {
 		handleChildren(children, lastFinal, matchBuffer, volume);

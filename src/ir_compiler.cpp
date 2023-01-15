@@ -10,25 +10,6 @@ std::string token_from_id(GLuint id, IrTokenList& tokens) {
     return "ERROR";
 }
 
-bool is_alphanum(char c) {
-    return c >= 'a' && c <= 'z' 
-        || c >= 'A' && c <= 'Z' 
-        || c >= '0' && c <= '9' 
-        || c == '_'
-        ;
-}
-
-
-std::string extract_token_at(std::string& str, u32& pos) {
-    std::string ret = "";
-    if (pos >= str.length() || pos < 0 ) throw Exception("Invalid source position reference from shaders.");
-    while (pos < str.length() && is_alphanum(str[pos])) {
-        ret += str[pos];
-        pos++;
-    }
-    return ret;
-}
-
 std::string serialize_uir_to_readable(GLuint* ir, u32 ir_len, 
     IrTokenList& ir_tokens, std::string& source) {
 

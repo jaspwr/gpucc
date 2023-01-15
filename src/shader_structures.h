@@ -2,9 +2,11 @@
 
 #include "include/glad/glad.h"
 
+// TODO: encase these in a namespace
+
 struct Token {
-	GLuint id;
-	GLuint len;
+    GLuint id;
+    GLuint len;
     GLint ast_node_location;
 
     void print() {
@@ -22,8 +24,8 @@ struct ChildNode {
 };
 
 struct AstNode {
-	GLuint nodeToken;
-	ChildNode children[4];
+    GLuint nodeToken;
+    ChildNode children[4];
     GLuint volume;
 
     void print() {

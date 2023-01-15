@@ -1,5 +1,5 @@
 #!/bin/bash
-arglist="compiler.cpp cli.cpp exception.cpp extendable_buffer.cpp job.cpp compiler_type.cpp variable_registry.cpp preprocessor.cpp debug_printing.cpp utils.cpp gl.cpp gl_atomic_counter.cpp shader.cpp parse_tree.cpp ir_ssbo_format.cpp ssbo.cpp ir_compiler.cpp lang.cpp yacc.cpp -o ../bin/meow glad.o `pkg-config --libs --cflags glfw3` -lm" &&
+arglist="compiler.cpp cli.cpp exception.cpp postprocessor.cpp job.cpp compiler_type.cpp variable_registry.cpp preprocessor.cpp debug_printing.cpp utils.cpp gl.cpp gl_atomic_counter.cpp shader.cpp parse_tree.cpp ir_ssbo_format.cpp ssbo.cpp ir_compiler.cpp lang.cpp yacc.cpp -o ../bin/meow glad.o `pkg-config --libs --cflags glfw3` -lm" &&
 copy_shaders() {
     rm -rf '../bin/shaders' &&
     cp -r 'shaders' '../bin'

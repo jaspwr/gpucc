@@ -529,7 +529,7 @@ partial_scope
 
 scope
     : $0 partial_scope '}'
-    ; < scope_start
+    ; < scope_start $x
     !0 scope_end
     >
 
@@ -663,7 +663,7 @@ break
 
 goto
     : 'goto' $0 primary_expression ';'
-    ; < JMP $0
+    ; < JMP goto_replace $0
     >
 
 return
@@ -685,7 +685,7 @@ label
     : [ '(', '['} { '.', '->' } { cast_operator, '*', '/', '%', '-', '+', '<<', '>>', '>', 
     '<', '<=', '>=', '!=', '==', '&', '^', '=', '+=', '-=', '*=', '/=', '%=', '<<=', '>>=', '&=', '^=', '|=', '++', '--', '&&', '||', '?', ':' } 
     $0 primary_expression ':'
-    ; < $0 :
+    ; < gotoable $0 $x :
     >
 
 statement

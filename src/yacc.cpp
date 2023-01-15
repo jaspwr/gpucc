@@ -81,11 +81,11 @@ bool is_whitespace(char c) {
 }
 
 bool is_alpha(char c) {
-    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_' || c == '#';
+    return char_utils::is_alpha(c) || c == '_' || c == '#';
 }
 
 bool is_numeric(char c) {
-    return c >= '0' && c <= '9' || c == '$' || c == '!'; // also includes prefixes
+    return char_utils::is_numeric(c) || c == '$' || c == '!'; // also includes prefixes
 }
 
 bool is_alphanumeric(char c) {
@@ -278,7 +278,7 @@ void handle_token(char* token_buffer, YaccContext& context, ParseTree& parse_tre
 }
 
 void parse_yacc(ParseTree& parse_tree, std::vector<Ssbo*>& ast_parse_trees, std::vector<std::string>& grammars,
-    GLuint* ast_nodes_buffer, GLuint& ast_nodes_len, GLuint* ir_codegen, GLuint& ir_codegen_len, 
+    GLuint* ast_nodes_buffer, GLuint& ast_nodes_len, GLuint* ir_codegen, GLuint& ir_codegen_len, ParseTree& ir_pt,
     IrTokenList* ir_token_list, ParseTree& yacc_parse_tree) {
     char token_buffer[TOKEN_BUFFER_SIZE];
     token_buffer[0] = '\0';
@@ -287,7 +287,6 @@ void parse_yacc(ParseTree& parse_tree, std::vector<Ssbo*>& ast_parse_trees, std:
     bool in_string = false;
     GLuint block_token = 0;
     GLuint yacc_tokens_last = 90;
-    ParseTree ir_pt = ParseTree({}, true);
     AstParseData ast_pt_data = AstParseData();
 
     for(auto grammar : grammars) {
@@ -317,7 +316,9 @@ void parse_yacc(ParseTree& parse_tree, std::vector<Ssbo*>& ast_parse_trees, std:
 
 }
 
-ast_ssbos create_ast_ssbos(std::vector<std::string> grammars, ParseTree& lang_tokens_parse_tree, IrTokenList* ir_token_list, ParseTree& yacc_parse_tree) {
+ast_ssbos create_ast_ssbos(std::vector<std::string> grammars, ParseTree& lang_tokens_parse_tree, 
+    IrTokenList* ir_token_list, ParseTree& yacc_parse_tree, ParseTree& ir_pt) {
+
     auto ssbos = ast_ssbos();
     GLuint ast_nodes_len = 1;
     GLuint ast_nodes_buffer[AST_BUFFER_SIZE];
@@ -326,10 +327,12 @@ ast_ssbos create_ast_ssbos(std::vector<std::string> grammars, ParseTree& lang_to
     GLuint ir_codegen_len = 256;
 
     try {
-        parse_yacc(lang_tokens_parse_tree, ssbos.ast_parse_trees, grammars, ast_nodes_buffer, ast_nodes_len, ir_codegen, ir_codegen_len, ir_token_list, yacc_parse_tree);
+        parse_yacc(lang_tokens_parse_tree, ssbos.ast_parse_trees, grammars, ast_nodes_buffer, ast_nodes_len, ir_codegen, 
+            ir_codegen_len, ir_pt, ir_token_list, yacc_parse_tree);
     } catch (Exception& e) {
         // This just saves having to add `ExceptionType::Yacc` to every throw
-        e.type = ExceptionType::Yacc;
+        if (e.type == ExceptionType::Misc)
+            e.type = ExceptionType::Yacc;
         throw e;
     }
 

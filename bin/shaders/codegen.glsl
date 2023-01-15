@@ -131,7 +131,7 @@ void main() {
 
 
     uint maxOut = 0;
-    while(workingVolume != currentNode.volume && maxOut < 3000) {
+    while(workingVolume != currentNode.volume && maxOut < 1024) {
         for (int i = 0; i < 4; i++) {
             if (currentNode.children[i].ref == 0) continue;
             int newNodePos = currentNode.children[i].ref;
