@@ -1,2 +1,2 @@
-{a=(2)* (2);     looooooooooooooooooooong*2/2*2*2*(2+2
+{int looooooooooooooooooooong; int a=(2)* (2);     looooooooooooooooooooong*2/2*2*2*(2+2
 );}

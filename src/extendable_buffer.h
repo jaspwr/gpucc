@@ -16,6 +16,7 @@ class ExtendableBuffer {
 
         void append(T byte);
         void add(T* data, u32 size);
+        std::vector<T> rollback(u32 count);
         T* flattern();
         u32 get_size();
 
@@ -79,4 +80,14 @@ u32 ExtendableBuffer<T>::get_size() {
 template <typename T>
 T& ExtendableBuffer<T>::operator[](u32 index) {
     return data[index / chunk_size][index % chunk_size];
+}
+
+template <typename T>
+std::vector<T> ExtendableBuffer<T>::rollback(u32 count) {
+    size -= count;
+    std::vector<T> ret = std::vector<T>();
+    for (u32 i = 0; i < count; i++) {
+        ret.push_back((*this)[size + i]);
+    }
+    return ret;
 }

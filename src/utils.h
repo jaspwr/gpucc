@@ -28,4 +28,35 @@ namespace char_utils {
     bool is_alpha(char c);
     bool is_numeric(char c);
     bool is_alpha_numeric_or_underscore(char c);
+    bool is_whitespace(char c);
 }
+
+// template <typename T>
+// struct Option {
+//     enum { None, Some } type;
+//     T* value_ptr;
+
+//     Option() { 
+//         value_ptr = nullptr; 
+//         type = None;
+//     }
+
+//     Option(T* value_ptr) { 
+//         this->value_ptr = value_ptr;
+//     }
+
+//     bool is_some() {
+//         return type == Some;
+//     }
+    
+//     bool is_none() {
+//         return type == None;
+//     }
+
+//     T* unwrap() {
+//         if (type == None) {
+//             throw "Unwrapping None.";
+//         }
+//         return value_ptr;
+//     }
+// };

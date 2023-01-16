@@ -10,8 +10,8 @@
 // Public interface
 std::string preprocess(std::string filename, VariableRegistry& var_reg) {
     ExtendableBuffer<u8> buffer = ExtendableBuffer<u8>(1024);
-    auto pre_proc_tokens = std::unordered_map<std::string, std::string>();
-    pre_proc_tokens["__BASE_FILE__"] = filename;
+    auto pre_proc_tokens = std::unordered_map<std::string, PreprocessorMacro*>();
+    pre_proc_tokens["__BASE_FILE__"] = new ObjectLikeMacro(filename);
     auto included = std::vector<std::string>();
 
     try {
@@ -20,6 +20,10 @@ std::string preprocess(std::string filename, VariableRegistry& var_reg) {
         if (e.type == ExceptionType::Misc)
             e.type = ExceptionType::Preprocessor;
         throw e;
+    }
+
+    for (auto& pair : pre_proc_tokens) {
+        delete pair.second;
     }
     
     buffer.add((u8*)" 0EOF\0", 6);
@@ -73,25 +77,46 @@ namespace preprocessor {
         token_buffer_ptr = 0;
     }
 
-    void handle_token_buffer(u32& token_buffer_ptr, char* token_buffer,
+    void handle_token_buffer(u32& token_buffer_ptr, char* token_buffer, u32& i, const char* source,
         ExtendableBuffer<u8>* buffer, PreProcTokensMap& pre_proc_tokens) {
         
         if (token_buffer_ptr > 0) {
             token_buffer[token_buffer_ptr] = '\0';
             auto token = std::string(token_buffer);
 
-            if (token == "typedef") {
-                // TODO
-                throw Exception("typedef not supported yet.");
-            }
+            // if (token == "typedef") {
+            //     // TODO
+            //     u32 start = buffer->get_size() - 1;
+            //     while (start > 0 && (*buffer)[start] != ';' && (*buffer)[start] != '}' && (*buffer)[start] != '{') start--;
+            //     start++;
+            //     auto pre = buffer->rollback(buffer->get_size() - start);
+            //     u32 end = i;
+            //     while (source[end] != '\0' && source[end] != ';' && source[end] != '}') end++;
+                
+            //     std::string type = "";
+            //     for (auto& c : pre) {
+            //         type += (char)c;
+            //     }
+            //     for(i++; i < end; i++) {
+            //         type += source[i];
+            //     }
+            //     printf("typedef: %s\n", type.c_str());
+
+            //     buffer->add((u8*)"fuck you", 8);
+
+            //     flush_token_buffer(token_buffer_ptr);
+            // }
 
             // FIXME: use the map properly I think it's being queried twice or something.
-            if (pre_proc_tokens.find(token) == pre_proc_tokens.end()) {
+            auto search = pre_proc_tokens.find(token);
+            if (search == pre_proc_tokens.end()) {
                 buffer->add((u8*)token_buffer, token_buffer_ptr * sizeof(char));
             } else {
                 // FIXME: variadic macros https://gcc.gnu.org/onlinedocs/cpp/Variadic-Macros.html#Variadic-Macros
-                auto repl = pre_proc_tokens[token];
-                buffer->add((u8*)repl.c_str(), repl.length() * sizeof(char));
+                
+
+                search->second->exectue(buffer, i, source);
+                //buffer->add((u8*)repl.c_str(), repl.length() * sizeof(char));
             }
 
             flush_token_buffer(token_buffer_ptr);
@@ -154,9 +179,11 @@ namespace preprocessor {
         VariableRegistry& var_reg, PreProcTokensMap& pre_proc_tokens, const char* filename) {
 
         auto macro_name = next_token(i, source, token_buffer, token_buffer_ptr);
-        if (source[i] == '(') {
-            throw Exception("Function-like macros not supported yet.");
-        }
+        enum { ObjectLike, FunctionLike } macro_type = source[i] == '('
+            ? FunctionLike 
+            : ObjectLike
+        ;
+        
         auto macro_repl = std::string();
         while(source[i] != '\0') {
             if (source[i] == '\\' && source[i + 1] == '\n' || source[i + 1] == '\r' ) {
@@ -164,13 +191,17 @@ namespace preprocessor {
                     i += 3;
                 else
                     i += 2;
-                buffer->append('\n');
+                macro_repl += '\n';
                 continue;
             }
             if (source[i] == '\r' || source[i] == '\n') break;
             macro_repl += source[i++];
         }
-        pre_proc_tokens[macro_name] = macro_repl;
+
+        pre_proc_tokens[macro_name] = macro_type == ObjectLike
+            ? (PreprocessorMacro*) new ObjectLikeMacro(macro_repl)
+            : (PreprocessorMacro*) new FunctionLikeMacro(macro_repl)
+        ;
     }
 
     void handle_pre_proc_directive(u32& i, const char* source, char* token_buffer, 
@@ -237,14 +268,16 @@ namespace preprocessor {
         VariableRegistry& var_reg, PreProcTokensMap& pre_proc_tokens) {
 
         included.push_back(filename);
-        pre_proc_tokens["__FILE__"] = filename;
+        pre_proc_tokens["__FILE__"] = new ObjectLikeMacro(filename);
+
         auto source = load_file(filename);
         
         #define TOKEN_BUFFER_SIZE 1024
         char token_buffer[TOKEN_BUFFER_SIZE];
         u32 token_buffer_ptr = 0;
         i32 if_depth = 0;
-        for (u32 i = 0; source[i] != '\0'; i++) {
+        u32 i;
+        for (i = 0; source[i] != '\0'; i++) {
             // Cry about it.
             goto no_flush;
             flush_continue:
@@ -281,12 +314,12 @@ namespace preprocessor {
                 continue;
             } else {
                 if (if_depth == 0) {
-                    handle_token_buffer(token_buffer_ptr, token_buffer, buffer, pre_proc_tokens);
+                    handle_token_buffer(token_buffer_ptr, token_buffer, i, source, buffer, pre_proc_tokens);
                     buffer->append(c);
                 }
             }
         }
         // Incase there was a token at the end of the file.
-        handle_token_buffer(token_buffer_ptr, token_buffer, buffer, pre_proc_tokens);
+        handle_token_buffer(token_buffer_ptr, token_buffer, i, source, buffer, pre_proc_tokens);
     }
 }

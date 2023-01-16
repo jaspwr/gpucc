@@ -1,11 +1,12 @@
-scope_start 
-%56 = MUL 2 2 
-%53 = %56 
-STORE a %53 
-%94 = DIV 2 2 
-%64 = MUL looooooooooooooooooooong %94 
-%66 = MUL %64 2 
-%68 = MUL %66 2 
-%103 = ADD 2 2 
-%70 = MUL %68 %103 
-scope_end 
+%56 = ALLOCA i32 %56 
+%84 = ALLOCA i32 %84 
+%90 = MUL 2 2 
+%87 = %90 
+STORE %84 %87 
+%128 = DIV 2 2 
+%169 = LOAD %56 
+%98 = MUL %169 %128 
+%100 = MUL %98 2 
+%102 = MUL %100 2 
+%137 = ADD 2 2 
+%104 = MUL %102 %137 

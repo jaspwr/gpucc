@@ -18,7 +18,7 @@
 #include "include/glad/glad.h"
 #include <math.h>
 
-// #define BENCHMARKING
+//#define BENCHMARKING
 
 #ifdef BENCHMARKING
 #include "benchmark.h"
@@ -75,7 +75,7 @@ GLuint fetch_entry_node_volume(Ssbo* tokens, Ssbo* ast_nodes) {
 
 std::string load_source(std::vector<std::string> source_files, VariableRegistry& var_reg, Job& job) {
     #ifdef BENCHMARKING
-    auto bm = Benchmark("Preprocesser");
+    auto bm = Benchmark("Preprocessing");
     #endif
 
     // TODO: separate files appropriately
@@ -136,7 +136,7 @@ std::string compile(Job& job, Shaders& shaders) {
     // tokens->dump();
 
     #ifdef BENCHMARKING
-    auto bm_gram = Benchmark("Grammar SSBO parsing");
+    auto bm_gram = Benchmark("Grammar SSBO Setup");
     #endif
 
     IrTokenList* ir_tokens = new IrTokenList();
@@ -146,6 +146,8 @@ std::string compile(Job& job, Shaders& shaders) {
     
     auto ast_ssbos = create_ast_ssbos(grammars, *lang_tokens_parse_tree, ir_tokens, yacc_parse_tree, ir_parse_tree);
     auto ast_nodes = Ssbo((AST_NODES_OVERFLOW_BUFFER_SIZE + source.length) * sizeof(AstNode));
+
+    var_reg.new_register_next = AST_NODES_OVERFLOW_BUFFER_SIZE + source.length + 20;
 
     #ifdef BENCHMARKING
     bm_gram.finalise();

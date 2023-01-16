@@ -1,25 +1,26 @@
-%56 = 0 
-STORE x %56 
-continuable %51 : 
-%62 = CMP LT x 10 
-JZ %62 %52 
-scope_start 
-%85 = CMP EQ x 5 
-JZ %85 %77 
-scope_start 
-replace_with %115 
-%131 = MUL 2 20 
-%125 = GETELEMENTPTR meow %131 
-%126 = LOAD %125 
-%119 = ADD 2 2 
-replace_me = CALL meow ( %119 , %126 ) 
-%107 = ADD 2 %115 
-%94 = OR x %107 
-STORE x %94 
-scope_end 
-%77 : 
-scope_end 
-%70 = ADD x 1 
-STORE x %70 
+%59 = ALLOCA i32 %59 
+%60 = 0 
+STORE %59 %60 
+%51 : 
+%191 = LOAD %59 
+%66 = CMP LT %191 10 
+JZ %66 %52 
+%83 = ALLOCA f32 %83 
+%192 = LOAD %59 
+%104 = CMP EQ %192 5 
+JZ %104 %97 
+%150 = MUL 2 20 
+%144 = GETELEMENTPTR %83 %150 
+%145 = LOAD %144 
+%138 = ADD 2 2 
+%134 = CALL %83 ( %138 , %145 ) 
+%126 = ADD 2 %134 
+%193 = LOAD %59 
+%113 = OR %193 %126 
+STORE %59 %113 
+%97 : 
+%194 = LOAD %59 
+%74 = ADD %194 1 
+STORE %59 %74 
 JMP %51 
-breakable %52 : 
+%52 : 

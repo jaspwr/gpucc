@@ -11,24 +11,55 @@ class StackItem {
 };
 
 template <typename T>
-class Stack {
+class StackIter {
+    private:
+        StackItem<T>* current_item;
     public:
-        Stack();
+        StackIter(StackItem<T>* top) {
+            this->current_item = top;
+        }
+
+        T& next() {
+            if (current_item == nullptr)
+                throw Exception("`StackIter::next()` called on empty stack");
+            
+            T& data = current_item->data;
+            
+            if (current_item->prev == nullptr)
+                current_item = nullptr;
+            else
+                current_item = current_item->prev;
+            return data;
+        }
+
+        bool has_next() {
+            return current_item != nullptr;
+        }
+};
+
+template <typename T>
+class Stack {
+    private:
+        std::string identifier;
+        StackItem<T>* top;
+        u32 _size;
+
+    public:
+        Stack(std::string identifier);
         ~Stack();
 
         void push(T item);
         T pop();
-        T peek();
+        T& peek();
         u32 size();
         bool empty();
 
-    private:
-        StackItem<T>* top;
-        u32 _size;
+        StackIter<T> iter();
 };
 
 template <typename T>
-Stack<T>::Stack() {
+Stack<T>::Stack(std::string identifier) {
+    this->identifier = identifier;
     top = nullptr;
     _size = 0;
 }
@@ -54,18 +85,26 @@ void Stack<T>::push(T item) {
     _size++;
 }
 
+template<typename T>
+struct is_pointer { static const bool value = false; };
+
+template<typename T>
+struct is_pointer<T*> { static const bool value = true; };
+
 template <typename T>
 T Stack<T>::pop() {
 
-    if (empty()) throw Exception("Tried to pop from empty stack.");
+    if (empty()) throw Exception("Tried to pop from empty stack \""+identifier+"\".");
     _size--;
     T ret = top->data;
     if (_size > 0) {
         top = top->prev;
-        delete top->next;
+        if (is_pointer<T>::value)
+            delete top->next;
         top->next = nullptr;
     } else {
-        delete top;
+        if (is_pointer<T>::value)
+            delete top;
         top = nullptr;
     }
     
@@ -73,12 +112,17 @@ T Stack<T>::pop() {
 }
 
 template <typename T>
-T Stack<T>::peek() {
-    if (empty()) throw Exception("Tried to peek from empty stack.");  
+T& Stack<T>::peek() {
+    if (empty()) throw Exception("Tried to peek from empty stack \""+identifier+"\".");  
     return top->data;
 }
 
 template <typename T>
 bool Stack<T>::empty() {
     return _size < 1;
+}
+
+template <typename T>
+StackIter<T> Stack<T>::iter() {
+    return StackIter<T>(top);
 }

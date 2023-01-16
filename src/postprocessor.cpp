@@ -15,6 +15,33 @@ const GLuint tokenise_ir_token(const char* token, ParseTree& ir_tokens) {
     return ret;
 }
 
+void replace_identifier(const GLint* shader_out, u32 ref_pos,
+    VariableRegistry& var_reg, std::string& source) {
+    
+    if (shader_out[ref_pos] != IR_SOURCE_POS_REF) return;
+    auto pos = (u32)shader_out[ref_pos + 1];
+    auto token = extract_token_at(source, pos);
+    if (char_utils::is_numeric(token[0])) return;
+    auto var = var_reg.get_var(token);
+
+    GLint* w_shader_out = (GLint*)shader_out;
+    w_shader_out[ref_pos] = IR_REFERNCE;
+    w_shader_out[ref_pos + 1] = var->register_;
+}
+
+void insert_line (ExtendableBuffer<GLint>& buffer, GLuint NEWLINE, std::vector<GLuint> insertion) {
+    u32 existing_line_len =  0;
+    while (buffer[buffer.get_size() - existing_line_len - 1] != NEWLINE) existing_line_len++;
+    auto line = buffer.rollback(existing_line_len);
+    for (auto token : insertion) {
+        buffer.append(token);
+    }
+    buffer.append(NEWLINE);
+    for (auto token : line) {
+        buffer.append(token);
+    }
+}
+
 SizedGLintBuffer postprocess(const GLint* shader_out, GLuint shader_out_size, 
     VariableRegistry& var_reg, ParseTree& ir_tokens, std::string& source) {
 
@@ -29,28 +56,50 @@ SizedGLintBuffer postprocess(const GLint* shader_out, GLuint shader_out_size,
     auto BREAKABLE = tokenise_ir_token("breakable", ir_tokens);
     auto CONTINUABLE = tokenise_ir_token("continuable", ir_tokens);
     auto JMP = tokenise_ir_token("JMP", ir_tokens);
+    auto EQUAL = tokenise_ir_token("=", ir_tokens);
+    auto LOAD = tokenise_ir_token("LOAD", ir_tokens);
     auto GOTOABLE = tokenise_ir_token("gotoable", ir_tokens);
     auto GOTO_REPLACE = tokenise_ir_token("goto_replace", ir_tokens);
     auto REPLACE_ME = tokenise_ir_token("replace_me", ir_tokens);
     auto REPLACE_WITH = tokenise_ir_token("replace_with", ir_tokens);
+    auto ALLOCA = tokenise_ir_token("ALLOCA", ir_tokens);
+    auto NEWLINE = tokenise_ir_token("\n", ir_tokens);
 
     struct continue_ {
         GLint index;
         GLint scope;
     };
 
-    Stack<GLint> scope_stack;
-    Stack<continue_> continue_stack;
-    Stack<GLint> break_stack;
-    Stack<GLint> replace_stack;
+    Stack<GLint> scope_stack("scope_stack");
+    scope_stack.push(0); // global scope
+    Stack<continue_> continue_stack("continue_stack");
+    Stack<GLint> continues_for_next_scope("continues_for_next_scope");
+
+    Stack<GLint> break_stack("break_stack");
+    Stack<GLint> replace_stack("replace_stack");
     std::unordered_map<std::string, GLint> labels;
     std::unordered_map<std::string, std::vector<GLint>> unresolved_labels;
+
+    bool loadable_flag = false;
 
     for (u32 i = 0; i < shader_out_size; i++) {
         auto value = shader_out[i];
         if (value == IR_SOURCE_POS_REF || value == IR_REFERNCE) {
-            buffer.append(value);
-            buffer.append(shader_out[++i]);
+            replace_identifier(shader_out, i, var_reg, source);
+            
+            auto marker = shader_out[i];
+            auto reg = shader_out[++i];
+            buffer.append(marker);
+            if (loadable_flag && marker == IR_REFERNCE && var_reg.is_loadable(reg)) {
+                auto new_reg = var_reg.get_new_register();
+                insert_line(buffer, NEWLINE, std::vector<GLuint>{
+                    IR_REFERNCE, new_reg, EQUAL, LOAD, IR_REFERNCE, (GLuint)reg
+                });
+                buffer.append(new_reg);
+            } else {
+                buffer.append(reg);
+            }
+            loadable_flag = false;
             continue;
         }
         if (value == REPLACE_WITH) {
@@ -63,6 +112,18 @@ SizedGLintBuffer postprocess(const GLint* shader_out, GLuint shader_out_size,
             buffer.append(IR_REFERNCE);
             buffer.append(replace_stack.pop());
             continue;
+        }
+        if (value == LOADABLE) {
+            loadable_flag = true;
+            continue;
+        }
+        if (value == ALLOCA) {
+            auto pos = (u32)shader_out[i + 3];
+            auto name = extract_token_at(source, pos);
+            auto val = new TypedValue();
+            val->register_ = shader_out[i - 2];
+            val->data = nullptr;
+            var_reg.add_var(name, val);
         }
         if (value == GOTOABLE) {
             // TODO: check how gotos and labels work specifically.
@@ -101,16 +162,24 @@ SizedGLintBuffer postprocess(const GLint* shader_out, GLuint shader_out_size,
             // TODO
             // This actually needs the next scope. 
             // You also need to do something for single/null satements.
-            continue_stack.push({ shader_out[i + 2], scope_stack.peek() });
+            continues_for_next_scope.push(shader_out[i + 2]);
             continue;
         }
         if (value == SCOPE_START) {
-            scope_stack.push(shader_out[i + 2]);
+            auto scope_ref = shader_out[i + 2];
+            scope_stack.push(scope_ref);
+            
+            while (!continues_for_next_scope.empty()) {
+                continue_stack.push({continues_for_next_scope.pop(), scope_ref});
+            }
+
+            var_reg.push_scope();
             i += 3;
             continue;
         }
         if (value == SCOPE_END) {
             auto scope = scope_stack.pop();
+            var_reg.pop_scope();
             
             if (!continue_stack.empty() && continue_stack.peek().scope == scope) {
                 continue_stack.pop();

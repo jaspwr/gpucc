@@ -154,6 +154,10 @@ namespace char_utils {
     bool is_alpha_numeric_or_underscore(char c) {
         return is_alpha(c) || is_numeric(c) || c == '_';
     }
+
+    bool is_whitespace(char c) {
+        return c == ' ' || c == '\t' || c == '\n' || c == '\r';
+    }
 }
 
 std::string extract_token_at(std::string& str, u32& pos) {

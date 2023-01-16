@@ -188,7 +188,7 @@ void tryParse(in uint start, out uint outToken, in uint preToken,
 	uint matchBuffer[10];
 	uint matchBufferPointer = 0;
 	uint iterations = 0;
-	for(uint i = 0; iterations < 1024; i++) {
+	for(uint i = 0; iterations < 10; i++) {
 		if (!inbounds(start + i, tokens.length())) break;
 		Token token = tokens[start + i];
 

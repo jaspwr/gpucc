@@ -1,15 +1,9 @@
 #include "variable_registry.h"
 
+#include "utils.h"
+
 #include <string.h>
 #include <string>
-
-TypedValue::TypedValue(std::string name, Scope scope, CompilerType type, void* data, u32 size) {
-    this->name = name;
-    this->scope = scope;
-    this->type = type;
-    this->data = data;
-    this->size = size;
-}
 
 std::string VariableRegistry::append_string_literal(char* data, u32 start, u32 length) {
     char* buffer = new char[length + 1];
@@ -17,24 +11,88 @@ std::string VariableRegistry::append_string_literal(char* data, u32 start, u32 l
     buffer[length] = '\0';
     auto name = "0str" + std::to_string(string_literal_count++);
     
-    add_variable(
-        new TypedValue(
-            name,
-            Scope::Global,
-            const_string_type(length + 1),
-            buffer,
-            length + 1
-        )
-    );
+    global_scope.variables[name] = new TypedValue{
+        name,
+        const_string_type(length + 1),
+        0,
+        buffer,
+        length + 1
+    };
     return name;
 }
 
-void VariableRegistry::add_variable(TypedValue* value) {
-    variables[value->name] = value;
+TypedValue* check_scope(std::string& name, Scope& scope) {
+    auto search = scope.variables.find(name);
+    if (search != scope.variables.end()) {
+        return search->second;
+    } else {
+        return nullptr;
+    }
 }
 
-VariableRegistry::~VariableRegistry() {
-    for (auto& pair: variables) {
-        delete pair.second;
+TypedValue* VariableRegistry::get_var(std::string& name) {
+    auto scopes_iter = local_scopes.iter();
+    while (scopes_iter.has_next()) {
+        auto& scope = scopes_iter.next();
+        auto search = check_scope(name, scope);
+        if (search != nullptr) return search;
     }
+    auto search = check_scope(name, global_scope);
+    if (search != nullptr) return search;
+    throw Exception("Unknown identifier \"" + name + "\".");
+}
+
+TypedValue::TypedValue(std::string name, CompilerType type, Register register_, void* data, u32 size) {
+    this->name = name;
+    this->type = type;
+    this->register_ = register_;
+    this->data = data;
+    this->size = size;
+}
+
+TypedValue::TypedValue() {
+    data = nullptr;
+}
+
+TypedValue::~TypedValue() {
+    if (data != nullptr)
+        delete[] (char*)data;
+}
+
+void VariableRegistry::add_var(std::string& name, TypedValue* value) {
+    if (local_scopes.size() == 0) {
+        global_scope.variables[name] = value;
+        global_scope.loadable_registers.push_back(value->register_);
+        return;
+    }
+    auto& current_scope = local_scopes.peek();
+    current_scope.variables[name] = value;
+    current_scope.loadable_registers.push_back(value->register_);
+}
+
+bool VariableRegistry::is_loadable(Register register_) {
+    // TODO: make faster
+    auto scopes_iter = local_scopes.iter();
+    while (scopes_iter.has_next()) {
+        auto& scope = scopes_iter.next();
+        for (auto& reg : scope.loadable_registers) {
+            if (reg == register_) return true;
+        }
+    }
+    for (auto& reg : global_scope.loadable_registers) {
+        if (reg == register_) return true;
+    }
+    return false;
+}
+
+Register VariableRegistry::get_new_register() {
+    return ++new_register_next;
+}
+
+void VariableRegistry::push_scope() {
+    local_scopes.push(Scope());
+}
+
+void VariableRegistry::pop_scope() {
+    local_scopes.pop();
 }

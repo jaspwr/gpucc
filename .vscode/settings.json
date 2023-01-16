@@ -60,6 +60,8 @@
         "typeinfo": "cpp",
         "codecvt": "cpp",
         "iomanip": "cpp",
-        "include.h": "c"
+        "include.h": "c",
+        "typeindex": "cpp",
+        "valarray": "cpp"
     }
 }

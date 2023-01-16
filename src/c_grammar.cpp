@@ -28,13 +28,27 @@ sizeof
     >
 
 type_specifier
-    : $0 'int'
-    | $0 'float'
-    | $0 'void'
-    | $0 'char'
-    | $0 'double'
-    | $0 'long'
-    ; < $0 >
+    : $0 int
+    | $0 char
+    | $0 float
+    | $0 void
+    ; < !0 >
+
+char
+    : 'char'
+    ; < i8 >
+
+int
+    : 'int'
+    ; < i32 >
+
+float
+    : 'float'
+    ; < f32 >
+
+void
+    : 'void'
+    ; < void >
 
 pointer
     : $0 type_specifier '*'
@@ -687,6 +701,7 @@ label
     $0 primary_expression ':'
     ; < gotoable $0 $x :
     >
+
 
 statement
     : $0 if
