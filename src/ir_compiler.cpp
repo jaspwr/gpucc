@@ -10,7 +10,7 @@ std::string token_from_id(GLuint id, IrTokenList& tokens) {
     return "ERROR";
 }
 
-std::string serialize_uir_to_readable(GLuint* ir, u32 ir_len, 
+std::string serialize_uir_to_readable(const GLuint* ir, u32 ir_len, 
     IrTokenList& ir_tokens, std::string& source) {
 
     std::string ret = "";
@@ -27,10 +27,11 @@ std::string serialize_uir_to_readable(GLuint* ir, u32 ir_len,
             if(++i >= ir_len) throw Exception("Malformed reference from shaders.");
             token = std::string("%") + std::to_string(ir[i]);
             break;
-        case IR_SOURCE_POS_REF:
+        case IR_SOURCE_POS_REF: {
             if(++i >= ir_len) throw Exception("Malformed source pos ref from shaders.");
-            token = extract_token_at(source, ir[i]);
-            break;
+            u32 pos = ir[i];
+            token = extract_token_at(source, pos);
+            break; }
         case IR_INSERSION:
             throw Exception("Insersion tokens should not not end up in shader output.");
         case IR_SELF_REFERENCE:

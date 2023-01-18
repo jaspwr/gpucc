@@ -22,7 +22,7 @@ std::string uintstring_to_string(UintString str);
 StrSplit str_split(const char* str, char separator);
 void free_str_split(StrSplit str_split);
 u32 parse_int(char* str);
-std::string extract_token_at(std::string& str, u32& pos);
+std::string extract_token_at(std::string& str, u32 pos);
 
 namespace char_utils {
     bool is_alpha(char c);

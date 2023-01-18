@@ -14,7 +14,7 @@ ParseTree* create_token_parse_tree(char** tokens, u32 token_count, u32 first_tok
             to_uint_string(tokens[i]), (GLuint)(i + first_token_id)
         });
     }
-    auto ret = new ParseTree(entries, false);
+    auto ret = new ParseTree(entries);
     for (ParseTreeEntry entry : entries) {
         delete[] entry.matches.data;
     }

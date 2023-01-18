@@ -290,7 +290,7 @@ void parse_yacc(ParseTree& parse_tree, std::vector<Ssbo*>& ast_parse_trees, std:
     AstParseData ast_pt_data = AstParseData();
 
     for(auto grammar : grammars) {
-        auto ast_parse_tree = ParseTree({}, true);
+        auto ast_parse_tree = ParseTree(500);
         // This has this weird previous character thing because it needs to deal with the final token
         for (i32 i = 0; fetch_char(grammar, i - 1) != '\0' || i == 0; i++) {
             auto c_cur = fetch_char(grammar, i);

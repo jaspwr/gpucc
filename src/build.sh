@@ -12,6 +12,8 @@ else if [ "$1" = "run" ]; then
     clang++ meow.cpp $arglist &&
     copy_shaders &&
     prime-run ../bin/meow ../tests/random.c --dbg
+else if [ "$1" = "justrun" ]; then
+    prime-run ../bin/meow ../tests/random.c --dbg
 else if [ "$1" = "test" ]; then
     clang++ -std=c++17 ../tests/tests.cpp $arglist -o ../bin/testbin &&
     copy_shaders &&
@@ -20,4 +22,4 @@ else if [ "$1" = "test" ]; then
 else
     clang++ $arglist -O3 &&
     copy_shaders
-fi fi fi
+fi fi fi fi

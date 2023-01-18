@@ -54,6 +54,7 @@ class VariableRegistry {
         TypedValue* get_var(std::string& name);
         void add_var(std::string& name, TypedValue* value);
         bool is_loadable(Register register_);
+        bool is_in_global_scope();
         Register get_new_register();
 
         Register new_register_next;

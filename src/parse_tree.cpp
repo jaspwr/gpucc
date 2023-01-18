@@ -54,10 +54,12 @@ UintString ParseTree::from_id(GLuint id) {
     return to_uint_string("");
 }
 
-ParseTree::ParseTree(std::vector<ParseTreeEntry> entries, bool non_fixed) {
+
+// TODO: remove repeated code
+ParseTree::ParseTree(std::vector<ParseTreeEntry> entries) {
     this->entries = new std::vector<ParseTreeEntry>();
 
-    max_rows = non_fixed ? 700 : sum_lens(entries);
+    max_rows = sum_lens(entries);
     tree = new ParseTreeItem[COLUMNS * max_rows + 40];
     rows = 0;
     size = 0;
@@ -67,6 +69,15 @@ ParseTree::ParseTree(std::vector<ParseTreeEntry> entries, bool non_fixed) {
             throw Exception("Tried to create parse tree with empty string. Is there a blank line in your token list?");
         append_entry(entry);
     }
+}
+
+ParseTree::ParseTree(u32 size_for_non_fixed) {
+    this->entries = new std::vector<ParseTreeEntry>();
+
+    max_rows = size_for_non_fixed;
+    tree = new ParseTreeItem[COLUMNS * max_rows + 40];
+    rows = 0;
+    size = 0;
 }
 
 Ssbo* ParseTree::into_ssbo() {
@@ -116,15 +127,7 @@ GLuint get_token_id(ParseTree& parse_tree, char* name) {
     return token;
 }
 
-bool unit_test_parse_tree_generator() {
-    // Leaks a little
-    ParseTreeEntry entry1 = {to_uint_string("meow"), 20};
-    ParseTreeEntry entry2 = {to_uint_string("hello"), 99};
-    ParseTree tree = ParseTree({entry1, entry2}, false);
-    return tree.exec(to_uint_string("meow")) == 20
-        && tree.exec(to_uint_string("hello")) == 99
-        && tree.exec(to_uint_string("nothing")) == 0;
-}
+
 
 ParseTree::~ParseTree() {
     for (ParseTreeEntry entry : *entries)

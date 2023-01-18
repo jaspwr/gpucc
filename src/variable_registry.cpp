@@ -85,6 +85,10 @@ bool VariableRegistry::is_loadable(Register register_) {
     return false;
 }
 
+bool VariableRegistry::is_in_global_scope() {
+    return local_scopes.size() == 0;
+}
+
 Register VariableRegistry::get_new_register() {
     return ++new_register_next;
 }

@@ -14,5 +14,5 @@ struct IrToken {
 
 typedef std::vector<IrToken> IrTokenList;
 
-std::string serialize_uir_to_readable(GLuint* ir, u32 ir_len, 
+std::string serialize_uir_to_readable(const GLuint* ir, u32 ir_len, 
     IrTokenList& ir_tokens, std::string& source);

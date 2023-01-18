@@ -11,8 +11,7 @@
 
  * To be done in postprocs
     * switch cases replacement.
-    * identifier loading
+    * proper types
 
-* Multiple passes is difinitley the go.
 
 * swap postfix and prefix increment and decrementer

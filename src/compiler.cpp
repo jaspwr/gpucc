@@ -140,8 +140,8 @@ std::string compile(Job& job, Shaders& shaders) {
     #endif
 
     IrTokenList* ir_tokens = new IrTokenList();
-    ParseTree yacc_parse_tree = ParseTree({}, true);
-    ParseTree ir_parse_tree = ParseTree({}, true);
+    ParseTree yacc_parse_tree = ParseTree(800);
+    ParseTree ir_parse_tree = ParseTree(400);
     std::vector<std::string> grammars = { c_pre_yacc, c_yacc };
     
     auto ast_ssbos = create_ast_ssbos(grammars, *lang_tokens_parse_tree, ir_tokens, yacc_parse_tree, ir_parse_tree);
@@ -215,6 +215,10 @@ std::string compile(Job& job, Shaders& shaders) {
     #ifdef BENCHMARKING
     auto bm_post = Benchmark("Postprocessing");
     #endif
+
+    auto _s = serialize_uir_to_readable((GLuint*) out_buf_dmp, output_buffer_size, *ir_tokens, source_str);
+    
+    if (job.dbg) printf("OUTPUT:\n%s\n", _s.c_str());
 
     auto post_proc = postprocess((const GLint*)out_buf_dmp, output_buffer_size, var_reg, ir_parse_tree, source_str);
     

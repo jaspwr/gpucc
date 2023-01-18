@@ -32,7 +32,8 @@ class ParseTree {
         std::vector<ParseTreeEntry>* entries;
     public:
         u32 size;
-        ParseTree(std::vector<ParseTreeEntry> entries, bool non_fixed);
+        ParseTree(std::vector<ParseTreeEntry> entries);
+        ParseTree(u32 size_for_non_fixed);
         Ssbo* into_ssbo();
         GLuint exec(UintString input);
         UintString from_id(GLuint id);

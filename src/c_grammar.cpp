@@ -1,7 +1,7 @@
 const char* c_pre_yacc = R"(
 primary_expression
     : $0 { #identifier, type_specifier, type_qualifier, struct_union_type
-    'int', 'float', 'char', 'void', 'double' 'long' 'struct', 'union' } #identifier
+    'int', 'float', 'char', 'void', 'double' 'long' 'struct', 'union', int, char, float, void } #identifier
     | $0 #literal
     | ] 'if', 'switch', 'for' } '(' $0 primary_expression ')'
     | $0 sizeof
@@ -14,7 +14,7 @@ switch_case_opener
 
 default_opener
     : 'default' ':'
-    ; < switch_default
+    ; < switch_default $x :
     >
 
 sizeof
@@ -65,6 +65,30 @@ struct_type
     : 'struct' $1 #identifier
     ; < struct $1 >
 
+struct_definition_head
+    : $0 struct_type '{'
+    | $0 union_type '{'
+    ; < !0 { >
+
+unnamed_struct_definition_head
+    : $0 'struct' '{'
+    ; < struct { >
+
+unnamed_union_definition_head
+    : $0 'union' '{'
+    ; < union { >
+
+partial_struct_definition
+    : $0 struct_definition_head $1 declaration ';'
+    | $0 unnamed_struct_definition_head $1 declaration ';'
+    | $0 unnamed_union_definition_head $1 declaration ';'
+    | $0 partial_struct_definition $1 declaration ';'
+    ; < !0 !1 >
+
+full_struct_definition
+    : $0 partial_struct_definition '}'
+    ; < !0 } >
+
 union_type
     : 'union' $1 #identifier
     ; < union $1 >
@@ -114,7 +138,7 @@ function_definition_head
     : $0 declaration '(' $1 declaration_list $2 declaration ')'
     | $0 declaration '(' $1 declaration ')'
     | $0 declaration '(' ')'
-    ; < define !0 ( !1 !2 ) >
+    ; < fn !0 ( !1 !2 ) >
 
 method_call_head
     : $0 primary_expression '('
@@ -182,6 +206,18 @@ function_definition
     ; < !0 { 
         !1}
     >
+
+global_statement
+    : $0 function_definition
+    | $0 full_struct_definition ';'
+    ; < !0 
+    >
+
+compound_global_statement
+    : ] global_statement } $0 global_statement $1 global_statement
+    | $0 compound_global_statement $1 global_statement
+    | ] compound_global_statement } $0 compound_global_statement $1 compound_global_statement
+    ;
 
 declaration_full
     : $0 declaration
@@ -543,6 +579,7 @@ partial_scope
 
 scope
     : $0 partial_scope '}'
+    | '{' '}'
     ; < scope_start $x
     !0 scope_end
     >
@@ -581,9 +618,9 @@ switch_head
 
 switch
     : $0 switch_head $1 switch_body
-    ; < switch $0 switch_body_start
-        !1 switch_body_end
-        breakable $x :
+    ; < switch $0 [ 
+    ]
+        !1 switch_body_end breakable $x :
     >
 
 switch_case
@@ -718,5 +755,6 @@ statement
     | $0 return
     | $0 return_empty
     | $0 continue
+    | ] statement } $0 statement $1 statement
     ;
 )";

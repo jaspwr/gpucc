@@ -29,16 +29,114 @@ void replace_identifier(const GLint* shader_out, u32 ref_pos,
     w_shader_out[ref_pos + 1] = var->register_;
 }
 
-void insert_line (ExtendableBuffer<GLint>& buffer, GLuint NEWLINE, std::vector<GLuint> insertion) {
-    u32 existing_line_len =  0;
-    while (buffer[buffer.get_size() - existing_line_len - 1] != NEWLINE) existing_line_len++;
-    auto line = buffer.rollback(existing_line_len);
+void insert_at(ExtendableBuffer<GLint>& buffer, u32 rollback_len, std::vector<GLuint>& insertion, GLuint NEWLINE) {
+    auto line = buffer.rollback(rollback_len);
     for (auto token : insertion) {
         buffer.append(token);
     }
     buffer.append(NEWLINE);
     for (auto token : line) {
         buffer.append(token);
+    }
+}
+
+void insert_line (ExtendableBuffer<GLint>& buffer, GLuint NEWLINE, std::vector<GLuint> insertion) {
+    u32 existing_line_len =  0;
+    while (buffer[buffer.get_size() - existing_line_len - 1] != NEWLINE) existing_line_len++;
+    insert_at(buffer, existing_line_len, insertion, NEWLINE);
+}
+
+struct Switch {
+    u32 insert_position;
+    
+    Switch(u32 insert_position) {
+        this->insert_position = insert_position;
+    }
+};
+
+void handle_break(Stack<GLint>& break_stack, ExtendableBuffer<GLint>& buffer, GLuint JMP) {
+    buffer.append(JMP); 
+    buffer.append(IR_REFERNCE);
+    break_stack.push(buffer.get_size());
+    buffer.append(0);
+}
+
+void handle_breakable_label(const GLint* shader_out, Stack<GLint>& break_stack, ExtendableBuffer<GLint>& buffer, u32& i) {
+    auto label = shader_out[i + 2];
+    while (!break_stack.empty()) {
+        buffer[break_stack.pop()] = label;
+    }
+}
+
+struct continue_ {
+    GLint index;
+    GLint scope;
+};
+
+void handle_continue(Stack<continue_>& continue_stack, ExtendableBuffer<GLint>& buffer, GLuint JMP) {
+    if (continue_stack.empty()) throw Exception(ExceptionType::Postprocessor, "Malformed IR. `continue` token outside of loop.");
+    auto continue_ = continue_stack.peek().index;
+    buffer.append(JMP);
+    buffer.append(IR_REFERNCE);
+    buffer.append(continue_);
+}
+
+typedef std::unordered_map<std::string, GLint> LabelMap;
+typedef std::unordered_map<std::string, std::vector<GLint>> UnresolvedLabelMap;
+
+void handle_gotoable_label(const GLint* shader_out, GLuint shader_out_size, u32& i,
+    ExtendableBuffer<GLint>& buffer, std::string& source, LabelMap& labels, 
+    UnresolvedLabelMap& unresolved_labels) {
+
+    // TODO: check how gotos and labels work specifically.
+    //       I'm not sure how they work scope wise or whatever.
+    if (i + 2 >= shader_out_size) throw Exception(ExceptionType::Postprocessor, "Malformed IR. `gotoable` token at end of shader.");
+    // Structure: GOTOABLE $0 $x :
+    auto pos = (u32)shader_out[i + 2];
+    auto label_indetifier = extract_token_at(source, pos);
+    auto label = shader_out[i + 4];
+    labels[label_indetifier] = label;
+
+    for (auto& unresolved_label : unresolved_labels[label_indetifier]) {
+        buffer[unresolved_label] = label;
+    }
+
+    i += 2;
+}
+
+void handle_goto_replace(const GLint* shader_out, GLuint shader_out_size, u32& i,
+    ExtendableBuffer<GLint>& buffer, std::string& source, LabelMap& labels, 
+    UnresolvedLabelMap& unresolved_labels) {
+
+    if (i + 2 >= shader_out_size) throw Exception(ExceptionType::Postprocessor, "Malformed IR. `goto_replace` token at end of shader.");
+    buffer.append(IR_REFERNCE);
+    auto pos = (u32)shader_out[i + 2];
+    auto label = extract_token_at(source, pos);
+    if (labels.find(label) != labels.end()) {
+        buffer.append(labels[label]);
+    } else {
+        unresolved_labels[label].push_back(buffer.get_size());
+        buffer.append(0);
+    }
+    i += 2;
+}
+
+void handle_identifier(const GLint* shader_out, std::string& source, ExtendableBuffer<GLint>& buffer,
+    VariableRegistry& var_reg, u32& i, GLuint NEWLINE, GLuint EQUAL, GLuint LOAD, bool loadable_flag) {
+
+    replace_identifier(shader_out, i, var_reg, source);
+
+    auto marker = shader_out[i];
+    auto reg = shader_out[++i];
+    buffer.append(marker);
+    if (loadable_flag && marker == IR_REFERNCE && var_reg.is_loadable(reg)) {
+        auto new_reg = var_reg.get_new_register();
+        insert_line(buffer, NEWLINE, std::vector<GLuint>{
+            IR_REFERNCE, new_reg, EQUAL, LOAD, IR_REFERNCE, (GLuint)reg
+        });
+        buffer.append(new_reg);
+    } else {
+        buffer.append(reg);
     }
 }
 
@@ -64,11 +162,11 @@ SizedGLintBuffer postprocess(const GLint* shader_out, GLuint shader_out_size,
     auto REPLACE_WITH = tokenise_ir_token("replace_with", ir_tokens);
     auto ALLOCA = tokenise_ir_token("ALLOCA", ir_tokens);
     auto NEWLINE = tokenise_ir_token("\n", ir_tokens);
-
-    struct continue_ {
-        GLint index;
-        GLint scope;
-    };
+    auto SWITCH = tokenise_ir_token("switch", ir_tokens);
+    auto SWITCH_BODY_END = tokenise_ir_token("switch_body_end", ir_tokens);
+    auto SWITCH_CASE = tokenise_ir_token("switch_case", ir_tokens);
+    auto SWITCH_DEFAULT = tokenise_ir_token("switch_default", ir_tokens);
+    auto FN = tokenise_ir_token("fn", ir_tokens);
 
     Stack<GLint> scope_stack("scope_stack");
     scope_stack.push(0); // global scope
@@ -77,28 +175,23 @@ SizedGLintBuffer postprocess(const GLint* shader_out, GLuint shader_out_size,
 
     Stack<GLint> break_stack("break_stack");
     Stack<GLint> replace_stack("replace_stack");
-    std::unordered_map<std::string, GLint> labels;
-    std::unordered_map<std::string, std::vector<GLint>> unresolved_labels;
+    Stack<Switch> switch_stack("switch_stack");
+    LabelMap labels;
+    UnresolvedLabelMap unresolved_labels;
 
     bool loadable_flag = false;
 
     for (u32 i = 0; i < shader_out_size; i++) {
         auto value = shader_out[i];
-        if (value == IR_SOURCE_POS_REF || value == IR_REFERNCE) {
-            replace_identifier(shader_out, i, var_reg, source);
-            
-            auto marker = shader_out[i];
-            auto reg = shader_out[++i];
-            buffer.append(marker);
-            if (loadable_flag && marker == IR_REFERNCE && var_reg.is_loadable(reg)) {
-                auto new_reg = var_reg.get_new_register();
-                insert_line(buffer, NEWLINE, std::vector<GLuint>{
-                    IR_REFERNCE, new_reg, EQUAL, LOAD, IR_REFERNCE, (GLuint)reg
-                });
-                buffer.append(new_reg);
-            } else {
-                buffer.append(reg);
+        if ((value == IR_SOURCE_POS_REF || value == IR_REFERNCE)) {
+            if (var_reg.is_in_global_scope()) {
+                buffer.append(shader_out[i]);
+                buffer.append(shader_out[++i]);
+                continue;
             }
+
+            handle_identifier(shader_out, source, buffer, var_reg, i, NEWLINE, EQUAL, LOAD, loadable_flag);
+            
             loadable_flag = false;
             continue;
         }
@@ -107,8 +200,36 @@ SizedGLintBuffer postprocess(const GLint* shader_out, GLuint shader_out_size,
             i += 3;
             continue;
         }
+        if (value == SWITCH) {
+            switch_stack.push(Switch(buffer.get_size() + 5));
+        }
+        if (value == SWITCH_BODY_END) {
+            switch_stack.pop();
+            continue;
+        }
+        if (value == SWITCH_CASE) {
+            auto& switch_ = switch_stack.peek();
+            auto case_value = (GLuint)shader_out[i + 2];
+            auto case_label = (GLuint)shader_out[i + 4];
+            auto insertion = std::vector<GLuint>{IR_SOURCE_POS_REF, case_value, IR_REFERNCE, case_label};
+            
+            // FIXME: this dosent work
+            // insert_at(buffer, buffer.get_size() - switch_.insert_position, insertion, NEWLINE);
+            
+            i += 2;
+            continue;
+        }
+        if (value == SWITCH_DEFAULT) {
+            auto& switch_ = switch_stack.peek();
+            auto case_label = (GLuint)shader_out[i + 2];
+            auto insertion = std::vector<GLuint>{JMP, IR_REFERNCE, case_label};
+
+            // insert_at(buffer, buffer.get_size() - switch_.insert_position, insertion, NEWLINE);
+            continue;
+        }
+
         if (value == REPLACE_ME) {
-            if (replace_stack.size() == 0) throw Exception(ExceptionType::Postprocessor, "Malformed IR. `replace_me` token with no `replace_with` token.");
+            if (replace_stack.size() == 0) continue; //throw Exception(ExceptionType::Postprocessor, "Malformed IR. `replace_me` token with no `replace_with` token.");
             buffer.append(IR_REFERNCE);
             buffer.append(replace_stack.pop());
             continue;
@@ -118,6 +239,7 @@ SizedGLintBuffer postprocess(const GLint* shader_out, GLuint shader_out_size,
             continue;
         }
         if (value == ALLOCA) {
+            // TODO: deal w types
             auto pos = (u32)shader_out[i + 3];
             auto name = extract_token_at(source, pos);
             auto val = new TypedValue();
@@ -126,42 +248,18 @@ SizedGLintBuffer postprocess(const GLint* shader_out, GLuint shader_out_size,
             var_reg.add_var(name, val);
         }
         if (value == GOTOABLE) {
-            // TODO: check how gotos and labels work specifically.
-            //       I'm not sure how they work scope wise or whatever.
-            if (i + 2 >= shader_out_size) throw Exception(ExceptionType::Postprocessor, "Malformed IR. `gotoable` token at end of shader.");
-            // Structure: GOTOABLE $0 $x :
-            auto pos = (u32)shader_out[i + 2];
-            auto label_indetifier = extract_token_at(source, pos);
-            auto label = shader_out[i + 4];
-            labels[label_indetifier] = label;
-
-            for (auto& unresolved_label : unresolved_labels[label_indetifier]) {
-                buffer[unresolved_label] = label;
-            }
-
-            i += 2;
+            handle_gotoable_label(shader_out, shader_out_size, i, buffer, source, labels, unresolved_labels);
             continue;
         }
         if (value == GOTO_REPLACE) {
-            if (i + 2 >= shader_out_size) throw Exception(ExceptionType::Postprocessor, "Malformed IR. `goto_replace` token at end of shader.");
-            buffer.append(IR_REFERNCE);
-            auto pos = (u32)shader_out[i + 2];
-            auto label = extract_token_at(source, pos);
-            if (labels.find(label) != labels.end()) {
-                buffer.append(labels[label]);
-            } else {
-                unresolved_labels[label].push_back(buffer.get_size());
-                buffer.append(0);
-            }
-            i += 2;
+            handle_goto_replace(shader_out, shader_out_size, i, buffer, source, labels, unresolved_labels);
             continue;
         }
         if (value == CONTINUABLE) {
             if (i + 2 >= shader_out_size) throw Exception(ExceptionType::Postprocessor, "Malformed IR. `continuable` token at end of shader.");
             
             // TODO
-            // This actually needs the next scope. 
-            // You also need to do something for single/null satements.
+            // do something for single/null satements.
             continues_for_next_scope.push(shader_out[i + 2]);
             continue;
         }
@@ -189,24 +287,15 @@ SizedGLintBuffer postprocess(const GLint* shader_out, GLuint shader_out_size,
             continue;
         }
         if (value == CONTINUE) {
-            if (continue_stack.empty()) throw Exception(ExceptionType::Postprocessor, "Malformed IR. `continue` token outside of loop.");
-            auto continue_ = continue_stack.peek().index;
-            buffer.append(JMP);
-            buffer.append(IR_REFERNCE);
-            buffer.append(continue_);
+            handle_continue(continue_stack, buffer, JMP);
             continue;
         }
         if (value == BREAK) {
-            buffer.append(JMP); 
-            buffer.append(IR_REFERNCE);
-            break_stack.push(buffer.get_size());
-            buffer.append(0);
+            handle_break(break_stack, buffer, JMP);
             continue;
         }
         if (value == BREAKABLE) {
-            while (!break_stack.empty()) {
-                buffer[break_stack.pop()] = shader_out[i + 2];
-            }
+            handle_breakable_label(shader_out, break_stack, buffer, i);
             continue;
         }
     
