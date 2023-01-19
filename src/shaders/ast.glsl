@@ -180,13 +180,11 @@ void handleChildren(out ChildNode children[4], uint lastFinal, in uint matchBuff
 	volume = workingVolume;
 }
 
-void tryParse(in uint start, out uint outToken, in uint preToken, 
+void tryParse(in uint start, out uint outToken, in uint preToken, inout uint matchBuffer[10], inout uint matchBufferPointer,
 	out ChildNode children[4], out uint outLength, out uint volume) {
 	uint row = 0;
 	uint lastFinal = 0;
 	uint lenAtFinal = 0;
-	uint matchBuffer[10];
-	uint matchBufferPointer = 0;
 	uint iterations = 0;
 	for(uint i = 0; iterations < 3000; i++) {
 		if (!inbounds(start + i, tokens.length())) break;
@@ -236,9 +234,13 @@ void main() {
 		ChildNode children[4];
 		uint pos = uint(start + i + preTokenLen);
 		uint volume = 0;
-		tryParse(pos, token, preToken, children, len, volume);
+
+		uint matchBuffer[10];
+		uint matchBufferPointer = 0;
+		tryParse(pos, token, preToken, matchBuffer, matchBufferPointer, children, len, volume);
 
         barrier();
+		
 	
 		// TODO: replace 90 with the number of language tokens and/or address following issue:
 		// Having "> 90" and not "!= 0" is sort of a bandaid fix for an issue where 

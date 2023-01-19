@@ -15,19 +15,6 @@ const GLuint tokenise_ir_token(const char* token, ParseTree& ir_tokens) {
     return ret;
 }
 
-void replace_identifier(const GLint* shader_out, u32 ref_pos,
-    VariableRegistry& var_reg, std::string& source) {
-    
-    if (shader_out[ref_pos] != IR_SOURCE_POS_REF) return;
-    auto pos = (u32)shader_out[ref_pos + 1];
-    auto token = extract_token_at(source, pos);
-    if (char_utils::is_numeric(token[0])) return;
-    auto var = var_reg.get_var(token);
-
-    GLint* w_shader_out = (GLint*)shader_out;
-    w_shader_out[ref_pos] = IR_REFERNCE;
-    w_shader_out[ref_pos + 1] = var->register_;
-}
 
 void insert_at(ExtendableBuffer<GLint>& buffer, u32 rollback_len, std::vector<GLuint>& insertion, GLuint NEWLINE) {
     auto line = buffer.rollback(rollback_len);
@@ -121,13 +108,54 @@ void handle_goto_replace(const GLint* shader_out, GLuint shader_out_size, u32& i
     i += 2;
 }
 
+
+
+CompilerType consume_type(const GLint* shader_out, u32& i,
+    GLuint I8, GLuint I32, GLuint F32, GLuint VOID, GLuint PTR ) {
+    
+    auto ret = CompilerType();
+    BaseType bt;
+
+    if (shader_out[i] == I8) {
+        bt = BaseType::i8;
+    } else if (shader_out[i] == I32) {
+        bt = BaseType::i32;
+    } else if (shader_out[i] == F32) {
+        bt = BaseType::f32;
+    } else if (shader_out[i] == VOID) {
+        bt = BaseType::void_;
+    } else {
+        //throw Exception(ExceptionType::Postprocessor, "Type error.");
+    }
+    i++;
+    ret.base_type = bt;
+    while (shader_out[i] == PTR) {
+        i++;
+        ret.pointer_level++;
+    }
+    return ret;
+}
+
 void handle_identifier(const GLint* shader_out, std::string& source, ExtendableBuffer<GLint>& buffer,
     VariableRegistry& var_reg, u32& i, GLuint NEWLINE, GLuint EQUAL, GLuint LOAD, bool loadable_flag) {
 
-    replace_identifier(shader_out, i, var_reg, source);
-
     auto marker = shader_out[i];
     auto reg = shader_out[++i];
+
+    if (marker == IR_SOURCE_POS_REF) {
+        auto token = extract_token_at(source, reg);
+        if (!char_utils::is_numeric(token[0])) { 
+            auto var = var_reg.get_var(token);
+
+            //buffer.append(var->get_ir_type());
+
+            GLint* w_shader_out = (GLint*)shader_out;
+            marker = IR_REFERNCE;
+            reg = var->register_;
+        }
+    }
+
+
     buffer.append(marker);
     if (loadable_flag && marker == IR_REFERNCE && var_reg.is_loadable(reg)) {
         auto new_reg = var_reg.get_new_register();
@@ -139,6 +167,23 @@ void handle_identifier(const GLint* shader_out, std::string& source, ExtendableB
         buffer.append(reg);
     }
 }
+
+void parse_var_def(const GLint* shader_out, u32& i, std::string& source, VariableRegistry& var_reg, Register reg, GLuint I8, GLuint I32, GLuint F32, GLuint VOID, GLuint PTR ) {
+    //auto type = consume_type(shader_out, i, I8, I32, F32, VOID, PTR);
+
+    // printf("type: %d\n", type.pointer_level);
+
+    auto pos = i--; // `i` is decremented is because it's incremented in the for loop.
+    while (shader_out[pos] != IR_SOURCE_POS_REF) pos++;
+
+    auto name = extract_token_at(source, shader_out[pos + 1]);
+    auto val = new TypedValue();
+    val->register_ = reg;
+    val->data = nullptr;
+    //val->type = type;
+    var_reg.add_var(name, val);
+}
+
 
 SizedGLintBuffer postprocess(const GLint* shader_out, GLuint shader_out_size, 
     VariableRegistry& var_reg, ParseTree& ir_tokens, std::string& source) {
@@ -167,6 +212,26 @@ SizedGLintBuffer postprocess(const GLint* shader_out, GLuint shader_out_size,
     auto SWITCH_CASE = tokenise_ir_token("switch_case", ir_tokens);
     auto SWITCH_DEFAULT = tokenise_ir_token("switch_default", ir_tokens);
     auto FN = tokenise_ir_token("fn", ir_tokens);
+    auto FN_DEF_ARG = tokenise_ir_token("fn_def_arg", ir_tokens);
+
+    auto I8 = tokenise_ir_token("i8", ir_tokens);
+    auto I32 = tokenise_ir_token("i32", ir_tokens);
+    auto F32 = tokenise_ir_token("f32", ir_tokens);
+    auto PTR = tokenise_ir_token("ptr", ir_tokens);
+    auto VOID = tokenise_ir_token("void", ir_tokens);
+
+    TypedValue::IR_I8 = I8;
+    TypedValue::IR_I32 = I32;
+    TypedValue::IR_F32 = F32;
+    TypedValue::IR_PTR = PTR;
+    TypedValue::IR_VOID = VOID;
+    
+    auto ENUM = tokenise_ir_token("enum", ir_tokens);
+
+    auto OPEN_CURLY = tokenise_ir_token("{", ir_tokens);
+    auto CLOSE_CURLY = tokenise_ir_token("}", ir_tokens);
+    auto OPEN_PAREN = tokenise_ir_token("(", ir_tokens);
+    auto CLOSE_PAREN = tokenise_ir_token(")", ir_tokens);
 
     Stack<GLint> scope_stack("scope_stack");
     scope_stack.push(0); // global scope
@@ -180,11 +245,12 @@ SizedGLintBuffer postprocess(const GLint* shader_out, GLuint shader_out_size,
     UnresolvedLabelMap unresolved_labels;
 
     bool loadable_flag = false;
+    bool ingore_next_scope_open_flag = false;
 
     for (u32 i = 0; i < shader_out_size; i++) {
         auto value = shader_out[i];
         if ((value == IR_SOURCE_POS_REF || value == IR_REFERNCE)) {
-            if (var_reg.is_in_global_scope()) {
+            if (var_reg.is_in_global_scope() || shader_out[i - 2] == FN) {
                 buffer.append(shader_out[i]);
                 buffer.append(shader_out[++i]);
                 continue;
@@ -219,6 +285,14 @@ SizedGLintBuffer postprocess(const GLint* shader_out, GLuint shader_out_size,
             i += 2;
             continue;
         }
+        if (value == FN_DEF_ARG) {
+            if (shader_out[i + 1] != CLOSE_PAREN) {
+                auto reg = var_reg.get_new_register();
+                i++;
+                parse_var_def(shader_out, i, source, var_reg, reg, I8, I32, F32, VOID, PTR);
+            }
+            continue;
+        }
         if (value == SWITCH_DEFAULT) {
             auto& switch_ = switch_stack.peek();
             auto case_label = (GLuint)shader_out[i + 2];
@@ -227,7 +301,13 @@ SizedGLintBuffer postprocess(const GLint* shader_out, GLuint shader_out_size,
             // insert_at(buffer, buffer.get_size() - switch_.insert_position, insertion, NEWLINE);
             continue;
         }
-
+        if (value == ENUM) {
+            if (shader_out[i + 1] == OPEN_CURLY) {
+                
+            }
+            buffer.append(I32);
+            continue;
+        }
         if (value == REPLACE_ME) {
             if (replace_stack.size() == 0) continue; //throw Exception(ExceptionType::Postprocessor, "Malformed IR. `replace_me` token with no `replace_with` token.");
             buffer.append(IR_REFERNCE);
@@ -240,12 +320,10 @@ SizedGLintBuffer postprocess(const GLint* shader_out, GLuint shader_out_size,
         }
         if (value == ALLOCA) {
             // TODO: deal w types
-            auto pos = (u32)shader_out[i + 3];
-            auto name = extract_token_at(source, pos);
-            auto val = new TypedValue();
-            val->register_ = shader_out[i - 2];
-            val->data = nullptr;
-            var_reg.add_var(name, val);
+            auto reg = shader_out[i - 2];
+            i++;
+            parse_var_def(shader_out, i, source, var_reg, reg, I8, I32, F32, VOID, PTR);
+
         }
         if (value == GOTOABLE) {
             handle_gotoable_label(shader_out, shader_out_size, i, buffer, source, labels, unresolved_labels);
@@ -263,7 +341,16 @@ SizedGLintBuffer postprocess(const GLint* shader_out, GLuint shader_out_size,
             continues_for_next_scope.push(shader_out[i + 2]);
             continue;
         }
+        if (value == FN) {
+            ingore_next_scope_open_flag = true;
+            var_reg.push_scope();
+        }
         if (value == SCOPE_START) {
+            if (ingore_next_scope_open_flag) {
+                ingore_next_scope_open_flag = false;
+            } else {
+                var_reg.push_scope();
+            }
             auto scope_ref = shader_out[i + 2];
             scope_stack.push(scope_ref);
             
@@ -271,7 +358,6 @@ SizedGLintBuffer postprocess(const GLint* shader_out, GLuint shader_out_size,
                 continue_stack.push({continues_for_next_scope.pop(), scope_ref});
             }
 
-            var_reg.push_scope();
             i += 3;
             continue;
         }

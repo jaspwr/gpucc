@@ -100,3 +100,31 @@ void VariableRegistry::push_scope() {
 void VariableRegistry::pop_scope() {
     local_scopes.pop();
 }
+
+void TypedValue::dereference() {
+    type.pointer_level--;
+}
+
+GLuint TypedValue::get_ir_type() {
+    if (type.pointer_level > 0) {
+        return IR_PTR;
+    }
+    switch (type.base_type) {
+        case BaseType::i8:
+            return IR_I8;
+        case BaseType::i32:
+            return IR_I32;
+        case BaseType::f32:
+            return IR_F32;
+        case BaseType::void_:
+            return IR_VOID;
+        default:
+            throw Exception("Unknown type.");
+    }
+}
+
+GLuint TypedValue::IR_I8 = 0;
+GLuint TypedValue::IR_I32 = 0;
+GLuint TypedValue::IR_F32 = 0;
+GLuint TypedValue::IR_VOID = 0;
+GLuint TypedValue::IR_PTR = 0;

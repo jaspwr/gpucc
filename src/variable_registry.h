@@ -3,6 +3,7 @@
 #include "types.h"
 #include "compiler_type.h"
 #include "stack.h"
+#include "gl.h"
 
 #include <string>
 #include <vector>
@@ -12,6 +13,13 @@
 typedef u32 Register;
 
 struct TypedValue {
+    static GLuint IR_I8;
+    static GLuint IR_I32;
+    static GLuint IR_F32;
+    static GLuint IR_VOID;
+    static GLuint IR_PTR;
+
+
     std::string name;
     CompilerType type;
 
@@ -23,7 +31,12 @@ struct TypedValue {
     TypedValue();
     TypedValue(std::string name, CompilerType type, Register register_, void* data, u32 size);
     ~TypedValue();
+
+    void dereference();
+
+    GLuint get_ir_type();
 };
+
 
 struct Scope {
     std::unordered_map<std::string, TypedValue*> variables;

@@ -1,7 +1,7 @@
 const char* c_pre_yacc = R"(
 primary_expression
     : $0 { #identifier, type_specifier, type_qualifier, struct_union_type
-    'int', 'float', 'char', 'void', 'double' 'long' 'struct', 'union', int, char, float, void } #identifier
+    'int', 'float', 'char', 'void', 'double' 'long' 'struct', 'union', 'enum' , int, char, float, void } #identifier
     | $0 #literal
     | ] 'if', 'switch', 'for' } '(' $0 primary_expression ')'
     | $0 sizeof
@@ -32,6 +32,9 @@ type_specifier
     | $0 char
     | $0 float
     | $0 void
+    | [ '{' } $0 enum_type
+    | [ ';' } $0 full_struct_definition
+    | [ ';' } $0 full_enum_definition
     ; < !0 >
 
 char
@@ -90,8 +93,41 @@ full_struct_definition
     ; < !0 } >
 
 union_type
-    : 'union' $1 #identifier
-    ; < union $1 >
+    : 'union' $0 #identifier
+    ; < union $0 >
+
+enum_type
+    : 'enum' #identifier
+    ; < enum >
+
+enum_definition_head
+    : 'enum' '{'
+    | enum_type '{'
+    ; < enum { >
+
+partial_enum_definition
+    : $0 enum_definition_head $1 primary_expression ','
+    | [ '=' } $0 enum_definition_head $1 primary_expression
+    | $0 partial_enum_definition $1 primary_expression ','
+    | [ '=' } $0 partial_enum_definition $1 primary_expression
+    | $0 partial_enum_definition_assign $1 primary_expression ','
+    | [ '=' } $0 partial_enum_definition_assign $1 primary_expression
+    ; < !0 $1 >
+
+partial_enum_definition_assign
+    : $0 enum_definition_head $1 primary_expression '=' $2 primary_expression ','
+    | $0 enum_definition_head $1 primary_expression '=' $2 primary_expression
+    | $0 partial_enum_definition_assign $1 primary_expression '=' $2 primary_expression ','
+    | $0 partial_enum_definition_assign $1 primary_expression '=' $2 primary_expression
+    | $0 partial_enum_definition $1 primary_expression '=' $2 primary_expression ','
+    | $0 partial_enum_definition $1 primary_expression '=' $2 primary_expression
+    ; < !0 set_counter $2 $1 >
+
+full_enum_definition
+    : $0 enum_definition_head '}'
+    | $0 partial_enum_definition '}'
+    | $0 partial_enum_definition_assign '}'
+    ; < !0 } >
 
 type_qualifier
     : $0 'const'
@@ -116,29 +152,44 @@ cast_operator
     | ] 'sizeof' } '(' $1 struct_union_type ')'
     ; < !0 !1 >
 
+array_pointer
+    : [ '[' } '[' ']'
+    | '[' ']' $0 array_pointer
+    ; < ptr !0 >
+
 declaration
-    : ] type_qualifier, qualifier_list, #identifier } $1 type_specifier $2 #identifier
-    | ] type_qualifier, qualifier_list, #identifier } $1 type_specifier $2 primary_expression
-    | ] type_qualifier, qualifier_list, #identifier } $1 struct_union_type $2 #identifier
-    | ] type_qualifier, qualifier_list, #identifier } $1 struct_union_type $2 primary_expression
-    | ] type_qualifier, qualifier_list, #identifier } $1 pointer $2 primary_expression
-    | ] type_qualifier, qualifier_list, #identifier } $0 qualifier_list $1 type_specifier $2 #identifier
-    | ] type_qualifier, qualifier_list, #identifier } $0 qualifier_list $1 struct_union_type $2 #identifier
-    | ] type_qualifier, qualifier_list, #identifier } $0 qualifier_list $1 type_specifier $2 primary_expression
-    | ] type_qualifier, qualifier_list, #identifier } $0 qualifier_list $1 struct_union_type $2 primary_expression
-    | ] type_qualifier, qualifier_list, #identifier } $0 qualifier_list $1 pointer $2 primary_expression
-    ; < !0 !1 $2 >
+    : ] type_qualifier, qualifier_list, #identifier } [ '[', array_pointer } $1 type_specifier $2 #identifier
+    | ] type_qualifier, qualifier_list, #identifier } [ '[', array_pointer } $1 type_specifier $2 primary_expression
+    | ] type_qualifier, qualifier_list, #identifier } [ '[', array_pointer } $1 struct_union_type $2 #identifier
+    | ] type_qualifier, qualifier_list, #identifier } [ '[', array_pointer } $1 struct_union_type $2 primary_expression
+    | ] type_qualifier, qualifier_list, #identifier } [ '[', array_pointer } $1 pointer $2 primary_expression
+    | ] type_qualifier, qualifier_list, #identifier } [ '[', array_pointer } $0 qualifier_list $1 type_specifier $2 #identifier
+    | ] type_qualifier, qualifier_list, #identifier } [ '[', array_pointer } $0 qualifier_list $1 struct_union_type $2 #identifier
+    | ] type_qualifier, qualifier_list, #identifier } [ '[', array_pointer } $0 qualifier_list $1 type_specifier $2 primary_expression
+    | ] type_qualifier, qualifier_list, #identifier } [ '[', array_pointer } $0 qualifier_list $1 struct_union_type $2 primary_expression
+    | ] type_qualifier, qualifier_list, #identifier } [ '[', array_pointer } $0 qualifier_list $1 pointer $2 primary_expression
+    | ] type_qualifier, qualifier_list, #identifier } [ '[', array_pointer } $1 type_specifier $2 #identifier $3 array_pointer
+    | ] type_qualifier, qualifier_list, #identifier } [ '[', array_pointer } $1 type_specifier $2 primary_expression $3 array_pointer
+    | ] type_qualifier, qualifier_list, #identifier } [ '[', array_pointer } $1 struct_union_type $2 #identifier $3 array_pointer
+    | ] type_qualifier, qualifier_list, #identifier } [ '[', array_pointer } $1 struct_union_type $2 primary_expression $3 array_pointer
+    | ] type_qualifier, qualifier_list, #identifier } [ '[', array_pointer } $1 pointer $2 primary_expression $3 array_pointer
+    | ] type_qualifier, qualifier_list, #identifier } [ '[', array_pointer } $0 qualifier_list $1 type_specifier $2 #identifier $3 array_pointer
+    | ] type_qualifier, qualifier_list, #identifier } [ '[', array_pointer } $0 qualifier_list $1 struct_union_type $2 #identifier $3 array_pointer
+    | ] type_qualifier, qualifier_list, #identifier } [ '[', array_pointer } $0 qualifier_list $1 type_specifier $2 primary_expression $3 array_pointer
+    | ] type_qualifier, qualifier_list, #identifier } [ '[', array_pointer } $0 qualifier_list $1 struct_union_type $2 primary_expression $3 array_pointer
+    | ] type_qualifier, qualifier_list, #identifier } [ '[', array_pointer } $0 qualifier_list $1 pointer $2 primary_expression $3 array_pointer
+    ; < !0 !1 !3 $2 >
 
 declaration_list
     : $0 declaration_list $1 declaration ','
     | ] ',', declaration_list } $0 declaration ','
-    ; < , >
+    ; < , fn_def_arg >
 
 function_definition_head
     : $0 declaration '(' $1 declaration_list $2 declaration ')'
     | $0 declaration '(' $1 declaration ')'
     | $0 declaration '(' ')'
-    ; < fn !0 ( !1 !2 ) >
+    ; < fn !0 ( fn_def_arg !1 !2 ) >
 
 method_call_head
     : $0 primary_expression '('
@@ -210,6 +261,7 @@ function_definition
 global_statement
     : $0 function_definition
     | $0 full_struct_definition ';'
+    | $0 full_enum_definition ';'
     ; < !0 
     >
 
@@ -482,8 +534,8 @@ assign
     : [ '(', '['} { '.', '->' } { cast_operator, '*', '/', '%', '-', '+', '<<', '>>', '>', 
     '<', '<=', '>=', '!=', '==', '&', '^', '++', '--', '&&', '||', '?', ':' } ] '=' }
     $0 primary_expression '=' $1 primary_expression
-    ; < $x = loadable $1
-    STORE $0 $x 
+    ; < STORE $0 loadable $1
+    $x = LOAD $0 
     >
 
 add_assign

@@ -140,7 +140,7 @@ std::string compile(Job& job, Shaders& shaders) {
     #endif
 
     IrTokenList* ir_tokens = new IrTokenList();
-    ParseTree yacc_parse_tree = ParseTree(800);
+    ParseTree yacc_parse_tree = ParseTree(900);
     ParseTree ir_parse_tree = ParseTree(400);
     std::vector<std::string> grammars = { c_pre_yacc, c_yacc };
     
