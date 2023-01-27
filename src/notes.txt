@@ -13,5 +13,11 @@
     * switch cases replacement.
     * proper types
 
+ * BRO some of this shit is literally just going to be easier if you do it in the shaders
+
+ * Do literall parsing in the shaders,
+ * create a set of markers for literals and then write parsers.
+ * this will be excelent for our backend
+ * shader side hashmap for identifiers? lol
 
 * swap postfix and prefix increment and decrementer

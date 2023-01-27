@@ -3,6 +3,8 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <sys/ioctl.h>
+#include <stdio.h>
 
 std::string get_next_arg(int& argc, char**& argv) {
     argc--;
@@ -43,4 +45,10 @@ Job parse_args(int argc, char** argv) {
         consume_arg(argc, argv, job);
     }
     return job;
+}
+
+TerminalSize get_terminal_size() {
+    struct winsize w;
+    ioctl(0, TIOCGWINSZ, &w);
+    return TerminalSize { w.ws_row, w.ws_col };
 }

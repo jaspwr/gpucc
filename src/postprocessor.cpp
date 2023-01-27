@@ -146,9 +146,6 @@ void handle_identifier(const GLint* shader_out, std::string& source, ExtendableB
         auto token = extract_token_at(source, reg);
         if (!char_utils::is_numeric(token[0])) { 
             auto var = var_reg.get_var(token);
-
-            //buffer.append(var->get_ir_type());
-
             GLint* w_shader_out = (GLint*)shader_out;
             marker = IR_REFERNCE;
             reg = var->register_;
@@ -213,6 +210,7 @@ SizedGLintBuffer postprocess(const GLint* shader_out, GLuint shader_out_size,
     auto SWITCH_DEFAULT = tokenise_ir_token("switch_default", ir_tokens);
     auto FN = tokenise_ir_token("fn", ir_tokens);
     auto FN_DEF_ARG = tokenise_ir_token("fn_def_arg", ir_tokens);
+    auto SET_ENUM_COUNTER = tokenise_ir_token("set_counter", ir_tokens);
 
     auto I8 = tokenise_ir_token("i8", ir_tokens);
     auto I32 = tokenise_ir_token("i32", ir_tokens);
@@ -303,10 +301,28 @@ SizedGLintBuffer postprocess(const GLint* shader_out, GLuint shader_out_size,
         }
         if (value == ENUM) {
             if (shader_out[i + 1] == OPEN_CURLY) {
-                
+                u32 enum_counter = 0;
+                i += 2;
+                while (shader_out[i] != CLOSE_CURLY) {
+                    if (shader_out[i] == SET_ENUM_COUNTER) {
+                        i += 2;
+                        enum_counter = parse_int((char* )extract_token_at(source, shader_out[i]).c_str());
+                        i++;
+                        continue;
+                    }
+                    if (shader_out[i] == IR_SOURCE_POS_REF) {
+                        i++;
+                        auto name = extract_token_at(source, shader_out[i]);
+                        var_reg.add_enum_const(name, enum_counter);
+                        enum_counter++;
+                    }
+                    i++;
+                }
+                continue;
+            } else {
+                buffer.append(I32);
+                continue;
             }
-            buffer.append(I32);
-            continue;
         }
         if (value == REPLACE_ME) {
             if (replace_stack.size() == 0) continue; //throw Exception(ExceptionType::Postprocessor, "Malformed IR. `replace_me` token with no `replace_with` token.");

@@ -40,6 +40,7 @@ struct TypedValue {
 
 struct Scope {
     std::unordered_map<std::string, TypedValue*> variables;
+    std::unordered_map<std::string, i64> enum_consts;
     std::vector<Register> loadable_registers;
 
     Scope() {
@@ -65,7 +66,9 @@ class VariableRegistry {
         void pop_scope();
         
         TypedValue* get_var(std::string& name);
+        i64 get_enum_const(std::string& name);
         void add_var(std::string& name, TypedValue* value);
+        void add_enum_const(std::string& name, i64 value);
         bool is_loadable(Register register_);
         bool is_in_global_scope();
         Register get_new_register();

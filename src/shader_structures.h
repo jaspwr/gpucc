@@ -28,8 +28,8 @@ struct AstNode {
     ChildNode children[4];
     GLuint volume;
 
-    void print() {
-        printf("nodeToken: %d, volume: %d\n", nodeToken, volume);
+    void print(std::string name) {
+        printf("nodeToken: %s, volume: %d\n", name.c_str(), volume);
         for (auto child : children) {
             if (child.ref == 0) continue;
             printf("    ");

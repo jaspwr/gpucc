@@ -185,18 +185,20 @@ std::string compile(Job& job, Shaders& shaders) {
     #endif
 
     if (job.dbg) {
+        auto nodes = ast_nodes.dump();
+        print_ast_nodes(nodes, ast_nodes.size - 1, *lang_tokens_parse_tree, yacc_parse_tree);
+        free(nodes);
+
         // tokens->print_contents();
 
-        auto tokens_dmp = tokens->dump();
-        print_tokens(tokens_dmp, tokens->size, *lang_tokens_parse_tree, yacc_parse_tree);
-        free(tokens_dmp);
+        // auto tokens_dmp = tokens->dump();
+        // print_tokens(tokens_dmp, tokens->size, *lang_tokens_parse_tree, yacc_parse_tree);
+        // free(tokens_dmp);
 
         // printf("AST NODES:\n");
         // ast_nodes.print_contents();
 
-        // auto nodes = ast_nodes.dump();
-        // print_ast_nodes(nodes, ast_nodes.size);
-        // free(nodes);
+
     }
 
     // FIXME: there shouldn't nee to be a +5 here    

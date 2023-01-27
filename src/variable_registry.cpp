@@ -70,6 +70,15 @@ void VariableRegistry::add_var(std::string& name, TypedValue* value) {
     current_scope.loadable_registers.push_back(value->register_);
 }
 
+void VariableRegistry::add_enum_const(std::string& name, i64 value) {
+    if (local_scopes.size() == 0) {
+        global_scope.enum_consts[name] = value;
+        return;
+    }
+    auto& current_scope = local_scopes.peek();
+    current_scope.enum_consts[name] = value;
+}
+
 bool VariableRegistry::is_loadable(Register register_) {
     // TODO: make faster
     auto scopes_iter = local_scopes.iter();
@@ -121,6 +130,22 @@ GLuint TypedValue::get_ir_type() {
         default:
             throw Exception("Unknown type.");
     }
+}
+
+i64 VariableRegistry::get_enum_const(std::string& name) {
+    auto scopes_iter = local_scopes.iter();
+    while (scopes_iter.has_next()) {
+        auto& scope = scopes_iter.next();
+        auto search = scope.enum_consts.find(name);
+        if (search != scope.enum_consts.end()) {
+            return search->second;
+        }
+    }
+    auto search = global_scope.enum_consts.find(name);
+    if (search != global_scope.enum_consts.end()) {
+        return search->second;
+    }
+    throw Exception("Unknown enum constant \"" + name + "\".");
 }
 
 GLuint TypedValue::IR_I8 = 0;
