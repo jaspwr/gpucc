@@ -3,6 +3,7 @@
 #include "gl.h"
 #include "variable_registry.h"
 #include "parse_tree.h"
+#include "shader_structures.h"
 
 struct SizedGLintBuffer {
     ~SizedGLintBuffer();
@@ -12,4 +13,4 @@ struct SizedGLintBuffer {
 };
 
 SizedGLintBuffer postprocess(const GLint* shader_out, GLuint shader_out_size,
-    VariableRegistry& var_reg, ParseTree& ir_tokens, std::string& source);
+    VariableRegistry& var_reg, ParseTree& ir_tokens, std::string& source, AstNode* ast_nodes_dmp);

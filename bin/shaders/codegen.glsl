@@ -2,13 +2,17 @@
 
 layout(local_size_x = 32, local_size_y = 1, local_size_z = 1 ) in;
 
+#define LITERAL 1
+#define IDENTIFIER 2
+
 // Reserved IR tokens
 #define IR_REFERNCE 1
 #define IR_SELF_REFERENCE 2
 #define IR_INSERSION 3
 #define IR_SOURCE_POS_REF 4
+#define IR_LITERAL_REF 5
 
-#define IR_OTHER_TOKENS_START 5
+#define IR_OTHER_TOKENS_START 6
 
 struct ChildNode {
     int ref;
@@ -61,7 +65,7 @@ uint getChildOffset(uint codegenPtr, uint childIndex) {
     return irCodegen[codegenPtr + childIndex];
 }
 
-int fetch_ref (uint ref, AstNode node) {
+int fetch_ref (uint ref, AstNode node, inout bool isLit) {
     if (ref > 4) return 0;
     int pos = node.children[ref].ref;
 
@@ -71,6 +75,12 @@ int fetch_ref (uint ref, AstNode node) {
         && codegenPointer(fetchAstNodeFromChildRef(pos).nodeToken) == 0) {
 
         pos = fetchAstNodeFromChildRef(pos).children[0].ref;
+
+        if (fetchAstNodeFromChildRef(pos).nodeToken == LITERAL) {
+            isLit = true;
+            return pos;
+        }
+
         maxOut++;
     }
 
@@ -97,9 +107,13 @@ void writeToOutput(uint pos, AstNode node, int nodePos) {
         else if (token == IR_REFERNCE) {
 
             if (++i >= len) break;
-            int ref = fetch_ref(irCodegen[ptr + i], node);
+            bool isLit = false;
+            int ref = fetch_ref(irCodegen[ptr + i], node, isLit);
             // TODO: deal with refs at 0
-            if (ref > 0) {
+            if (isLit) {
+                output_[pos + i - 1] = IR_LITERAL_REF;
+                output_[pos + i] = ref;
+            } else if (ref > 0) {
                 output_[pos + i - 1] = IR_REFERNCE;
                 output_[pos + i] = ref;
             } else {

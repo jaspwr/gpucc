@@ -136,6 +136,8 @@ void print_ast_nodes(void* nodes, u32 length, ParseTree& lang_tokens, ParseTree&
             largest_volume = node.volume;
             entry = node;
         }
+        node.print(check_both_parse_trees(node.nodeToken, &lang_tokens, &abstract_tokens));
+        
     }
 
     auto term_size = get_terminal_size();
@@ -147,7 +149,7 @@ void print_ast_nodes(void* nodes, u32 length, ParseTree& lang_tokens, ParseTree&
     // print_centered("AST", term_size.cols / 2);
     // printf("\n");
 
-    // entry.print(check_both_parse_trees(entry.nodeToken, &lang_tokens, &abstract_tokens));
+    entry.print(check_both_parse_trees(entry.nodeToken, &lang_tokens, &abstract_tokens));
     //print_node(entry, term_size.cols, ast_nodes, node_map, lang_tokens, abstract_tokens);
 }
 

@@ -17,6 +17,7 @@
 
 struct Shaders {
     Shader tokeniser;
+    Shader literals;
     Shader ast;
     Shader codegen;
 };

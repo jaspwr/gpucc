@@ -5,6 +5,9 @@ layout(local_size_x = 32, local_size_y = 1, local_size_z = 1 ) in;
 #define CHARS_PER_INVOCATION 4
 #define ROW_SIZE 256
 
+#define LITERAL 1
+#define IDENTIFIER 2
+
 struct ParseTreeItem {
 	uint nextRow;
 	uint final;
@@ -109,18 +112,58 @@ void tryParse(in uint start, out uint outToken, out uint outLength) {
 void parseIdentifiersAndLiterals(in uint pos, inout uint token, out uint len) {
 	len = 0;
 	if (beginsAlphanumToken(pos)) {
-		token = isNumeric(source[pos]) ? 1 : 2;
-		while (inbounds(pos + len, source.length()) && isAlphanum(source[pos + len]) && len < 30) {
+		token = isNumeric(source[pos]) ? LITERAL : IDENTIFIER;
+		while (true) {
 			// TODO: Check max source length
-			len++;
+			if (inbounds(pos + len, source.length()) && isAlphanum(source[pos + len]) && len < 30) {
+				len++;
+				continue;
+			}
+			if (token == LITERAL) {
+				if (source[pos + len] == 46 /* . */) {
+					len++;
+					continue;
+				}
+				if (source[pos + len - 1] == 101 /* e */ || source[pos + len - 1] == 69 /* E */) {
+					if (source[pos + len] == 43 /* + */ || source[pos + len] == 45 /* - */) {
+						len++;
+						continue;
+					}
+				}
+			}
+			break;
 		}
+		
 	}
+}
+
+bool parseCharLiteral(in uint pos, out uint len) {
+	len = 1;
+	if (source[pos] == 39) {
+		while (inbounds(pos + len, source.length()) && source[pos + len] != 39) {
+			len++;
+			if (len > 3) {
+				return false;
+			}
+		}
+
+		tokens[pos].id = LITERAL;
+		tokens[pos].len = ++len;
+		tokens[pos].astNodeLocation = -int(pos);
+		return true;
+	} 
+	return false;
 }
 
 void main() {
 	uint start = gl_GlobalInvocationID.x * CHARS_PER_INVOCATION;
 
 	for (uint i = 0; i < CHARS_PER_INVOCATION; i++) {
+		uint charLen = 0;
+		if (parseCharLiteral(start + i, charLen)) {
+			i += charLen;
+			continue;
+		}
 		if (!beginsToken(start + i)) {
 			continue;
 		}

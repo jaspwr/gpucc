@@ -3,6 +3,7 @@
 #include "exception.h"
 #include "ir_ssbo_format.h"
 #include "stack.h"
+#include "literal.h"
 
 SizedGLintBuffer::~SizedGLintBuffer() {
     delete[] data;
@@ -181,9 +182,24 @@ void parse_var_def(const GLint* shader_out, u32& i, std::string& source, Variabl
     var_reg.add_var(name, val);
 }
 
+struct LiteralFromShader {
+    GLuint _padding0[2];
+    GLuint type;
+    GLuint _padding1;
+    GLuint value_first_half;
+    GLuint _padding2;
+    GLuint value_second_half;
+    GLuint _padding3[3];
+};
+
+Literal get_literal(GLuint pos, AstNode* ast_nodes_dmp) {
+    auto node = ((LiteralFromShader*)ast_nodes_dmp)[pos];
+    return Literal(node.type, node.value_first_half, node.value_second_half);
+}
+
 
 SizedGLintBuffer postprocess(const GLint* shader_out, GLuint shader_out_size, 
-    VariableRegistry& var_reg, ParseTree& ir_tokens, std::string& source) {
+    VariableRegistry& var_reg, ParseTree& ir_tokens, std::string& source, AstNode* ast_nodes_dmp) {
 
     auto buffer = ExtendableBuffer<GLint>(1024);
 
@@ -257,6 +273,12 @@ SizedGLintBuffer postprocess(const GLint* shader_out, GLuint shader_out_size,
             handle_identifier(shader_out, source, buffer, var_reg, i, NEWLINE, EQUAL, LOAD, loadable_flag);
             
             loadable_flag = false;
+            continue;
+        }
+        if (value == IR_LITERAL_REF) {
+            buffer.append(shader_out[i]);
+            buffer.append(shader_out[++i]);
+            get_literal(shader_out[i] - 1, ast_nodes_dmp).print();
             continue;
         }
         if (value == REPLACE_WITH) {

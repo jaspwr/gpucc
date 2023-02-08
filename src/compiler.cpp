@@ -29,8 +29,7 @@ Ssbo* tokenise(UintString& source, Shader* tokeniser) {
     auto bm = Benchmark("Tokeniser SSBO Setup");
     #endif
 
-    Ssbo source_ssbo = Ssbo(source.length * sizeof(GLuint), source.data);
-    source_ssbo.bind(1);
+
     Ssbo* tokens = new Ssbo(source.length * sizeof(Token));
     tokens->bind(2);
 
@@ -51,7 +50,7 @@ Ssbo* tokenise(UintString& source, Shader* tokeniser) {
     return tokens;
 }
 
-GLuint fetch_entry_node_volume(Ssbo* tokens, Ssbo* ast_nodes) {
+GLuint fetch_entry_node_volume(Ssbo* tokens, AstNode* ast_nodes_dmp) {
     #ifdef BENCHMARKING
     auto bm = Benchmark("Out volume fetch");
     #endif
@@ -59,13 +58,11 @@ GLuint fetch_entry_node_volume(Ssbo* tokens, Ssbo* ast_nodes) {
     Token* tokens_dmp = (Token*)tokens->dump();
     GLuint ast_node_location = tokens_dmp[0].ast_node_location;
     delete[] tokens_dmp;
-    AstNode* ast_nodes_dmp = (AstNode*)ast_nodes->dump();
     GLuint volume = 0;
     AstNode entry_node = ast_nodes_dmp[ast_node_location - 1];
     for (auto child : entry_node.children) {
         volume += child.codegenVolume;
     }
-    delete[] ast_nodes_dmp;
     return volume;
 
     #ifdef BENCHMARKING
@@ -128,10 +125,17 @@ std::string compile(Job& job, Shaders& shaders) {
     auto ast_overflow_atomic_counter = GLAtomicCounter(0);
     ast_overflow_atomic_counter.bind(0);
 
+    Ssbo source_ssbo = Ssbo(source.length * sizeof(GLuint), source.data);
+    source_ssbo.bind(1);
+
     auto tokens = tokenise(source, &shaders.tokeniser);
 
+    const GLuint ast_invocations_count = (tokens->size / AST_INVOCATIONS) / AST_CHARS_PER_INV + 1;
+
+
     if (job.dbg) tokens->print_contents();
-    
+
+
     // IDK what the fuck is going on here 
     // tokens->dump();
 
@@ -156,7 +160,6 @@ std::string compile(Job& job, Shaders& shaders) {
 
     ast_nodes.bind(3);
     ast_ssbos.ir_codegen->bind(0);
-    ast_ssbos.ast_nodes->bind(1);
 
 
 
@@ -170,9 +173,12 @@ std::string compile(Job& job, Shaders& shaders) {
     auto bm_ = Benchmark("AST Exec");
     #endif
 
-    const GLuint ast_invocations_count = (tokens->size / AST_INVOCATIONS) / AST_CHARS_PER_INV + 1;
 
     ast_ssbos.ast_parse_trees[0]->bind(4);
+
+    shaders.literals.exec(ast_invocations_count);
+    ast_ssbos.ast_nodes->bind(1);
+
     for (int i = 0; i < 30; i++)
         shaders.ast.exec(ast_invocations_count);
 
@@ -201,8 +207,10 @@ std::string compile(Job& job, Shaders& shaders) {
 
     }
 
-    // FIXME: there shouldn't nee to be a +5 here    
-    const GLuint output_buffer_size = fetch_entry_node_volume(tokens, &ast_nodes) + 5;
+    AstNode* ast_nodes_dmp = (AstNode*)ast_nodes.dump();
+
+    // FIXME: there shouldn't nee to be a +5 here
+    const GLuint output_buffer_size = fetch_entry_node_volume(tokens, ast_nodes_dmp) + 5;
     if (job.dbg) printf("Output buffer size: %d\n", output_buffer_size);
 
 
@@ -222,7 +230,7 @@ std::string compile(Job& job, Shaders& shaders) {
     
     if (job.dbg) printf("OUTPUT:\n%s\n", _s.c_str());
 
-    auto post_proc = postprocess((const GLint*)out_buf_dmp, output_buffer_size, var_reg, ir_parse_tree, source_str);
+    auto post_proc = postprocess((const GLint*)out_buf_dmp, output_buffer_size, var_reg, ir_parse_tree, source_str, ast_nodes_dmp);
     
     #ifdef BENCHMARKING
     bm_post.finalise();
@@ -237,6 +245,7 @@ std::string compile(Job& job, Shaders& shaders) {
     delete ir_tokens;
     delete lang_tokens_parse_tree;
     delete[] source.data;
+    delete[] ast_nodes_dmp;
     delete tokens;
 
     #ifdef BENCHMARKING

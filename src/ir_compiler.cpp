@@ -36,6 +36,10 @@ std::string serialize_uir_to_readable(const GLuint* ir, u32 ir_len,
             throw Exception("Insersion tokens should not not end up in shader output.");
         case IR_SELF_REFERENCE:
             throw Exception("Self reference tokens should not not end up in shader output.");
+        case IR_LITERAL_REF:
+            if(++i >= ir_len) throw Exception("Malformed literal marker from shaders.");
+            token = std::string("&") + std::to_string(ir[i]);
+            break;
         default:
             token = ir[i] == 0 
                 ? "NULL"
