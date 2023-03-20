@@ -25,7 +25,7 @@ std::string preprocess(std::string filename, VariableRegistry& var_reg) {
     for (auto& pair : pre_proc_tokens) {
         delete pair.second;
     }
-    
+
     buffer.add((u8*)" 0EOF\0", 6);
 
     // FIXME: either free `buffer` after its a string or just don't use an `std::string` so it's not copied.
@@ -35,7 +35,7 @@ std::string preprocess(std::string filename, VariableRegistry& var_reg) {
 namespace preprocessor {
     // Internal functions
 
-    std::string consume_string_literal(const char* source, u32& i, 
+    std::string consume_string_literal(const char* source, u32& i,
         const char closer, VariableRegistry& var_reg) {
 
         u32 start = i;
@@ -79,7 +79,7 @@ namespace preprocessor {
 
     void handle_token_buffer(u32& token_buffer_ptr, char* token_buffer, u32& i, const char* source,
         ExtendableBuffer<u8>* buffer, PreProcTokensMap& pre_proc_tokens) {
-        
+
         if (token_buffer_ptr > 0) {
             token_buffer[token_buffer_ptr] = '\0';
             auto token = std::string(token_buffer);
@@ -92,7 +92,7 @@ namespace preprocessor {
             //     auto pre = buffer->rollback(buffer->get_size() - start);
             //     u32 end = i;
             //     while (source[end] != '\0' && source[end] != ';' && source[end] != '}') end++;
-                
+
             //     std::string type = "";
             //     for (auto& c : pre) {
             //         type += (char)c;
@@ -113,7 +113,7 @@ namespace preprocessor {
                 buffer->add((u8*)token_buffer, token_buffer_ptr * sizeof(char));
             } else {
                 // FIXME: variadic macros https://gcc.gnu.org/onlinedocs/cpp/Variadic-Macros.html#Variadic-Macros
-                
+
 
                 search->second->exectue(buffer, i, source);
                 //buffer->add((u8*)repl.c_str(), repl.length() * sizeof(char));
@@ -149,9 +149,9 @@ namespace preprocessor {
         VariableRegistry& var_reg, PreProcTokensMap& pre_proc_tokens, const char* filename, std::vector<std::string>& included) {
 
         skip_space(source, i); // FIXME: newlines and stuff
-        
+
         if (source[i] != '"' && source[i] != '<') throw Exception("Expected '\"' or '<' after #include");
-        
+
         auto include_type = source[i++] == '<' ? IncludeType::System : IncludeType::Local;
         auto name = std::string();
         while(source[i] != (include_type == IncludeType::System ? '>' : '"')) {
@@ -162,7 +162,7 @@ namespace preprocessor {
         if (include_type == IncludeType::System) {
             name = Job::libc_path + name;
         } else {
-            // This is also meant to check the include path or something 
+            // This is also meant to check the include path or something
             // https://gcc.gnu.org/onlinedocs/cpp/Search-Path.html#Search-Path
             u32 last_slash = strlen(filename);
             while(last_slash > 0 && filename[last_slash] != '/') last_slash--;
@@ -170,24 +170,24 @@ namespace preprocessor {
         }
         for (auto& inc : included) {
             if (inc == name) return;
-        }    
+        }
         preprocessor::preprocess(name.c_str(), buffer, included, var_reg, pre_proc_tokens);
     }
 
-    void handle_define(u32& i, const char* source, char* token_buffer, 
+    void handle_define(u32& i, const char* source, char* token_buffer,
         u32& token_buffer_ptr, ExtendableBuffer<u8>* buffer,
         VariableRegistry& var_reg, PreProcTokensMap& pre_proc_tokens, const char* filename) {
 
         auto macro_name = next_token(i, source, token_buffer, token_buffer_ptr);
         enum { ObjectLike, FunctionLike } macro_type = source[i] == '('
-            ? FunctionLike 
+            ? FunctionLike
             : ObjectLike
         ;
-        
+
         auto macro_repl = std::string();
         while(source[i] != '\0') {
             if (source[i] == '\\' && source[i + 1] == '\n' || source[i + 1] == '\r' ) {
-                if (source[i + 1] == '\r' && source[i + 2] == '\n') 
+                if (source[i + 1] == '\r' && source[i + 2] == '\n')
                     i += 3;
                 else
                     i += 2;
@@ -204,11 +204,17 @@ namespace preprocessor {
         ;
     }
 
-    void handle_pre_proc_directive(u32& i, const char* source, char* token_buffer, 
+    void handle_pre_proc_directive(u32& i, const char* source, char* token_buffer,
         u32& token_buffer_ptr, ExtendableBuffer<u8>* buffer, i32& if_depth,
         VariableRegistry& var_reg, PreProcTokensMap& pre_proc_tokens, const char* filename, std::vector<std::string>& included) {
 
         auto name = next_token(i, source, token_buffer, token_buffer_ptr);
+
+        // Ignore version for GLSL
+        if ("version" == name) {
+            buffer->add((u8*)"#version ", 9);
+            return;
+        }
 
         if (if_depth > 0) {
             if ("endif" == name) if_depth--;
@@ -255,7 +261,7 @@ namespace preprocessor {
         if ("else" == name) {
             // TODO
             throw Exception("#else is not supported yet.");
-        } else 
+        } else
         if ("pragma" == name) {
             // TODO
             throw Exception("#pragma is not supported yet.");
@@ -271,7 +277,7 @@ namespace preprocessor {
         pre_proc_tokens["__FILE__"] = new ObjectLikeMacro(filename);
 
         auto source = load_file(filename);
-        
+
         #define TOKEN_BUFFER_SIZE 1024
         char token_buffer[TOKEN_BUFFER_SIZE];
         u32 token_buffer_ptr = 0;
@@ -289,7 +295,7 @@ namespace preprocessor {
             if (c == '"') {
                 std::string string_literal_identifier = consume_string_literal(source, i, '"', var_reg);
                 if (if_depth == 0)
-                    buffer->add((u8*)string_literal_identifier.c_str(), 
+                    buffer->add((u8*)string_literal_identifier.c_str(),
                         string_literal_identifier.length() * sizeof(char));
                 goto flush_continue;
             }
@@ -303,7 +309,7 @@ namespace preprocessor {
             }
             if (c == '#') {
                 // FIXME: Error if not start of line
-                handle_pre_proc_directive(i, source, token_buffer, token_buffer_ptr, 
+                handle_pre_proc_directive(i, source, token_buffer, token_buffer_ptr,
                     buffer, if_depth, var_reg, pre_proc_tokens, filename, included);
                 goto flush_continue;
             }

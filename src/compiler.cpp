@@ -110,7 +110,7 @@ std::string compile(Job& job, Shaders& shaders) {
 
 
     if (job.source_files.size() == 0) { throw Exception("No source files specified."); }
-    
+
     VariableRegistry var_reg = VariableRegistry();
 
     std::string source_str = load_source(job.source_files, var_reg, job);
@@ -136,7 +136,7 @@ std::string compile(Job& job, Shaders& shaders) {
     if (job.dbg) tokens->print_contents();
 
 
-    // IDK what the fuck is going on here 
+    // IDK what the fuck is going on here
     // tokens->dump();
 
     #ifdef BENCHMARKING
@@ -147,7 +147,7 @@ std::string compile(Job& job, Shaders& shaders) {
     ParseTree yacc_parse_tree = ParseTree(900);
     ParseTree ir_parse_tree = ParseTree(400);
     std::vector<std::string> grammars = { c_pre_yacc, c_yacc };
-    
+
     auto ast_ssbos = create_ast_ssbos(grammars, *lang_tokens_parse_tree, ir_tokens, yacc_parse_tree, ir_parse_tree);
     auto ast_nodes = Ssbo((AST_NODES_OVERFLOW_BUFFER_SIZE + source.length) * sizeof(AstNode));
 
@@ -227,18 +227,18 @@ std::string compile(Job& job, Shaders& shaders) {
     #endif
 
     auto _s = serialize_uir_to_readable((GLuint*) out_buf_dmp, output_buffer_size, *ir_tokens, source_str);
-    
+
     if (job.dbg) printf("OUTPUT:\n%s\n", _s.c_str());
 
-    auto post_proc = postprocess((const GLint*)out_buf_dmp, output_buffer_size, var_reg, ir_parse_tree, source_str, ast_nodes_dmp);
-    
-    #ifdef BENCHMARKING
-    bm_post.finalise();
-    #endif
-    
-    auto s = serialize_uir_to_readable((GLuint*) post_proc.data, post_proc.size, *ir_tokens, source_str);
-    
-    if (job.dbg) printf("OUTPUT:\n%s\n", s.c_str());
+    // auto post_proc = postprocess((const GLint*)out_buf_dmp, output_buffer_size, var_reg, ir_parse_tree, source_str, ast_nodes_dmp);
+
+    // #ifdef BENCHMARKING
+    // bm_post.finalise();
+    // #endif
+
+    // auto s = serialize_uir_to_readable((GLuint*) post_proc.data, post_proc.size, *ir_tokens, source_str);
+
+    // if (job.dbg) printf("OUTPUT:\n%s\n", s.c_str());
 
     delete_ast_ssbos(ast_ssbos);
     free(out_buf_dmp);
@@ -256,5 +256,6 @@ std::string compile(Job& job, Shaders& shaders) {
     Benchmark::print_all();
     #endif
 
-    return s;
+    // return s;
+    return _s;
 }

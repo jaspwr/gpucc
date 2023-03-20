@@ -25,6 +25,9 @@ MessageCallback( GLenum source,
 			type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ,
 			type, severity, message );
 	}
+	if (type == GL_DEBUG_TYPE_ERROR) {
+		throw Exception("GL Error");
+	}
 }
 
 

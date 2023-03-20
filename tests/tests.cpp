@@ -4,10 +4,12 @@
 #include "../src/compiler.h"
 #include "../src/gl.h"
 #include "../src/exception.h"
+#include "../src/preprocessor.h"
 
 #include <string>
 #include <iostream>
 #include <filesystem>
+#include <functional>
 
 #define TEST_DIRECTORY "../tests"
 
@@ -43,7 +45,7 @@ class IntergrationTest : public Test {
             this->source_path = source_path;
             this->expected_output_path = expected_output_path;
         }
-        
+
         TestResult run(Shaders& shaders) {
             Job job = Job(source_path);
             std::string output = compile(job, shaders);
@@ -57,12 +59,25 @@ class IntergrationTest : public Test {
         }
 };
 
+class UnitTest : public Test {
+    public:
+        std::function<TestResult()> test;
+        UnitTest(std::string name, std::function<TestResult()> test) {
+            this->name = name;
+            this->test = test;
+        }
+        TestResult run(Shaders& shaders) {
+            return test();
+        }
+};
+
 void run_test(Test* test, Shaders& shaders, i32& succeded, i32& failed) {
     TestResult res;
 
     try {
         res = test->run(shaders);
     } catch(Exception e) {
+        e.print();
         res = FAILURE;
     }
 
@@ -89,17 +104,57 @@ std::vector<IntergrationTest> get_intergration_tests(const char* path) {
     return tests;
 }
 
+UnitTest create_preprocessor_test(std::string name, std::string source_path, std::string expected_output_path) {
+    return UnitTest(name, [=]() {
+        auto var_reg = VariableRegistry();
+        std::string output = preprocess(source_path, var_reg);
+        if (output == load_file(expected_output_path.c_str())) {
+            return SUCCESS;
+        } else {
+            std::cout << "Expected:\n" << load_file(expected_output_path.c_str()) << std::endl;
+            std::cout << "Got:\n" << output << std::endl;
+            return FAILURE;
+        }
+    });
+}
+
+std::vector<UnitTest> get_unit_tests() {
+    std::vector<UnitTest> tests;
+    tests.push_back(create_preprocessor_test(
+        "preprocessor_misc",
+        TEST_DIRECTORY "/unit/preprocessor_misc/in.c",
+        TEST_DIRECTORY "/unit/preprocessor_misc/out.c"
+    ));
+    return tests;
+}
+
+#define UNIT_TESTS
+
 int main(int arcg, char** argv) {
-    Gl::init(false);
-    Shaders shaders = Gl::compile_shaders();
     i32 succeded = 0;
     i32 failed = 0;
-    std::cout << "\n\n\n";
-    auto intergration_tests = get_intergration_tests(TEST_DIRECTORY);
+
+    Gl::init(false);
+    Shaders shaders = Gl::compile_shaders();
+
+    #ifdef INTERGRATION_TESTS
+    std::cout << "\n\n\n---------- Intergration Tests ----------\n";
+    auto intergration_tests = get_intergration_tests(TEST_DIRECTORY "/integration");
     for (auto test : intergration_tests) {
         run_test(&test, shaders, succeded, failed);
     }
+    #endif
+
+    #ifdef UNIT_TESTS
+    std::cout << "\n\n\n---------- Unit Tests ----------\n";
+    auto unit_tests = get_unit_tests();
+    for (auto test : unit_tests) {
+        run_test(&test, shaders, succeded, failed);
+    }
+    #endif
+
     std::cout << "\n\n\n";
     auto overall = failed == 0 ? SUCCESS : FAILURE;
     printf("%s Succeded: %d, Failed: %d\n", result_string(overall), succeded, failed);
+    return 0;
 }

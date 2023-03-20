@@ -1,5 +1,6 @@
 #include "shader.h"
 #include "exception.h"
+#include "preprocessor.h"
 
 #include <vector>
 #include <string>
@@ -14,6 +15,12 @@ Shader::Shader(const char* shader_source_path, GLuint _barrier_mode) {
 
     shader_index = glCreateShader(GL_COMPUTE_SHADER);
     auto path = get_bin_dir() + std::string("/") + std::string(shader_source_path);
+
+    // auto var_reg = VariableRegistry();
+    // auto s = preprocess(path, var_reg);
+    // const char* shader_source = s.c_str();
+    // printf("%s:\n%s\n", path.c_str(), shader_source);
+
     const char* shader_source = load_file(path.c_str());
     glShaderSource(shader_index, 1, &shader_source, NULL);
     glCompileShader(shader_index);
@@ -27,7 +34,7 @@ Shader::Shader(const char* shader_source_path, GLuint _barrier_mode) {
         glGetShaderInfoLog(shader_index, maxLength, &maxLength, &errorLog[0]);
         for(int i = 0; i < maxLength; i ++)
             printf("%c",(char)errorLog[i]);
-        
+
         glDeleteShader(shader_index);
         throw Exception(std::string("Failed to compile ") + std::string(shader_source_path));
     }
