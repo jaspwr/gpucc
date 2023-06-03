@@ -20,6 +20,6 @@ else if [ "$1" = "test" ]; then
     prime-run ../bin/testbin &&
     rm ../bin/testbin
 else
-    clang++ $arglist -O3 &&
+    clang++ meow.cpp $arglist -O3 &&
     copy_shaders
 fi fi fi fi

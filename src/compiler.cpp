@@ -13,7 +13,7 @@
 #include "postprocessor.h"
 
 #include "c_tokens.cpp"
-#include "c_grammar.cpp"
+#include "grammars/c_grammar.cpp"
 
 #include "include/glad/glad.h"
 #include <math.h>

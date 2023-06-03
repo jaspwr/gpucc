@@ -63,5 +63,8 @@
         "include.h": "c",
         "typeindex": "cpp",
         "valarray": "cpp"
-    }
+    },
+    "cSpell.words": [
+        "optimise"
+    ]
 }

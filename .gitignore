@@ -1,1 +1,3 @@
 bin/*
+.vscode/*
+src/.vscode/*

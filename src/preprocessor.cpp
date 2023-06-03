@@ -131,6 +131,10 @@ namespace preprocessor {
         i++;
         skip_space(source, i); // spaces are allowed here for some reason...
         flush_token_buffer(token_buffer_ptr);
+
+        if (source[i] == '\n')
+            throw Exception("Expected an identifier.");
+
         while(source[i] != '\0' && char_utils::is_alpha_numeric_or_underscore(source[i])) {
             token_buffer[token_buffer_ptr++] = source[i];
             i++;
@@ -218,11 +222,12 @@ namespace preprocessor {
 
         if (if_depth > 0) {
             if ("endif" == name) if_depth--;
+            if ("else" == name) if_depth--;
             else if ("if" == name || "ifdef" == name || "ifndef" == name) if_depth++;
-            return;
+            return; // Ignore tokens until if depth is zero
         }
 
-        // TODO: micro optimise this with map or whatever
+        // TODO: optimise this with map or whatever
         if ("import" == name) {
             auto empty = std::vector<std::string>();
             handle_include(i, source, token_buffer, token_buffer_ptr, buffer, var_reg, pre_proc_tokens, filename, empty);
@@ -259,8 +264,9 @@ namespace preprocessor {
             throw Exception("#elif is not supported yet.");
         } else
         if ("else" == name) {
+            if_depth++;
             // TODO
-            throw Exception("#else is not supported yet.");
+            // throw Exception("#else is not supported yet.");
         } else
         if ("pragma" == name) {
             // TODO
