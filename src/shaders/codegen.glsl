@@ -2,17 +2,11 @@
 
 layout(local_size_x = 32, local_size_y = 1, local_size_z = 1 ) in;
 
-#define LITERAL 1
-#define IDENTIFIER 2
+//INCLUDE ir_tokens
 
-// Reserved IR tokens
-#define IR_REFERNCE 1
-#define IR_SELF_REFERENCE 2
-#define IR_INSERSION 3
-#define IR_SOURCE_POS_REF 4
-#define IR_LITERAL_REF 5
-
-#define IR_OTHER_TOKENS_START 6
+#define BREAKABLE 91
+#define CONTINUABLE 92
+#define FOR_WRAPPER 93
 
 struct ChildNode {
     int ref;
@@ -87,7 +81,11 @@ int fetch_ref (uint ref, AstNode node, inout bool isLit) {
     return pos;
 }
 
-void writeToOutput(uint pos, AstNode node, int nodePos) {
+uint continueOfForWrapper(AstNode for_wrapper) {
+    return fetchAstNodeFromChildRef(for_wrapper.children[0].ref).children[0].ref;
+}
+
+void writeToOutput(uint pos, AstNode node, int nodePos, uint lastContinue, uint lastBreak) {
     uint ptr = codegenPointer(node.nodeToken) + 5;
     uint len = getCodegenLength(node.nodeToken);
     for (uint i = 0; i < len; i++) {
@@ -100,7 +98,8 @@ void writeToOutput(uint pos, AstNode node, int nodePos) {
         uint token = irCodegen[ptr + i];
 
         // TODO: refactor into smaller fuctions
-        if (token >= IR_OTHER_TOKENS_START)
+        if (token >= IR_OTHER_TOKENS_START
+            && token != IR_BREAK && token != IR_CONTINUE)
 
             output_[pos + i] = token;
 
@@ -130,7 +129,15 @@ void writeToOutput(uint pos, AstNode node, int nodePos) {
         } else if (token == IR_INSERSION) {
 
             i++;
-            
+
+        } else if (token == IR_BREAK) {
+            output_[pos + i] = IR_REFERNCE;
+            i++;
+            output_[pos + i] = lastBreak;
+        } else if (token == IR_CONTINUE) {
+            output_[pos + i] = IR_REFERNCE;
+            i++;
+            output_[pos + i] = lastContinue;
         }
     }
 }
@@ -143,6 +150,8 @@ void main() {
     AstNode currentNode = astNodes[currentNodePos];
     if (workingVolume > currentNode.volume) return;
 
+    uint lastContinue = 0;
+    uint lastBreak = 0;
 
     uint maxOut = 0;
     while(workingVolume != currentNode.volume && maxOut < 1024) {
@@ -153,6 +162,14 @@ void main() {
             uint childLength = currentNode.children[i].codegenVolume;
             if (workingVolume <= childNode.volume) {
                 // decend
+
+                if (currentNode.nodeToken == BREAKABLE) {
+                    lastBreak = currentNodePos;
+                } else if (currentNode.nodeToken == CONTINUABLE) {
+                    lastContinue = currentNodePos;
+                } else if (currentNode.nodeToken == FOR_WRAPPER) {
+                    lastContinue = continueOfForWrapper(currentNode);
+                }
 
                 uint codegenPtr = codegenPointer(currentNode.nodeToken);
                 wokringStartPos += getChildOffset(codegenPtr, i);
@@ -169,5 +186,5 @@ void main() {
     }
     if (codegenPointer(currentNode.nodeToken) == 0) return;
 
-    writeToOutput(wokringStartPos, currentNode, currentNodePos);
+    writeToOutput(wokringStartPos, currentNode, currentNodePos, lastContinue, lastBreak);
 }

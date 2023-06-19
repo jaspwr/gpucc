@@ -49,3 +49,12 @@ void Ssbo::print_contents() {
     printf("\n");
     free(token_dump);
 }
+
+void Ssbo::print_size(const char* name) {
+    GLint64 size;
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, index);
+    glGetBufferParameteri64v(GL_SHADER_STORAGE_BUFFER, GL_BUFFER_SIZE, &size);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    glFinish();
+    (void)printf("[%s] SSBO size: %ld KB\n", name, size / 1000);
+}

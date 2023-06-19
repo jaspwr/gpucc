@@ -1,8 +1,12 @@
 #!/bin/bash
-arglist="compiler.cpp cli.cpp exception.cpp string_template.cpp postprocessor.cpp preprocessor_macro.cpp job.cpp compiler_type.cpp variable_registry.cpp preprocessor.cpp debug_printing.cpp utils.cpp gl.cpp gl_atomic_counter.cpp shader.cpp parse_tree.cpp ir_ssbo_format.cpp ssbo.cpp ir_compiler.cpp lang.cpp yacc.cpp -o ../bin/meow glad.o `pkg-config --libs --cflags glfw3` -lm" &&
+arglist="compiler.cpp cli.cpp exception.cpp instruction_selection_syntax.cpp string_template.cpp postprocessor.cpp preprocessor_macro.cpp job.cpp compiler_type.cpp variable_registry.cpp preprocessor.cpp debug_printing.cpp utils.cpp gl.cpp gl_atomic_counter.cpp shader.cpp parse_tree.cpp ir_ssbo_format.cpp ssbo.cpp ir_compiler.cpp lang.cpp yacc.cpp -o ../bin/meow glad.o `pkg-config --libs --cflags glfw3` -lm" &&
 copy_shaders() {
-    rm -rf '../bin/shaders' &&
-    cp -r 'shaders' '../bin'
+    clang++ shader_preproc.cpp -o sp &&
+    rm -rf '../bin/shaders/*' &&
+    for f in shaders/*; do
+        ./sp $f ../bin/shaders/$(basename $f) || exit 1
+    done &&
+    rm sp
 }
 
 if [ "$1" = "debug" ]; then

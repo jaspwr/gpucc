@@ -10,11 +10,12 @@ std::string token_from_id(GLuint id, IrTokenList& tokens) {
     return "ERROR";
 }
 
-std::string serialize_uir_to_readable(const GLuint* ir, u32 ir_len, 
+
+std::string serialize_uir_to_readable(const GLuint* ir, u32 ir_len,
     IrTokenList& ir_tokens, std::string& source) {
 
     std::string ret = "";
-    
+
     // Ignore trailing whitespace
     while (ir[ir_len - 1] == 0) {
         ir_len--;
@@ -41,13 +42,30 @@ std::string serialize_uir_to_readable(const GLuint* ir, u32 ir_len,
             token = std::string("&") + std::to_string(ir[i]);
             break;
         default:
-            token = ir[i] == 0 
+            token = ir[i] == 0
                 ? "NULL"
                 : token_from_id(ir[i], ir_tokens)
             ;
             break;
         }
         ret += token + (token != "\n" ? " " : "");
+    }
+    return ret;
+}
+
+std::string ir_tokens_shader_definitions(IrTokenList& ir_tokens) {
+    std::string ret = "";
+    for (IrToken token : ir_tokens) {
+        for (auto c : token.name) {
+            if (!char_utils::is_alpha_numeric_or_underscore(c)) {
+                goto skip;
+            }
+        }
+        goto dont_skip;
+        skip:
+            continue;
+        dont_skip:
+            ret += "#define IR_" + token.name + " " + std::to_string(token.id) + "\n";
     }
     return ret;
 }

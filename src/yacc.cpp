@@ -151,7 +151,7 @@ GLuint yacc_constant(char* token) {
 }
 
 void handle_token(char* token_buffer, YaccContext& context, ParseTree& parse_tree, ParseTree& ast_parse_tree,
-    GLuint* ast_nodes_buffer, GLuint& ast_nodes_len, GLuint& block_token, ParseTree& yacc_parse_tree, 
+    GLuint* ast_nodes_buffer, GLuint& ast_nodes_len, GLuint& block_token, ParseTree& yacc_parse_tree,
     GLuint& yacc_tokens_last, AstParseData& ast_pt_data, GLuint* codegen_ssbo, GLuint& codegen_ssbo_len, ParseTree& ir_pt, IrTokenList* ir_tokens) {
 
     if (context == YaccContext::Codegen) {
@@ -162,10 +162,10 @@ void handle_token(char* token_buffer, YaccContext& context, ParseTree& parse_tre
         } else {
             ast_pt_data.codegen.push_back(token_buffer);
         }
-        return;       
+        return;
     }
     if ((strcmp(token_buffer, "\n") == 0)) return;
-    
+
     // TODO: Make this a loop or something.
     if (strcmp(token_buffer, ":") == 0) {
         if (context != YaccContext::BlockName) {
@@ -207,7 +207,7 @@ void handle_token(char* token_buffer, YaccContext& context, ParseTree& parse_tre
         return;
     }
     if (strcmp(token_buffer, "}") == 0) {
-        if (context != YaccContext::PreExclusions 
+        if (context != YaccContext::PreExclusions
         && context != YaccContext::PostExclusions
         && context != YaccContext::SymmetricExclusions) {
             throw Exception("Found '}', but no exclusions block was opened.");
@@ -289,6 +289,12 @@ void parse_yacc(ParseTree& parse_tree, std::vector<Ssbo*>& ast_parse_trees, std:
     GLuint yacc_tokens_last = 90;
     AstParseData ast_pt_data = AstParseData();
 
+    auto breakable = get_token_id(yacc_parse_tree, (char*) "breakable", yacc_tokens_last);
+    auto continuable = get_token_id(yacc_parse_tree, (char*) "continuable", yacc_tokens_last);
+    auto for_wrapper = get_token_id(yacc_parse_tree, (char*) "for_wrapper", yacc_tokens_last);
+
+    printf("breakable: %d\n", breakable);
+
     for(auto grammar : grammars) {
         auto ast_parse_tree = ParseTree(500);
         // This has this weird previous character thing because it needs to deal with the final token
@@ -301,7 +307,7 @@ void parse_yacc(ParseTree& parse_tree, std::vector<Ssbo*>& ast_parse_trees, std:
             if (!in_string && (cur_cat != pre_cat || pre_cat == CharCatergory::Other)) {
                 if (pre_cat != CharCatergory::Whitespace) {
                     handle_token( token_buffer, context, parse_tree, ast_parse_tree, ast_nodes_buffer,
-                                ast_nodes_len, block_token, yacc_parse_tree, yacc_tokens_last, 
+                                ast_nodes_len, block_token, yacc_parse_tree, yacc_tokens_last,
                                 ast_pt_data, ir_codegen, ir_codegen_len, ir_pt, ir_token_list);
                 }
                 flush_string_buffer(token_buffer, token_buffer_index);
@@ -316,7 +322,7 @@ void parse_yacc(ParseTree& parse_tree, std::vector<Ssbo*>& ast_parse_trees, std:
 
 }
 
-ast_ssbos create_ast_ssbos(std::vector<std::string> grammars, ParseTree& lang_tokens_parse_tree, 
+ast_ssbos create_ast_ssbos(std::vector<std::string> grammars, ParseTree& lang_tokens_parse_tree,
     IrTokenList* ir_token_list, ParseTree& yacc_parse_tree, ParseTree& ir_pt) {
 
     auto ssbos = ast_ssbos();
@@ -327,7 +333,7 @@ ast_ssbos create_ast_ssbos(std::vector<std::string> grammars, ParseTree& lang_to
     GLuint ir_codegen_len = 256;
 
     try {
-        parse_yacc(lang_tokens_parse_tree, ssbos.ast_parse_trees, grammars, ast_nodes_buffer, ast_nodes_len, ir_codegen, 
+        parse_yacc(lang_tokens_parse_tree, ssbos.ast_parse_trees, grammars, ast_nodes_buffer, ast_nodes_len, ir_codegen,
             ir_codegen_len, ir_pt, ir_token_list, yacc_parse_tree);
     } catch (Exception& e) {
         // This just saves having to add `ExceptionType::Yacc` to every throw
@@ -338,6 +344,12 @@ ast_ssbos create_ast_ssbos(std::vector<std::string> grammars, ParseTree& lang_to
 
     ssbos.ast_nodes = new Ssbo(ast_nodes_len * sizeof(GLuint), ast_nodes_buffer);
     ssbos.ir_codegen = new Ssbo(ir_codegen_len * sizeof(GLuint), ir_codegen);
+
+
+    (void)ssbos.ast_nodes->print_size("AST nodes parse tree");
+    (void)ssbos.ir_codegen->print_size("ir_codegen");
+
+
     return ssbos;
 
 }

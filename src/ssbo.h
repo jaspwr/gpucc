@@ -3,7 +3,7 @@
 #include "include/glad/glad.h"
 
 class Ssbo {
-    public: 
+    public:
         unsigned int size;
         GLuint index;
         Ssbo(GLuint size); // Zero-initialised
@@ -12,4 +12,5 @@ class Ssbo {
         void bind(GLuint index);
         void* dump();
         void print_contents();
+        void print_size(const char* name);
 };

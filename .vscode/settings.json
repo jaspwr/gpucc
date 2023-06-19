@@ -62,7 +62,14 @@
         "iomanip": "cpp",
         "include.h": "c",
         "typeindex": "cpp",
-        "valarray": "cpp"
+        "valarray": "cpp",
+        "hash_map": "cpp",
+        "charconv": "cpp",
+        "optional": "cpp",
+        "format": "cpp",
+        "span": "cpp",
+        "stdfloat": "cpp",
+        "variant": "cpp"
     },
     "cSpell.words": [
         "optimise"

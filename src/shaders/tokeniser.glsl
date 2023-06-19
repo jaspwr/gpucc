@@ -95,14 +95,14 @@ void tryParse(in uint start, out uint outToken, out uint outLength) {
 			lastFinal = pti.final;
 			lastLength = i + 1;
 		}
-		if (pti.nextRow == 0) { 
-			break; 
+		if (pti.nextRow == 0) {
+			break;
 		}
 		row = pti.nextRow;
 	}
 	if (beginsToken(start + lastLength)) {
 		outToken = lastFinal;
-		outLength = lastLength;	
+		outLength = lastLength;
 	} else {
 		outToken = 0;
 		outLength = 0;
@@ -133,7 +133,7 @@ void parseIdentifiersAndLiterals(in uint pos, inout uint token, out uint len) {
 			}
 			break;
 		}
-		
+
 	}
 }
 
@@ -151,7 +151,7 @@ bool parseCharLiteral(in uint pos, out uint len) {
 		tokens[pos].len = ++len;
 		tokens[pos].astNodeLocation = -int(pos);
 		return true;
-	} 
+	}
 	return false;
 }
 

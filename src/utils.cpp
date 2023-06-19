@@ -20,12 +20,12 @@ const char* load_file (const char* path) {
         file.read(file_buffer, size);
         file.close();
         file_buffer[size] = '\0';
-    } else 
+    } else
         throw Exception(ExceptionType::File, BAD_FILE_MSG + std::string(path) + "\".");
-    
+
     if (file_buffer == nullptr)
         throw Exception(ExceptionType::File, BAD_FILE_MSG + std::string(path) + "\".");
-    
+
     return file_buffer;
 }
 

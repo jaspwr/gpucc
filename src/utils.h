@@ -36,19 +36,19 @@ namespace char_utils {
 //     enum { None, Some } type;
 //     T* value_ptr;
 
-//     Option() { 
-//         value_ptr = nullptr; 
+//     Option() {
+//         value_ptr = nullptr;
 //         type = None;
 //     }
 
-//     Option(T* value_ptr) { 
+//     Option(T* value_ptr) {
 //         this->value_ptr = value_ptr;
 //     }
 
 //     bool is_some() {
 //         return type == Some;
 //     }
-    
+
 //     bool is_none() {
 //         return type == None;
 //     }

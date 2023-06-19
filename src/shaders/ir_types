@@ -1,0 +1,16 @@
+
+#define U0  0
+#define U8  1
+#define U32 2
+#define U64 3
+#define I8  4
+#define I32 5
+#define I64 6
+#define F32 7
+#define F64 8
+
+struct IrType {
+    uint base;
+    uint pointer_depth;
+    uint load_depth;
+};

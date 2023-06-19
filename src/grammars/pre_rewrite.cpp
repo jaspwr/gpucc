@@ -632,7 +632,9 @@ partial_scope
 scope
     : $0 partial_scope '}'
     | '{' '}'
-    ;
+    ; < scope_start $x
+    !0 scope_end
+    >
 
 if_head
     : 'if' '(' $0 primary_expression ')'
@@ -666,30 +668,11 @@ switch_head
     : 'switch' '(' $0 primary_expression ')'
     ;
 
-breakable
-    : $0 switch
-    | $0 continuable
-    | $0 for_wrapper
-    ; < $x :
-    >
-
-for_wrapper
-    : $0 for
-    | $0 for_empty_condition
-    | $0 for_empty_final
-    | $0 for_empty_all
-    ;
-
-continuable
-    : $0 while
-    ; < $x :
-    !0 >
-
 switch
     : $0 switch_head $1 switch_body
     ; < switch $0 [
     ]
-        !1 switch_body_end
+        !1 switch_body_end breakable $x :
     >
 
 switch_case
@@ -716,21 +699,26 @@ switch_body
     : '{' $0 parial_switch_body
     ;
 
+while_head
+    : 'while'
+    ; < continuable $x:
+    >
 
 while
-    : 'while' $1 primary_expression $2 primary_expression ';'
-    | ] ';', '}', scope } 'while' $1 primary_expression ';'
-    | 'while' $1 primary_expression $2 scope
-    | 'do' $2 primary_expression ';' 'while' $1 primary_expression ';'
-    | 'do' $2 scope $0 'while' $1 primary_expression ';'
+    : $0 while_head $1 primary_expression $2 primary_expression ';'
+    | ] ';', '}', scope } $0 while_head $1 primary_expression ';'
+    | $0 while_head $1 primary_expression $2 scope
+    | 'do' $2 primary_expression ';' $0 while_head $1 primary_expression ';'
+    | 'do' $2 scope $0 while_head $1 primary_expression ';'
     ; < JZ $1 $x
-        !2 JMP CONTINUE NOP
+        !2 JMP $0
+        breakable $x :
     >
 
 for_head
     : 'for' '(' $0 primary_expression ';'
     | 'for' '(' ';'
-    ; < $x:
+    ; < continuable $x:
     >
 
 for
@@ -740,6 +728,7 @@ for
     | $0 for_head $1 primary_expression ';' $3 primary_expression ')' ';'
     ; < JZ $1 $x
         !2 !3 JMP $0
+        breakable $x :
     >
 
 for_empty_condition
@@ -748,6 +737,7 @@ for_empty_condition
     | $0 for_head ';' $2 primary_expression ')' $1 scope
     | $0 for_head ';' $2 primary_expression ')' ';'
     ; < JMP $0
+        breakable $x :
     >
 
 for_empty_final
@@ -757,6 +747,7 @@ for_empty_final
     | $0 for_head $1 primary_expression ';' ')' ';'
     ; < JZ $1 $x
         !2 JMP $0
+        breakable $x :
     >
 
 for_empty_all
@@ -765,11 +756,12 @@ for_empty_all
     | $0 for_head ';' ')' $1 scope
     | $0 for_head ';' ')' ';'
     ; < JMP $0
+        breakable $x :
     >
 
 break
     : 'break' ';'
-    ; < JMP BREAK NOP
+    ; < BREAK
     >
 
 goto
@@ -789,7 +781,7 @@ return_empty
 
 continue
     : 'continue' ';'
-    ; < JMP CONTINUE NOP
+    ; < CONTINUE
     >
 
 label
@@ -803,8 +795,13 @@ label
 statement
     : $0 if
     | $0 if_else
+    | $0 while
     | $0 break
-    | $0 breakable
+    | $0 switch
+    | $0 for
+    | $0 for_empty_condition
+    | $0 for_empty_final
+    | $0 for_empty_all
     | $0 goto
     | $0 label
     | $0 return

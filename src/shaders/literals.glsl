@@ -9,16 +9,7 @@ layout(local_size_x = 32, local_size_y = 1, local_size_z = 1 ) in;
 #define LITERAL 1
 #define IDENTIFIER 2
 
-#define Nil 0
-#define U8  1
-#define U32 2
-#define U64 3
-#define I8  4
-#define I32 5
-#define I64 6
-#define F32 7
-#define F64 8
-
+//INCLUDE ir_types
 
 struct ParseTreeItem {
 	uint nextRow;
@@ -98,7 +89,7 @@ void formatFloat(in uint firstPart, in uint secondPart, inout uint valueHalf1, i
 		shift *= 10;
 		dec /= 10.0;
 	}
-	
+
 	uint value = firstPart * shift + secondPart;
 	uint exponent = 0;
 	while (value >= shift) {
@@ -120,7 +111,7 @@ void parseNumber(inout uint pos, in uint base, inout uint valueHalf1, inout uint
 			} else {
 				firstPart = firstPart * base + (source[pos] - ASCII_ZERO);
 			}
-		} else if (source[pos] == 46 /* . */) { 
+		} else if (source[pos] == 46 /* . */) {
 			pastDecimalPoint = true;
 		} else {
 			break;
@@ -142,7 +133,7 @@ void parseLiteral(in uint sourcePos, in uint len, out ChildNode childArray[4]) {
 	int type = -1;
 	uint valueHalf1 = 0;
 	uint valueHalf2 = 0;
-	
+
 	int base = 10;
 
 

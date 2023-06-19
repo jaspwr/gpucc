@@ -11,12 +11,16 @@
 #include "exception.h"
 #include "preprocessor.h"
 #include "postprocessor.h"
+#include "instruction_selection_syntax.h"
 
 #include "c_tokens.cpp"
 #include "grammars/c_grammar.cpp"
+#include "type_propagation.h"
+#include "x86_64_selection.h"
 
 #include "include/glad/glad.h"
 #include <math.h>
+#include <iostream>
 
 //#define BENCHMARKING
 
@@ -151,6 +155,8 @@ std::string compile(Job& job, Shaders& shaders) {
     auto ast_ssbos = create_ast_ssbos(grammars, *lang_tokens_parse_tree, ir_tokens, yacc_parse_tree, ir_parse_tree);
     auto ast_nodes = Ssbo((AST_NODES_OVERFLOW_BUFFER_SIZE + source.length) * sizeof(AstNode));
 
+    std::cout << ir_tokens_shader_definitions(*ir_tokens);
+
     var_reg.new_register_next = AST_NODES_OVERFLOW_BUFFER_SIZE + source.length + 20;
 
     #ifdef BENCHMARKING
@@ -227,8 +233,10 @@ std::string compile(Job& job, Shaders& shaders) {
     #endif
 
     auto _s = serialize_uir_to_readable((GLuint*) out_buf_dmp, output_buffer_size, *ir_tokens, source_str);
+   if (job.dbg) printf("OUTPUT:\n%s\n", _s.c_str());
 
-    if (job.dbg) printf("OUTPUT:\n%s\n", _s.c_str());
+    auto t = parse_type_propagation(type_propagation);
+
 
     // auto post_proc = postprocess((const GLint*)out_buf_dmp, output_buffer_size, var_reg, ir_parse_tree, source_str, ast_nodes_dmp);
 

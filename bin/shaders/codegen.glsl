@@ -14,6 +14,68 @@ layout(local_size_x = 32, local_size_y = 1, local_size_z = 1 ) in;
 
 #define IR_OTHER_TOKENS_START 6
 
+
+#define IR_switch_case 7
+#define IR_switch_default 10
+#define IR_sizeof 12
+#define IR_i8 13
+#define IR_i32 14
+#define IR_f32 15
+#define IR_void 16
+#define IR_ptr 17
+#define IR_struct 18
+#define IR_union 20
+#define IR_enum 22
+#define IR_set_counter 23
+#define IR_fn_def_arg 25
+#define IR_fn 26
+#define IR_ALLOCA 29
+#define IR_CALL 30
+#define IR_replace_with 31
+#define IR_GETELEMENTPTR 32
+#define IR_COPY 33
+#define IR_replace_me 34
+#define IR_COMMA 35
+#define IR_ADD 36
+#define IR_SUB 37
+#define IR_MUL 38
+#define IR_DIV 39
+#define IR_MOD 40
+#define IR_SHR 41
+#define IR_SHL 42
+#define IR_CMP 43
+#define IR_LT 44
+#define IR_GT 45
+#define IR_LTE 46
+#define IR_GTE 47
+#define IR_EQ 48
+#define IR_NE 49
+#define IR_AND 50
+#define IR_XOR 51
+#define IR_OR 52
+#define IR_CAST 53
+#define IR_0 54
+#define IR_1 55
+#define IR_LOAD 57
+#define IR_STORE 58
+#define IR_BOOL_AND 59
+#define IR_BOOL_OR 60
+#define IR_SELECT 61
+#define IR_JZ 62
+#define IR_JMP 63
+#define IR_switch 64
+#define IR_switch_body_end 67
+#define IR_CONTINUE 68
+#define IR_NOP 69
+#define IR_BREAK 70
+#define IR_goto_replace 71
+#define IR_RET 72
+#define IR_gotoable 73
+
+#define BREAKABLE 91
+#define CONTINUABLE 92
+#define FOR_WRAPPER 93
+
 struct ChildNode {
     int ref;
     uint codegenVolume;
@@ -87,7 +149,11 @@ int fetch_ref (uint ref, AstNode node, inout bool isLit) {
     return pos;
 }
 
-void writeToOutput(uint pos, AstNode node, int nodePos) {
+uint continueOfForWrapper(AstNode for_wrapper) {
+    return fetchAstNodeFromChildRef(for_wrapper.children[0].ref).children[0].ref;
+}
+
+void writeToOutput(uint pos, AstNode node, int nodePos, uint lastContinue, uint lastBreak) {
     uint ptr = codegenPointer(node.nodeToken) + 5;
     uint len = getCodegenLength(node.nodeToken);
     for (uint i = 0; i < len; i++) {
@@ -100,7 +166,8 @@ void writeToOutput(uint pos, AstNode node, int nodePos) {
         uint token = irCodegen[ptr + i];
 
         // TODO: refactor into smaller fuctions
-        if (token >= IR_OTHER_TOKENS_START)
+        if (token >= IR_OTHER_TOKENS_START
+            && token != IR_BREAK && token != IR_CONTINUE)
 
             output_[pos + i] = token;
 
@@ -130,7 +197,15 @@ void writeToOutput(uint pos, AstNode node, int nodePos) {
         } else if (token == IR_INSERSION) {
 
             i++;
-            
+
+        } else if (token == IR_BREAK) {
+            output_[pos + i] = IR_REFERNCE;
+            i++;
+            output_[pos + i] = lastBreak;
+        } else if (token == IR_CONTINUE) {
+            output_[pos + i] = IR_REFERNCE;
+            i++;
+            output_[pos + i] = lastContinue;
         }
     }
 }
@@ -143,6 +218,8 @@ void main() {
     AstNode currentNode = astNodes[currentNodePos];
     if (workingVolume > currentNode.volume) return;
 
+    uint lastContinue = 0;
+    uint lastBreak = 0;
 
     uint maxOut = 0;
     while(workingVolume != currentNode.volume && maxOut < 1024) {
@@ -153,6 +230,14 @@ void main() {
             uint childLength = currentNode.children[i].codegenVolume;
             if (workingVolume <= childNode.volume) {
                 // decend
+
+                if (currentNode.nodeToken == BREAKABLE) {
+                    lastBreak = currentNodePos;
+                } else if (currentNode.nodeToken == CONTINUABLE) {
+                    lastContinue = currentNodePos;
+                } else if (currentNode.nodeToken == FOR_WRAPPER) {
+                    lastContinue = continueOfForWrapper(currentNode);
+                }
 
                 uint codegenPtr = codegenPointer(currentNode.nodeToken);
                 wokringStartPos += getChildOffset(codegenPtr, i);
@@ -169,5 +254,5 @@ void main() {
     }
     if (codegenPointer(currentNode.nodeToken) == 0) return;
 
-    writeToOutput(wokringStartPos, currentNode, currentNodePos);
+    writeToOutput(wokringStartPos, currentNode, currentNodePos, lastContinue, lastBreak);
 }
