@@ -29,6 +29,16 @@ const char* load_file (const char* path) {
     return file_buffer;
 }
 
+void write_file(const char* path, const char* content) {
+    std::ofstream file(path);
+    if (file.is_open()) {
+        file << content;
+        file.close();
+    } else {
+        throw Exception(ExceptionType::File, "Unable to write file \"" + std::string(path) + "\".");
+    }
+}
+
 #ifdef WIN32
 #include <Windows.h>
 std::string get_bin_dir() {

@@ -13,17 +13,15 @@ struct ParseTreeItem {
 	uint final;
 };
 
-struct Token {
-	uint id;
-	uint len;
-	int astNodeLocation;
-};
+
+//INCLUDE structs
+
 
 layout(std430, binding = 0) readonly buffer TokenParseTree {
 	ParseTreeItem tokenParseTree[];
 };
 
-layout(std430, binding = 1) readonly coherent buffer Source {
+layout(std430, binding = 5) readonly coherent buffer Source {
 	uint source[];
 };
 

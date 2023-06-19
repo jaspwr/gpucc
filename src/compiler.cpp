@@ -13,8 +13,6 @@
 #include "postprocessor.h"
 #include "instruction_selection_syntax.h"
 
-#include "c_tokens.cpp"
-#include "grammars/c_grammar.cpp"
 #include "type_propagation.h"
 #include "x86_64_selection.h"
 
@@ -107,11 +105,13 @@ void codegen_shdr_exec(Shaders& shaders, GLuint output_buffer_size) {
 #define MAX_AST_NODES 100
 #define AST_NODES_OVERFLOW_BUFFER_SIZE 50
 
-std::string compile(Job& job, Shaders& shaders) {
+std::string compile(Job& job, Shaders& shaders, ParseTree& yacc_parse_tree,
+                    ParseTree& ir_parse_tree, ParseTree* lang_tokens_parse_tree,
+                    IrTokenList* ir_tokens, ast_ssbos _ast_ssbos) {
+
     #ifdef BENCHMARKING
     auto all = Benchmark("All");
     #endif
-
 
     if (job.source_files.size() == 0) { throw Exception("No source files specified."); }
 
@@ -121,7 +121,10 @@ std::string compile(Job& job, Shaders& shaders) {
     auto source = to_uint_string(source_str);
 
 
-    auto lang_tokens_parse_tree = tokens_list_to_parse_tree(c_tokens);
+    auto ast_nodes = Ssbo((AST_NODES_OVERFLOW_BUFFER_SIZE + source.length) * sizeof(AstNode));
+
+    var_reg.new_register_next = AST_NODES_OVERFLOW_BUFFER_SIZE + source.length + 20;
+
 
     auto pt_ssbo = lang_tokens_parse_tree->into_ssbo();
     pt_ssbo->bind(0);
@@ -130,7 +133,7 @@ std::string compile(Job& job, Shaders& shaders) {
     ast_overflow_atomic_counter.bind(0);
 
     Ssbo source_ssbo = Ssbo(source.length * sizeof(GLuint), source.data);
-    source_ssbo.bind(1);
+    source_ssbo.bind(5);
 
     auto tokens = tokenise(source, &shaders.tokeniser);
 
@@ -147,17 +150,6 @@ std::string compile(Job& job, Shaders& shaders) {
     auto bm_gram = Benchmark("Grammar SSBO Setup");
     #endif
 
-    IrTokenList* ir_tokens = new IrTokenList();
-    ParseTree yacc_parse_tree = ParseTree(900);
-    ParseTree ir_parse_tree = ParseTree(400);
-    std::vector<std::string> grammars = { c_pre_yacc, c_yacc };
-
-    auto ast_ssbos = create_ast_ssbos(grammars, *lang_tokens_parse_tree, ir_tokens, yacc_parse_tree, ir_parse_tree);
-    auto ast_nodes = Ssbo((AST_NODES_OVERFLOW_BUFFER_SIZE + source.length) * sizeof(AstNode));
-
-    std::cout << ir_tokens_shader_definitions(*ir_tokens);
-
-    var_reg.new_register_next = AST_NODES_OVERFLOW_BUFFER_SIZE + source.length + 20;
 
     #ifdef BENCHMARKING
     bm_gram.finalise();
@@ -165,7 +157,7 @@ std::string compile(Job& job, Shaders& shaders) {
 
 
     ast_nodes.bind(3);
-    ast_ssbos.ir_codegen->bind(0);
+    _ast_ssbos.ir_codegen->bind(0);
 
 
 
@@ -180,15 +172,15 @@ std::string compile(Job& job, Shaders& shaders) {
     #endif
 
 
-    ast_ssbos.ast_parse_trees[0]->bind(4);
+    _ast_ssbos.ast_parse_trees[0]->bind(4);
 
     shaders.literals.exec(ast_invocations_count);
-    ast_ssbos.ast_nodes->bind(1);
+    _ast_ssbos.ast_nodes->bind(1);
 
     for (int i = 0; i < 30; i++)
         shaders.ast.exec(ast_invocations_count);
 
-    ast_ssbos.ast_parse_trees[1]->bind(4);
+    _ast_ssbos.ast_parse_trees[1]->bind(4);
     for (int i = 0; i < 200; i++)
         shaders.ast.exec(ast_invocations_count);
 
@@ -248,7 +240,7 @@ std::string compile(Job& job, Shaders& shaders) {
 
     // if (job.dbg) printf("OUTPUT:\n%s\n", s.c_str());
 
-    delete_ast_ssbos(ast_ssbos);
+    delete_ast_ssbos(_ast_ssbos);
     free(out_buf_dmp);
     delete ir_tokens;
     delete lang_tokens_parse_tree;

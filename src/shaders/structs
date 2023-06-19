@@ -1,0 +1,17 @@
+struct ChildNode {
+    int ref;
+    uint codegenVolume;
+};
+
+struct AstNode {
+	uint nodeToken;
+	ChildNode children[4];
+	uint volume;
+    uint parent;
+};
+
+struct Token {
+	uint id;
+	uint len;
+	int astNodeLocation;
+};

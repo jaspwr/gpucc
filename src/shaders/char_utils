@@ -1,0 +1,14 @@
+bool isAlpha(in uint c) {
+	return c >= 97 && c <= 122  // a-z
+		|| c >= 65 && c <= 90	// A-Z
+		|| c == 95 				// _
+		;
+}
+
+bool isNumeric(in uint c) {
+	return c >= 48 && c <= 57;	// 0-9
+}
+
+bool isAlphanum(in uint c) {
+	return isAlpha(c) || isNumeric(c);
+}

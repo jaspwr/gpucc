@@ -14,6 +14,7 @@ struct StrSplit {
 };
 
 const char* load_file(const char* path);
+void write_file(const char* path, const char* content);
 std::string repeated_char(u32 length, char c);
 std::string get_bin_dir();
 UintString to_uint_string(std::string str);

@@ -4,6 +4,8 @@ layout(local_size_x = 32, local_size_y = 1, local_size_z = 1 ) in;
 
 #define CHARS_PER_INVOCATION 4
 #define ROW_SIZE 256
+#define AST_NODES_OVERFLOW_BUFFER_SIZE 50
+
 #define MAX_AST_NODES 70
 
 struct ParseTreeItem {
@@ -11,25 +13,8 @@ struct ParseTreeItem {
 	uint final;
 };
 
-struct Token {
-	uint id;
-	uint len;
-	int astNodeLocation;
-};
+//INCLUDE structs
 
-struct ChildNode {
-    int ref;
-    uint codegenVolume;
-};
-
-struct AstNode {
-	uint nodeToken;
-	ChildNode children[4];
-	uint volume;
-};
-
-
-#define AST_NODES_OVERFLOW_BUFFER_SIZE 50
 layout(binding = 0) uniform atomic_uint astNodesOverflowPointer;
 
 layout(std430, binding = 4) readonly buffer AstParseTree {
@@ -166,7 +151,7 @@ void handleChildren(out ChildNode children[4], uint lastFinal, in uint matchBuff
 	for (uint j = 0; j < 4; j++) {
 		uint childRef = astTreeData[sigTokLoc + j];
 		children[j].codegenVolume = 0;
-		if (childRef == 0) { 
+		if (childRef == 0) {
 			children[j].ref = 0;
 		} else {
 			int loc = tokens[matchBuffer[childRef - 1]].astNodeLocation;
@@ -191,7 +176,7 @@ void tryParse(in uint start, out uint outToken, in uint preToken, inout uint mat
 		Token token = tokens[start + i];
 
         if (token.id == 0) continue;
-		
+
 		if (!inbounds(matchBufferPointer, matchBuffer.length())) break;
 		matchBuffer[matchBufferPointer++] = start + i;
 		ParseTreeItem pti = astParseTree[row * ROW_SIZE + token.id];
@@ -240,18 +225,25 @@ void main() {
 		tryParse(pos, token, preToken, matchBuffer, matchBufferPointer, children, len, volume);
 
         barrier();
-		
-	
+
+
 		// TODO: replace 90 with the number of language tokens and/or address following issue:
-		// Having "> 90" and not "!= 0" is sort of a bandaid fix for an issue where 
+		// Having "> 90" and not "!= 0" is sort of a bandaid fix for an issue where
 		// random things where being parsed which needs to be properly addressed.
-		// Set "token > 90" back to "token != 0" and try get it to work. 
+		// Set "token > 90" back to "token != 0" and try get it to work.
 		if (token > 90 && inbounds(pos, tokens.length())) {
-			AstNode newNode = AstNode(token, children, volume);
+			AstNode newNode = AstNode(token, children, volume, 0);
 			int astPos = appendAstNode(newNode, pos, len);
 			tokens[pos].id = token;
     		tokens[pos].len = len;
 			tokens[pos].astNodeLocation = int(astPos + 1);
+
+			for (uint i = 0; i < 4; i++) {
+				if (children[i].ref != 0) {
+					astNodes[children[i].ref - 1].parent = int(astPos);
+				}
+			}
+
 			// TODO: Find the smallest length of tokens that need to be cleared.
 			// 		 This will get really slow for higher nodes.
 			for (uint j = 1; j < len; j++) {

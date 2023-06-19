@@ -6,7 +6,7 @@
 #include <string>
 #include <string.h>
 
-
+#include "shader_preproc.h"
 #include "utils.h"
 
 
@@ -14,7 +14,15 @@ Shader::Shader(const char* shader_source_path, GLuint _barrier_mode) {
     barrier_mode = _barrier_mode;
 
     shader_index = glCreateShader(GL_COMPUTE_SHADER);
-    auto path = get_bin_dir() + std::string("/") + std::string(shader_source_path);
+    auto path_of_raw = get_bin_dir() + std::string("/") + std::string(shader_source_path);
+    std::string path = path_of_raw + ".out";
+
+    try {
+        preproc(path_of_raw.c_str(), path.c_str());
+    } catch (std::string e) {
+        throw Exception(e);
+    }
+
 
     // auto var_reg = VariableRegistry();
     // auto s = preprocess(path, var_reg);

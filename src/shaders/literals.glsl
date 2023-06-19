@@ -16,28 +16,14 @@ struct ParseTreeItem {
 	uint final;
 };
 
-struct Token {
-	uint id;
-	uint len;
-	int astNodeLocation;
-};
 
-struct ChildNode {
-    int ref;
-    uint codegenVolume;
-};
-
-struct AstNode {
-	uint nodeToken;
-	ChildNode children[4];
-	uint volume;
-};
+//INCLUDE structs
 
 
 #define AST_NODES_OVERFLOW_BUFFER_SIZE 50
 layout(binding = 0) uniform atomic_uint astNodesOverflowPointer;
 
-layout(std430, binding = 1) readonly coherent buffer Source {
+layout(std430, binding = 5) readonly coherent buffer Source {
 	uint source[];
 };
 
@@ -187,7 +173,8 @@ void main() {
 		AstNode newNode = AstNode(
 			LITERAL,
 			childArray,
-			1
+			1,
+			0
 		);
 
 		int astPos = appendAstNode(newNode, pos, 1);

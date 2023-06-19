@@ -8,22 +8,9 @@ layout(local_size_x = 32, local_size_y = 1, local_size_z = 1 ) in;
 #define CONTINUABLE 92
 #define FOR_WRAPPER 93
 
-struct ChildNode {
-    int ref;
-    uint codegenVolume;
-};
+//INCLUDE structs
 
-struct AstNode {
-	uint nodeToken;
-	ChildNode children[4];
-	uint volume;
-};
-
-struct Token {
-	uint id;
-	uint len;
-	int astNodeLocation;
-};
+//INCLUDE char_utils
 
 layout(std430, binding = 3) readonly buffer AstNodes {
 	AstNode astNodes[];
@@ -35,6 +22,10 @@ layout(std430, binding = 2) readonly buffer Tokens {
 
 layout(std430, binding = 1) writeonly volatile buffer Output {
     uint output_[];
+};
+
+layout(std430, binding = 5) readonly coherent buffer Source {
+	uint source[];
 };
 
 layout(std430, binding = 0) readonly buffer IrCodegen {
@@ -57,6 +48,23 @@ uint getCodegenLength(uint nodeToken) {
 
 uint getChildOffset(uint codegenPtr, uint childIndex) {
     return irCodegen[codegenPtr + childIndex];
+}
+
+bool strcmp(uint lhs_pos, uint rhs_pos) {
+    uint i = 0;
+    while (true) {
+        bool lhs_alphanum = isAlphanum(source[lhs_pos + i]);
+        bool rhs_alphanum = isAlphanum(source[rhs_pos + i]);
+
+        if (lhs_alphanum != rhs_alphanum) return false;
+
+        if (!lhs_alphanum && !rhs_alphanum) return true;
+
+        if (source[lhs_pos + i] != source[rhs_pos + i]) return false;
+
+        i++;
+    }
+    return true;
 }
 
 int fetch_ref (uint ref, AstNode node, inout bool isLit) {

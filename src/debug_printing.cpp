@@ -7,9 +7,9 @@
 #include <math.h>
 #include <unordered_map>
 
-std::string check_both_parse_trees(GLuint token, ParseTree* lang_tokens, 
+std::string check_both_parse_trees(GLuint token, ParseTree* lang_tokens,
     ParseTree* abstract_tokens) {
-        
+
     if (token == 1) return "Literal";
     if (token == 2) return "Identifier";
     if (abstract_tokens != nullptr) {
@@ -27,7 +27,7 @@ std::string check_both_parse_trees(GLuint token, ParseTree* lang_tokens,
     return "Unknown token";
 }
 
-void print_tokens(void* tokens, u32 length, 
+void print_tokens(void* tokens, u32 length,
     ParseTree& lang_tokens, ParseTree& abstract_tokens) {
 
     Token* _tokens = (Token*)tokens;
@@ -45,8 +45,8 @@ void print_tokens(void* tokens, u32 length,
 }
 
 AstNode get_ast_node(GLuint* ast_nodes, u32 index) {
-    
-    #define AST_NODE_SIZE 10
+
+    #define AST_NODE_SIZE 11
 
     return {
         ast_nodes[index * AST_NODE_SIZE + 0],
@@ -58,7 +58,8 @@ AstNode get_ast_node(GLuint* ast_nodes, u32 index) {
         ast_nodes[index * AST_NODE_SIZE + 6],
         (int) ast_nodes[index * AST_NODE_SIZE + 7],
         ast_nodes[index * AST_NODE_SIZE + 8],
-        ast_nodes[index * AST_NODE_SIZE + 9]
+        ast_nodes[index * AST_NODE_SIZE + 9],
+        ast_nodes[index * AST_NODE_SIZE + 10]
     };
 }
 
@@ -137,7 +138,7 @@ void print_ast_nodes(void* nodes, u32 length, ParseTree& lang_tokens, ParseTree&
             entry = node;
         }
         node.print(check_both_parse_trees(node.nodeToken, &lang_tokens, &abstract_tokens));
-        
+
     }
 
     auto term_size = get_terminal_size();
@@ -154,5 +155,5 @@ void print_ast_nodes(void* nodes, u32 length, ParseTree& lang_tokens, ParseTree&
 }
 
 
-  	
+
 //┏━━╋━┻━┓

@@ -3,7 +3,7 @@
 #include <string>
 #include "stdio.h"
 
-void preproc_file(char* filename, std::ofstream& output);
+void preproc_file(const char* filename, std::ofstream& output);
 
 inline void skip_whitespace(std::string& line, int& i) {
     while (i < line.length() && (line[i] == ' ' || line[i] == '\t')) i++;
@@ -20,7 +20,7 @@ inline void read_filename(char* filename_buf, int path_len, std::string& line, i
     filename_buf[j] = '\0';
 }
 
-inline int file_location(char* location, char* filepath) {
+inline int file_location(char* location, const char* filepath) {
     int last_slash = 0;
     int len = 0;
     while (filepath[len] != '\0') {
@@ -33,7 +33,7 @@ inline int file_location(char* location, char* filepath) {
     return last_slash;
 }
 
-bool try_include(char* path, std::string& line, std::ofstream& output) {
+bool try_include(const char* path, std::string& line, std::ofstream& output) {
     int i = 0;
     skip_whitespace(line, i);
     if (i + 9 < line.length() && line.substr(i, 9) == "//INCLUDE") {
@@ -49,7 +49,7 @@ bool try_include(char* path, std::string& line, std::ofstream& output) {
     return false;
 }
 
-void preproc_file(char* filename, std::ofstream& output) {
+void preproc_file(const char* filename, std::ofstream& output) {
     std::string line;
     std::ifstream input(filename);
 
@@ -64,23 +64,28 @@ void preproc_file(char* filename, std::ofstream& output) {
     }
 }
 
+void preproc(const char* in, const char* out) {
+    std::remove(out);
+    std::ofstream output(out);
+    if (output.is_open()) {
+        preproc_file(in, output);
+        output.close();
+    }
+}
+
+#ifdef CLI
 int main(int argc, char** argv) {
     if (argc != 3) {
         std::cout << "Usage: " << argv[0] << " <file> <location>" << std::endl;
         return 1;
     }
 
-    std::remove(argv[2]);
-
     try {
-        std::ofstream output(argv[2]);
-        if (output.is_open()) {
-            preproc_file(argv[1], output);
-            output.close();
-        }
+        preproc(argv[1], argv[2]);
     } catch (std::string e) {
         std::cout << std::string("[SHADER PREPROC ERROR] ") + e << std::endl;
         return 1;
     }
     return 0;
 }
+#endif
