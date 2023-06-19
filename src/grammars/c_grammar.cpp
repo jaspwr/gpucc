@@ -723,7 +723,7 @@ while
     | 'while' $1 primary_expression $2 scope
     | 'do' $2 primary_expression ';' 'while' $1 primary_expression ';'
     | 'do' $2 scope $0 'while' $1 primary_expression ';'
-    ; < JZ $1 $x
+    ; < JZ $1 BREAK NOP
         !2 JMP CONTINUE NOP
     >
 
@@ -738,8 +738,9 @@ for
     | $0 for_head $1 primary_expression ';' $3 primary_expression ')' $2 statement
     | $0 for_head $1 primary_expression ';' $3 primary_expression ')' $2 scope
     | $0 for_head $1 primary_expression ';' $3 primary_expression ')' ';'
-    ; < JZ $1 $x
-        !2 !3 JMP $0
+    ; < JZ $1 BREAK NOP
+        !2 $x:
+        !3 JMP $0
     >
 
 for_empty_condition
@@ -747,7 +748,8 @@ for_empty_condition
     | $0 for_head ';' $2 primary_expression ')' $1 statement
     | $0 for_head ';' $2 primary_expression ')' $1 scope
     | $0 for_head ';' $2 primary_expression ')' ';'
-    ; < JMP $0
+    ; < $x:
+    JMP $0
     >
 
 for_empty_final
@@ -755,8 +757,9 @@ for_empty_final
     | $0 for_head $1 primary_expression ';' ')' $2 statement
     | $0 for_head $1 primary_expression ';' ')' $2 scope
     | $0 for_head $1 primary_expression ';' ')' ';'
-    ; < JZ $1 $x
-        !2 JMP $0
+    ; < JZ $1 BREAK NOP
+        !2 $x:
+        JMP $0
     >
 
 for_empty_all
@@ -764,7 +767,8 @@ for_empty_all
     | $0 for_head ';' ')' $1 statement
     | $0 for_head ';' ')' $1 scope
     | $0 for_head ';' ')' ';'
-    ; < JMP $0
+    ; < $x:
+    JMP $0
     >
 
 break

@@ -82,7 +82,7 @@ int fetch_ref (uint ref, AstNode node, inout bool isLit) {
 }
 
 uint continueOfForWrapper(AstNode for_wrapper) {
-    return fetchAstNodeFromChildRef(for_wrapper.children[0].ref).children[0].ref;
+    return for_wrapper.children[0].ref;
 }
 
 void writeToOutput(uint pos, AstNode node, int nodePos, uint lastContinue, uint lastBreak) {

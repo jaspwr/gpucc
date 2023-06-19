@@ -61,9 +61,9 @@
 #define IR_JMP 63
 #define IR_switch 64
 #define IR_switch_body_end 67
-#define IR_CONTINUE 68
+#define IR_BREAK 68
 #define IR_NOP 69
-#define IR_BREAK 70
+#define IR_CONTINUE 70
 #define IR_goto_replace 71
 #define IR_RET 72
 #define IR_gotoable 73

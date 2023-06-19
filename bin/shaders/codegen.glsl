@@ -65,9 +65,9 @@ layout(local_size_x = 32, local_size_y = 1, local_size_z = 1 ) in;
 #define IR_JMP 63
 #define IR_switch 64
 #define IR_switch_body_end 67
-#define IR_CONTINUE 68
+#define IR_BREAK 68
 #define IR_NOP 69
-#define IR_BREAK 70
+#define IR_CONTINUE 70
 #define IR_goto_replace 71
 #define IR_RET 72
 #define IR_gotoable 73
@@ -150,7 +150,7 @@ int fetch_ref (uint ref, AstNode node, inout bool isLit) {
 }
 
 uint continueOfForWrapper(AstNode for_wrapper) {
-    return fetchAstNodeFromChildRef(for_wrapper.children[0].ref).children[0].ref;
+    return for_wrapper.children[0].ref;
 }
 
 void writeToOutput(uint pos, AstNode node, int nodePos, uint lastContinue, uint lastBreak) {
