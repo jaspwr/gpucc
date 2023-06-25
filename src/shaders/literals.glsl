@@ -16,9 +16,7 @@ struct ParseTreeItem {
 	uint final;
 };
 
-
 //INCLUDE structs
-
 
 #define AST_NODES_OVERFLOW_BUFFER_SIZE 50
 layout(binding = 0) uniform atomic_uint astNodesOverflowPointer;
@@ -115,7 +113,7 @@ void parseNumber(inout uint pos, in uint base, inout uint valueHalf1, inout uint
 }
 
 
-void parseLiteral(in uint sourcePos, in uint len, out ChildNode childArray[4]) {
+IrType parseLiteral(in uint sourcePos, in uint len, out ChildNode childArray[4]) {
 	int type = -1;
 	uint valueHalf1 = 0;
 	uint valueHalf2 = 0;
@@ -159,6 +157,8 @@ void parseLiteral(in uint sourcePos, in uint len, out ChildNode childArray[4]) {
 	childArray[1] = ChildNode( 0, valueHalf1 );
 	childArray[2] = ChildNode( 0, valueHalf2 );
 	childArray[3] = ChildNode( 0, 0 );
+
+	return IrType(type, 0, 0);
 }
 
 void main() {
@@ -168,7 +168,7 @@ void main() {
 
 		if (tokens[pos].id != LITERAL) continue;
 		ChildNode childArray[4];
-		parseLiteral(pos, tokens[pos].len, childArray);
+		IrType type = parseLiteral(pos, tokens[pos].len, childArray);
 
 		AstNode newNode = AstNode(
 			LITERAL,
@@ -179,6 +179,8 @@ void main() {
 
 		int astPos = appendAstNode(newNode, pos, 1);
 		tokens[pos].astNodeLocation = int(astPos + 1);
+
+		vregTypes[astPos + 1] = type;
 
         // barrier();
 	    // memoryBarrierBuffer();

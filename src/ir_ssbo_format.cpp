@@ -3,6 +3,8 @@
 
 #include <iostream>
 
+#include "shaders/type_actions.h"
+
 void append_children_offsets(GLuint* codegen_ssbo, GLuint& start_pos, GLuint children_offsets[4]) {
     for (i32 i = 0; i < 4; i++) {
         codegen_ssbo[start_pos + i] = children_offsets[i];
@@ -38,8 +40,62 @@ void append_numeral(std::string number_str, GLuint max_num, GLuint* codegen_ssbo
     codegen_ssbo[codegen_ssbo_len++] = num;
 }
 
+std::vector<GLuint> create_action(std::vector<std::string>& action) {
+    // 0 : len
+    // 1 : SELF OR REF
+    // 2 : vreg if is ref
+
+    // 3 : STATIC OR REF
+    // 4 : ref or
+
+    auto ret = std::vector<GLuint>();
+
+    ret.push_back(0);
+
+    if (action.size() == 0) return ret;
+
+    GLuint len = 0;
+
+    if (action[0] == "$x" || action[0] == "$X") {
+        ret.push_back(TYPE_ACTION_SET_SELF_VREG);
+        ret.push_back(0);
+        len += 2;
+    } else {
+        ret.push_back(TYPE_ACTION_SET_VREG);
+        ret.push_back(parse_int((char *)action[0].c_str() + 1));
+        len += 2;
+    }
+
+    if (action[1] != ":" || action[2] != "=")
+        throw Exception("Expected cock and balls operator in type action.");
+
+    for (u32 i = 3; i < action.size(); i += 2) {
+        if (action[i][0] == '$') {
+            ret.push_back(TYPE_ACTION_TYPE_OF_VREG);
+            auto a = parse_int((char *)action[i].c_str() + 1);
+            ret.push_back(a);
+        } else {
+            ret.push_back(TYPE_ACTION_STATIC_TYPE);
+            if (action[i] == "i1") {
+                ret.push_back(TYPE_ACTION_I1);
+            }
+            // TODO
+        }
+        len += 2;
+    }
+
+    ret[0] = len;
+
+    for (auto c : ret) {
+        std::cout << "UHHHH " << c << std::endl;
+    }
+
+    return ret;
+}
+
 void append_codegen_ssbo_entry(GLuint* codegen_ssbo, GLuint& codegen_ssbo_len,
-    GLuint node_token, std::vector<std::string>& ir, ParseTree& ir_pt, IrTokenList* ir_tokens) {
+    GLuint node_token, std::vector<std::string>& ir, ParseTree& ir_pt, IrTokenList* ir_tokens,
+    std::vector<std::string>& type_actions) {
 
     // Codegen SSBO structure
     // 0 -> 256 : Pointers to IR section that is inserted for nodes with the token at that index
@@ -47,11 +103,13 @@ void append_codegen_ssbo_entry(GLuint* codegen_ssbo, GLuint& codegen_ssbo_len,
     //     0 -> 4 : Child offsets
     //     4 : Length of IR
     //     5 -> 5 + length : IR tokens
+    //     5 + length : Type actions length
+    //     6 + length -> 6 + length + type_actions_length : Type actions
 
     if (ir.size() == 0) return; // May need to write the codegen_ssbo[node_token] to 0 for this case to be safe (not sure if it's needed should check)
 
     codegen_ssbo[node_token] = codegen_ssbo_len; // Set pointer to IR for that node token
-    
+
     GLuint start_pos = codegen_ssbo_len;
     codegen_ssbo_len += 4;
     GLuint len_pos = codegen_ssbo_len++; // Set this empty spot to length of IR once known
@@ -72,7 +130,6 @@ void append_codegen_ssbo_entry(GLuint* codegen_ssbo, GLuint& codegen_ssbo_len,
             }
             codegen_ssbo[codegen_ssbo_len++] = IR_REFERNCE;
             append_numeral(ir[i], 3, codegen_ssbo, codegen_ssbo_len);
-
             break;
         case '!': {
             char* tok_str = (char*)ir[i].c_str();
@@ -88,6 +145,11 @@ void append_codegen_ssbo_entry(GLuint* codegen_ssbo, GLuint& codegen_ssbo_len,
         }
     }
     codegen_ssbo[len_pos] = codegen_ssbo_len - init_codegen_ssbo_len; // Set length of IR
+
+    for (auto c : create_action(type_actions)) {
+        codegen_ssbo[codegen_ssbo_len++] = c;
+    }
+
     append_children_offsets(codegen_ssbo, start_pos, children_offsets);
 
 }

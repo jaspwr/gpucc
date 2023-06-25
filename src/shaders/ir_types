@@ -1,12 +1,17 @@
 #define U0  0
-#define U8  1
-#define U32 2
-#define U64 3
-#define I8  4
-#define I32 5
-#define I64 6
-#define F32 7
-#define F64 8
+#define U1  1
+#define U8  2
+#define U16 3
+#define U32 4
+#define U64 5
+#define I8  6
+#define I16 7
+#define I32 9
+#define I64 10
+#define F32 11
+#define F64 12
+
+#define ERROR_TYPE 4000
 
 struct IrType {
     uint base;
@@ -17,3 +22,11 @@ struct IrType {
 layout(std430, binding = 6) coherent volatile buffer VregTypes {
 	IrType vregTypes[];
 };
+
+IrType favoured(IrType lhs, IrType rhs) {
+    // TODO: Report all implicit casts (ugh).
+    if (lhs.base == 0) return rhs;
+    if (rhs.base == 0) return lhs;
+
+    return lhs;
+}

@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
         auto lang_tokens_parse_tree = tokens_list_to_parse_tree(c_tokens);
 
         IrTokenList* ir_tokens = new IrTokenList();
-        ParseTree yacc_parse_tree = ParseTree(900);
+        ParseTree yacc_parse_tree = ParseTree(1000);
         ParseTree ir_parse_tree = ParseTree(400);
         std::vector<std::string> grammars = { c_pre_yacc, c_yacc };
 
@@ -29,6 +29,9 @@ int main(int argc, char** argv) {
 
         write_file((get_bin_dir() + "/shaders/ir_tokens_generated").c_str(),
             ir_tokens_shader_definitions(*ir_tokens).c_str());
+
+        write_file((get_bin_dir() + "/shaders/lang_tokens_generated").c_str(),
+            shader_token_defs(c_tokens).c_str());
 
         Shaders shaders = Gl::compile_shaders();
 

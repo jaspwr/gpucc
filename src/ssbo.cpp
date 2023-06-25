@@ -3,8 +3,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 
-Ssbo::Ssbo(GLuint size) // Zero-initialised
-{
+Ssbo::Ssbo(GLuint size) { // Zero-initialised
     this->size = size;
     glGenBuffers(1, &index);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, index);
@@ -13,8 +12,7 @@ Ssbo::Ssbo(GLuint size) // Zero-initialised
     glFinish();
 }
 
-Ssbo::Ssbo(GLuint size, void* data) // Initialised with data
-{
+Ssbo::Ssbo(GLuint size, void* data) { // Initialised with data
     this->size = size;
     glGenBuffers(1, &index);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, index);

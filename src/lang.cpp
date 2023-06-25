@@ -1,8 +1,8 @@
 #include "lang.h"
 
 ParseTree* tokens_list_to_parse_tree(const char* token_list) {
-    auto spl = str_split(token_list, '\n');
-    auto ret = create_token_parse_tree(spl.spl, spl.len, 4);
+    StrSplit spl = str_split(token_list, '\n');
+    auto ret = create_token_parse_tree(spl.spl, spl.len, FIRST_TOKEN_ID);
     free_str_split(spl);
     return ret;
 }
@@ -17,6 +17,28 @@ ParseTree* create_token_parse_tree(char** tokens, u32 token_count, u32 first_tok
     auto ret = new ParseTree(entries);
     for (ParseTreeEntry entry : entries) {
         delete[] entry.matches.data;
+    }
+    return ret;
+}
+
+std::string shader_token_defs(const char* token_list) {
+    StrSplit tokens = str_split(token_list, '\n');
+    auto ret = std::string();
+    u32 id = FIRST_TOKEN_ID;
+    for (u32 i = 0; i < tokens.len; i++) {
+        auto token = tokens.spl[i];
+
+        if (!char_utils::string_is_var_name(token)
+            || char_utils::is_numeric(token[0])) {
+
+            continue;
+        }
+
+        ret += "#define LANG_"
+               + std::string(token)
+               + " "
+               + std::to_string(id++)
+               + "\n";
     }
     return ret;
 }

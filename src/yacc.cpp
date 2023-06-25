@@ -74,6 +74,7 @@ enum class YaccContext: u32 {
     PostExclusions,
     SymmetricExclusions,
     Codegen,
+    TypeAction,
 };
 
 bool is_whitespace(char c) {
@@ -152,13 +153,30 @@ GLuint yacc_constant(char* token) {
 
 void handle_token(char* token_buffer, YaccContext& context, ParseTree& parse_tree, ParseTree& ast_parse_tree,
     GLuint* ast_nodes_buffer, GLuint& ast_nodes_len, GLuint& block_token, ParseTree& yacc_parse_tree,
-    GLuint& yacc_tokens_last, AstParseData& ast_pt_data, GLuint* codegen_ssbo, GLuint& codegen_ssbo_len, ParseTree& ir_pt, IrTokenList* ir_tokens) {
+    GLuint& yacc_tokens_last, AstParseData& ast_pt_data, GLuint* codegen_ssbo, GLuint& codegen_ssbo_len,
+    ParseTree& ir_pt, IrTokenList* ir_tokens, std::vector<std::string>& type_actions) {
+
+    if (context == YaccContext::TypeAction) {
+        if (strcmp(token_buffer, "`") == 0) {
+            context = YaccContext::Codegen;
+        } else {
+            type_actions.push_back(token_buffer);
+            printf("Type action: %s\n", token_buffer);
+        }
+        return;
+    }
 
     if (context == YaccContext::Codegen) {
+        if (strcmp(token_buffer, "`") == 0) {
+            context = YaccContext::TypeAction;
+            return;
+        }
         if (strcmp(token_buffer, ">") == 0) {
             context = YaccContext::BlockName;
-            append_codegen_ssbo_entry(codegen_ssbo, codegen_ssbo_len, block_token, ast_pt_data.codegen, ir_pt, ir_tokens);
+            append_codegen_ssbo_entry(codegen_ssbo, codegen_ssbo_len, block_token,
+                                      ast_pt_data.codegen, ir_pt, ir_tokens, type_actions);
             ast_pt_data.codegen.clear();
+            type_actions = std::vector<std::string>();
         } else {
             ast_pt_data.codegen.push_back(token_buffer);
         }
@@ -288,15 +306,29 @@ void parse_yacc(ParseTree& parse_tree, std::vector<Ssbo*>& ast_parse_trees, std:
     GLuint block_token = 0;
     GLuint yacc_tokens_last = 90;
     AstParseData ast_pt_data = AstParseData();
+    auto type_actions = std::vector<std::string>();
 
     auto breakable = get_token_id(yacc_parse_tree, (char*) "breakable", yacc_tokens_last);
     auto continuable = get_token_id(yacc_parse_tree, (char*) "continuable", yacc_tokens_last);
     auto for_wrapper = get_token_id(yacc_parse_tree, (char*) "for_wrapper", yacc_tokens_last);
+    auto scope = get_token_id(yacc_parse_tree, (char*) "scope", yacc_tokens_last);
+    auto partial_scope = get_token_id(yacc_parse_tree, (char*) "partial_scope", yacc_tokens_last);
+    auto partial_scope_dec = get_token_id(yacc_parse_tree, (char*) "partial_scope_dec", yacc_tokens_last);
+    auto type_specifier = get_token_id(yacc_parse_tree, (char*) "type_specifier", yacc_tokens_last);
+    auto pointer = get_token_id(yacc_parse_tree, (char*) "pointer", yacc_tokens_last);
+    auto declaration_full = get_token_id(yacc_parse_tree, (char*) "declaration_full", yacc_tokens_last);
+    auto type_qualifier = get_token_id(yacc_parse_tree, (char*) "type_qualifier", yacc_tokens_last);
+    auto int_ = get_token_id(yacc_parse_tree, (char*) "int", yacc_tokens_last);
+    auto char_ = get_token_id(yacc_parse_tree, (char*) "char", yacc_tokens_last);
+    auto short_ = get_token_id(yacc_parse_tree, (char*) "short", yacc_tokens_last);
+    auto long_ = get_token_id(yacc_parse_tree, (char*) "long", yacc_tokens_last);
+    auto double_ = get_token_id(yacc_parse_tree, (char*) "double", yacc_tokens_last);
+    auto float_ = get_token_id(yacc_parse_tree, (char*) "float", yacc_tokens_last);
 
     printf("breakable: %d\n", breakable);
 
     for(auto grammar : grammars) {
-        auto ast_parse_tree = ParseTree(500);
+        auto ast_parse_tree = ParseTree(600);
         // This has this weird previous character thing because it needs to deal with the final token
         for (i32 i = 0; fetch_char(grammar, i - 1) != '\0' || i == 0; i++) {
             auto c_cur = fetch_char(grammar, i);
@@ -308,7 +340,7 @@ void parse_yacc(ParseTree& parse_tree, std::vector<Ssbo*>& ast_parse_trees, std:
                 if (pre_cat != CharCatergory::Whitespace) {
                     handle_token( token_buffer, context, parse_tree, ast_parse_tree, ast_nodes_buffer,
                                 ast_nodes_len, block_token, yacc_parse_tree, yacc_tokens_last,
-                                ast_pt_data, ir_codegen, ir_codegen_len, ir_pt, ir_token_list);
+                                ast_pt_data, ir_codegen, ir_codegen_len, ir_pt, ir_token_list, type_actions);
                 }
                 flush_string_buffer(token_buffer, token_buffer_index);
             }

@@ -1,21 +1,12 @@
-for(int x = 0; x < 10; x++) {
-    if(x == 5) {
-        x |= 2 + 8 * 2;
+for(2; x < 10; x++) {
+    float*** ((apples)) = 2.0;
+    if(5 == 5) {
+        int x = 2 + 8.0 * 2;
+        int a = 0;
+        x = 2 + 2;
+        a = 9 + (2 + 2);
+        x = 1;
+        apples = 2;
         continue;
-        break;
-    }
-    break;
-    continue;
-
-    while (1) {
-        x = 0;
-        continue;
-        break;
-        while (1) {
-            x = 0;
-            continue;
-            break;
-        }
-        a = 2 + 2;
     }
 }

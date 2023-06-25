@@ -71,6 +71,19 @@ void print_centered(std::string str, u32 width) {
     std::cout << repeated_char(spacing / 2, ' ') << str << repeated_char(spacing / 2, ' ');
 }
 
+void print_types(void* types, u32 length) {
+    #define TYPE_STRUCT_SIZE 3
+    GLuint* _types = (GLuint*)types;
+    for (u32 i = 0; i < length / sizeof(GLuint); i += TYPE_STRUCT_SIZE) {
+        if (_types[i + 0] == 0) continue;
+        std::cout << "[" << i / TYPE_STRUCT_SIZE << "] ";
+        std::cout << "Type: " << _types[i + 0] << " ";
+        std::cout << "PointerDepth: " << _types[i + 1] << " ";
+        std::cout << "LoadDepth: " << _types[i + 2] << " ";
+        std::cout << "\n";
+    }
+}
+
 void print_tree_lines(u32 nodes_count, u32 width) {
     bool even = nodes_count % 2 == 0;
     std::vector<u32> down_node_positions;

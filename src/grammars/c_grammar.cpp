@@ -31,33 +31,31 @@ type_specifier
     : $0 int
     | $0 char
     | $0 float
+    | $0 double
     | $0 void
     | [ '{' } $0 enum_type
     | [ ';' } $0 full_struct_definition
     | [ ';' } $0 full_enum_definition
-    ; < !0 >
+    ;
 
-char
-    : 'char'
-    ; < i8 >
-
-int
-    : 'int'
-    ; < i32 >
-
-float
-    : 'float'
-    ; < f32 >
-
-void
-    : 'void'
-    ; < void >
+int : 'int' ;
+char : 'char' ;
+float : 'float' ;
+double : 'double' ;
+void : 'void' ;
+long : 'long' ;
+short : 'short' ;
+signed : 'signed' ;
+unsigned : 'unsigned' ;
+const : 'const' ;
+volatile : 'volatile' ;
+register : 'register' ;
 
 pointer
     : $0 type_specifier '*'
     | $0 pointer '*'
     | $0 struct_union_type '*'
-    ; < !0 ptr >
+    ;
 
 struct_union_type
     : $0 union_type
@@ -130,12 +128,13 @@ full_enum_definition
     ; < !0 } >
 
 type_qualifier
-    : $0 'const'
-    | $0 'volatile'
-    | $0 'unsigned'
-    | $0 'signed'
-    | $0 'short'
-    | $0 'register'
+    : $0 const
+    | $0 volatile
+    | $0 unsigned
+    | $0 long
+    | $0 signed
+    | $0 short
+    | $0 register
     ;
 
 qualifier_list
@@ -178,7 +177,7 @@ declaration
     | ] type_qualifier, qualifier_list, #identifier } [ '[', array_pointer } $0 qualifier_list $1 type_specifier $2 primary_expression $3 array_pointer
     | ] type_qualifier, qualifier_list, #identifier } [ '[', array_pointer } $0 qualifier_list $1 struct_union_type $2 primary_expression $3 array_pointer
     | ] type_qualifier, qualifier_list, #identifier } [ '[', array_pointer } $0 qualifier_list $1 pointer $2 primary_expression $3 array_pointer
-    ; < !0 !1 !3 $2 >
+    ; < $2 >
 
 declaration_list
     : $0 declaration_list $1 declaration ','
@@ -246,7 +245,6 @@ primary_expression
     | $0 method_call_no_args
     | $0 method_call
     | $0 array_access_wrapper
-    | $0 declaration_full
     | $0 dereference
     | $0 address_of
     | $0 cast_expression
@@ -275,6 +273,15 @@ declaration_full
     : $0 declaration
     ; < $x = ALLOCA !0
     >
+
+declaration_assign
+    : $0 declaration_full '=' $1 primary_expression ';'
+    ; < STORE $0 $1
+    >
+
+declaration_nothing
+    : $0 declaration_full ';'
+    ;
 
 method_call_no_args
     : $0 method_call_head ')'
@@ -321,7 +328,7 @@ comma
 addition
     : [ '(', '['} { '.', '->' } { '*', '/', '-', '%', '++', '--' } ] '+' } $0 primary_expression '+' $1 primary_expression
     ; < $x = ADD $0 $1
-    >
+    ` $x := $0 ` >
 
 subtraction
     : [ '(', '['} { '.', '->' } { '*', '/', '%', '++', '--' } ] '-' } $0 primary_expression '-' $1 primary_expression
@@ -331,7 +338,7 @@ subtraction
 multiplication
     : [ '(', '['} { '.', '->' } { '/', '%', '++', '--' } ] '*' } $0 primary_expression '*' $1 primary_expression
     ; < $x = MUL $0 $1
-    >
+    ` $x := $0 | $1 ` >
 
 division
     : [ '(', '['} { '.', '->' } [ '++', '--' } ] '/' } $0 primary_expression '/' $1 primary_expression
@@ -376,7 +383,7 @@ comparison_greater_than_or_equal
 comparison_equal
     : [ '(', '['} { '.', '->' } { cast_operator, '*', '/', '%', '-', '+', '<<', '>>', '>', '<', '<=', '>=', '!=', '++', '--' } ] '==' } $0 primary_expression '==' $1 primary_expression
     ; < $x = CMP EQ $0 $1
-    >
+    ` $x := i1 ` >
 
 comparison_not_equal
     : [ '(', '['} { '.', '->' } { cast_operator, '*', '/', '%', '-', '+', '<<', '>>', '>', '<', '<=', '>=', '++', '--' } ] '!=' } $0 primary_expression '!=' $1 primary_expression
@@ -627,10 +634,24 @@ partial_scope
     | $0 partial_scope $1 statement
     | $0 partial_scope $1 scope
     | $0 partial_scope ';'
+    | $0 partial_scope_dec $1 primary_expression ';'
+    | $0 partial_scope_dec $1 statement
+    | $0 partial_scope_dec $1 scope
+    | $0 partial_scope_dec ';'
+    ;
+
+partial_scope_dec
+    : $0 '{' $1 declaration_assign
+    | $0 '{' $1 declaration_nothing
+    | $0 partial_scope $1 declaration_assign
+    | $0 partial_scope $1 declaration_nothing
+    | $0 partial_scope_dec $1 declaration_assign
+    | $0 partial_scope_dec $1 declaration_nothing
     ;
 
 scope
     : $0 partial_scope '}'
+    | $0 partial_scope_dec '}'
     | '{' '}'
     ;
 
@@ -729,6 +750,8 @@ while
 
 for_head
     : 'for' '(' $0 primary_expression ';'
+    | 'for' '(' $0 declaration_assign
+    | 'for' '(' $0 declaration_nothing
     | 'for' '(' ';'
     ; < $x:
     >

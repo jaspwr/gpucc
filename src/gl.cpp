@@ -2,12 +2,12 @@
 #include "exception.h"
 
 Shaders Gl::compile_shaders() {
-	// TODO: Make these annotated with the member names.
 	return Shaders {
 		Shader("shaders/tokeniser.glsl", GL_ALL_BARRIER_BITS),
 		Shader("shaders/literals.glsl", GL_ALL_BARRIER_BITS),
 		Shader("shaders/ast.glsl", GL_ALL_BARRIER_BITS),
-		Shader("shaders/codegen.glsl", GL_ALL_BARRIER_BITS)
+		Shader("shaders/codegen.glsl", GL_ALL_BARRIER_BITS),
+		Shader("shaders/type_propagation.glsl", GL_ALL_BARRIER_BITS)
 	};
 }
 
@@ -40,7 +40,7 @@ void Gl::init(bool dbg_output) {
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-	window = glfwCreateWindow(1, 1, "Null Window", NULL, NULL);
+	window = glfwCreateWindow(1, 1, "", NULL, NULL);
 	if (!window) {
 		throw Exception("Failed to create the GLFW window.");
 		glfwTerminate();

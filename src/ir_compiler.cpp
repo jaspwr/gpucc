@@ -56,16 +56,8 @@ std::string serialize_uir_to_readable(const GLuint* ir, u32 ir_len,
 std::string ir_tokens_shader_definitions(IrTokenList& ir_tokens) {
     std::string ret = "";
     for (IrToken token : ir_tokens) {
-        for (auto c : token.name) {
-            if (!char_utils::is_alpha_numeric_or_underscore(c)) {
-                goto skip;
-            }
-        }
-        goto dont_skip;
-        skip:
-            continue;
-        dont_skip:
-            ret += "#define IR_" + token.name + " " + std::to_string(token.id) + "\n";
+        if (!char_utils::string_is_var_name(token.name)) continue;
+        ret += "#define IR_" + token.name + " " + std::to_string(token.id) + "\n";
     }
     return ret;
 }

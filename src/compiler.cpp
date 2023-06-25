@@ -172,6 +172,9 @@ std::string compile(Job& job, Shaders& shaders, ParseTree& yacc_parse_tree,
     #endif
 
 
+    auto types = Ssbo(666 * sizeof(GLuint)); // TODO: Get proper size.
+    types.bind(6);
+
     _ast_ssbos.ast_parse_trees[0]->bind(4);
 
     shaders.literals.exec(ast_invocations_count);
@@ -215,26 +218,23 @@ std::string compile(Job& job, Shaders& shaders, ParseTree& yacc_parse_tree,
     Ssbo output_buffer = Ssbo(output_buffer_size * sizeof(GLuint));
     output_buffer.bind(1);
 
-
     codegen_shdr_exec(shaders, output_buffer_size);
+
+
+
+    shaders.type_propagation.exec((types.size / 3) / 32);
 
     auto out_buf_dmp = (GLint*)output_buffer.dump();
 
-    #ifdef BENCHMARKING
-    auto bm_post = Benchmark("Postprocessing");
-    #endif
+    auto types_dmp = types.dump();
+    print_types(types_dmp, types.size);
 
     auto _s = serialize_uir_to_readable((GLuint*) out_buf_dmp, output_buffer_size, *ir_tokens, source_str);
-   if (job.dbg) printf("OUTPUT:\n%s\n", _s.c_str());
-
-    auto t = parse_type_propagation(type_propagation);
+    if (job.dbg) printf("OUTPUT:\n%s\n", _s.c_str());
 
 
     // auto post_proc = postprocess((const GLint*)out_buf_dmp, output_buffer_size, var_reg, ir_parse_tree, source_str, ast_nodes_dmp);
 
-    // #ifdef BENCHMARKING
-    // bm_post.finalise();
-    // #endif
 
     // auto s = serialize_uir_to_readable((GLuint*) post_proc.data, post_proc.size, *ir_tokens, source_str);
 

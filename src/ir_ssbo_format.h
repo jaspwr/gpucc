@@ -8,7 +8,8 @@
 #include <vector>
 
 void append_codegen_ssbo_entry(GLuint* codegen_ssbo, GLuint& codegen_ssbo_len,
-GLuint node_token, std::vector<std::string>& ir, ParseTree& ir_pt, IrTokenList* ir_tokens);
+    GLuint node_token, std::vector<std::string>& ir, ParseTree& ir_pt, IrTokenList* ir_tokens,
+    std::vector<std::string>& type_actions);
 
 // Reserved IR tokens
 #define IR_REFERNCE 1

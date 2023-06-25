@@ -168,6 +168,25 @@ namespace char_utils {
     bool is_whitespace(char c) {
         return c == ' ' || c == '\t' || c == '\n' || c == '\r';
     }
+
+    bool string_is_var_name(std::string str) {
+        for (auto c : str) {
+            if (!char_utils::is_alpha_numeric_or_underscore(c)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    bool string_is_var_name(char* str) {
+        while (*str != '\0') {
+            if (!char_utils::is_alpha_numeric_or_underscore(*str)) {
+                return false;
+            }
+            str++;
+        }
+        return true;
+    }
 }
 
 std::string extract_token_at(std::string& str, u32 pos) {

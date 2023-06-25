@@ -20,6 +20,7 @@ struct Shaders {
     Shader literals;
     Shader ast;
     Shader codegen;
+    Shader type_propagation;
 };
 
 class Gl {

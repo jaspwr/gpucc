@@ -30,6 +30,8 @@ namespace char_utils {
     bool is_numeric(char c);
     bool is_alpha_numeric_or_underscore(char c);
     bool is_whitespace(char c);
+    bool string_is_var_name(std::string str);
+    bool string_is_var_name(char* str);
 }
 
 // template <typename T>
