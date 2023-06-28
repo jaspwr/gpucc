@@ -38,6 +38,13 @@ void Exception::print() {
     case ExceptionType::Postprocessor:
         printf("\033[1;31mPostprocessor error\033[0m %s\n", message.c_str());
         break;
+    case ExceptionType::InstructionSelectionSchema:
+        printf("\033[1;31mInstruction selection schema error\033[0m %s\n", message.c_str());
+        break;
+    default:
+        printf("\033[1;31mError\033[0m %s\n", message.c_str());
+        printf("NOTE: This is an unknown exception type. Add a case for %d in the switch in `Exception::print` in exception.cpp.\n", (u32)type);
+        break;
     }
-    
+
 }

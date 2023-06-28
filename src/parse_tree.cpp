@@ -121,13 +121,32 @@ GLuint get_token_id(ParseTree& parse_tree, char* name) {
 
     auto token = parse_tree.exec(_name);
     if (token == 0) {
-        throw std::string("Token \"") + std::string(name) + std::string("\" not found.");
+        throw Exception(std::string("Token \"") + std::string(name) + std::string("\" not found."));
     }
     delete _name.data;
     return token;
 }
 
+std::string ParseTree::to_shader_defs() {
+    auto ret = std::string();
 
+    for (ParseTreeEntry entry : *entries) {
+        std::string token = uintstring_to_string(entry.matches);
+        if (!char_utils::string_is_var_name(token)
+            || char_utils::is_numeric(token[0])) {
+
+            continue;
+        }
+
+        ret += "#define AST_"
+               + std::string(token)
+               + " "
+               + std::to_string(entry.points_to)
+               + "\n";
+    }
+
+    return ret;
+}
 
 ParseTree::~ParseTree() {
     for (ParseTreeEntry entry : *entries)

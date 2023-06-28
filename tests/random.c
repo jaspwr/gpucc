@@ -1,5 +1,5 @@
 for(2; x < 10; x++) {
-    float*** ((apples)) = 2.0;
+    double*** ((apples)) = 2.0;
     if(5 == 5) {
         int x = 2 + 8.0 * 2;
         int a = 0;

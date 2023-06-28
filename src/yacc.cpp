@@ -308,25 +308,6 @@ void parse_yacc(ParseTree& parse_tree, std::vector<Ssbo*>& ast_parse_trees, std:
     AstParseData ast_pt_data = AstParseData();
     auto type_actions = std::vector<std::string>();
 
-    auto breakable = get_token_id(yacc_parse_tree, (char*) "breakable", yacc_tokens_last);
-    auto continuable = get_token_id(yacc_parse_tree, (char*) "continuable", yacc_tokens_last);
-    auto for_wrapper = get_token_id(yacc_parse_tree, (char*) "for_wrapper", yacc_tokens_last);
-    auto scope = get_token_id(yacc_parse_tree, (char*) "scope", yacc_tokens_last);
-    auto partial_scope = get_token_id(yacc_parse_tree, (char*) "partial_scope", yacc_tokens_last);
-    auto partial_scope_dec = get_token_id(yacc_parse_tree, (char*) "partial_scope_dec", yacc_tokens_last);
-    auto type_specifier = get_token_id(yacc_parse_tree, (char*) "type_specifier", yacc_tokens_last);
-    auto pointer = get_token_id(yacc_parse_tree, (char*) "pointer", yacc_tokens_last);
-    auto declaration_full = get_token_id(yacc_parse_tree, (char*) "declaration_full", yacc_tokens_last);
-    auto type_qualifier = get_token_id(yacc_parse_tree, (char*) "type_qualifier", yacc_tokens_last);
-    auto int_ = get_token_id(yacc_parse_tree, (char*) "int", yacc_tokens_last);
-    auto char_ = get_token_id(yacc_parse_tree, (char*) "char", yacc_tokens_last);
-    auto short_ = get_token_id(yacc_parse_tree, (char*) "short", yacc_tokens_last);
-    auto long_ = get_token_id(yacc_parse_tree, (char*) "long", yacc_tokens_last);
-    auto double_ = get_token_id(yacc_parse_tree, (char*) "double", yacc_tokens_last);
-    auto float_ = get_token_id(yacc_parse_tree, (char*) "float", yacc_tokens_last);
-
-    printf("breakable: %d\n", breakable);
-
     for(auto grammar : grammars) {
         auto ast_parse_tree = ParseTree(600);
         // This has this weird previous character thing because it needs to deal with the final token

@@ -38,6 +38,7 @@ class ParseTree {
         GLuint exec(UintString input);
         UintString from_id(GLuint id);
         void append_entry(ParseTreeEntry entry);
+        std::string to_shader_defs();
         ~ParseTree();
 };
 

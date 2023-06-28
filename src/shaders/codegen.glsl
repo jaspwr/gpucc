@@ -4,23 +4,7 @@ layout(local_size_x = 32, local_size_y = 1, local_size_z = 1 ) in;
 
 //INCLUDE ir_tokens
 
-#define BREAKABLE 91
-#define CONTINUABLE 92
-#define FOR_WRAPPER 93
-#define SCOPE 94
-#define PARTIAL_SCOPE 95
-#define PARTIAL_SCOPE_DEC 96
-#define TYPE_SPECIFIER 97
-#define POINTER 98
-#define DECLARATION_FULL 99
-#define TYPE_QUALIFIER 100
-#define AST_INT 101
-#define AST_CHAR 102
-#define AST_SHORT 103
-#define AST_LONG 104
-#define AST_DOUBLE 105
-#define AST_FLOAT 106
-
+//INCLUDE ast_tokens_generated
 
 //INCLUDE structs
 
@@ -142,7 +126,7 @@ uint findIdentifierVreg(uint str_pos, AstNode start) {
         switch (state) {
             case ASCENDING_FOR_PARTIAL: {
 
-                if (node.nodeToken == PARTIAL_SCOPE || node.nodeToken == PARTIAL_SCOPE_DEC) {
+                if (node.nodeToken == AST_partial_scope || node.nodeToken == AST_partial_scope_dec) {
                     state = DESCENDING;
                     nodeAtScopeAccent = node;
                     break;
@@ -154,7 +138,7 @@ uint findIdentifierVreg(uint str_pos, AstNode start) {
                 break;
             }
             case DESCENDING: {
-                if (node.nodeToken == PARTIAL_SCOPE_DEC) {
+                if (node.nodeToken == AST_partial_scope_dec) {
                     uint decFullLoc = 0;
                     uint identifier = fetchIdentifierFromPartialScopeDec(node, decFullLoc);
                     // return decFullLoc;
@@ -175,7 +159,7 @@ uint findIdentifierVreg(uint str_pos, AstNode start) {
                 break;
             }
             case ASCENDING_FOR_SCOPE: {
-                if (node.nodeToken == SCOPE) {
+                if (node.nodeToken == AST_scope) {
                     state = ASCENDING_FOR_PARTIAL;
                     break;
                 }
@@ -264,13 +248,13 @@ void writeToOutput(uint pos, AstNode node, int nodePos, uint lastContinue, uint 
 
 uint getTypeBase(uint token, bool signed_, bool long_, bool short_) {
     switch (token) {
-        case 1:
+        case AST_void:
             return U0;
-        case AST_CHAR:
+        case AST_char:
             return signed_ ? I8 : U8;
-        case AST_SHORT:
+        case AST_short:
             return signed_ ? I16 : U16;
-        case AST_INT:
+        case AST_int:
             if (long_) {
                 return signed_ ? I64 : U64;
             } else if(short_) {
@@ -278,10 +262,12 @@ uint getTypeBase(uint token, bool signed_, bool long_, bool short_) {
             } else {
                 return signed_ ? I32 : U32;
             }
-        case AST_FLOAT:
+        case AST_long:
+            return signed_ ? I64 : U64;
+        case AST_float:
             return F32;
-        case AST_DOUBLE:
-            return F64;
+        case AST_double:
+            return long_ ? x86_FP80 : F64;
         default:
             return ERROR_TYPE;
     }
@@ -293,13 +279,19 @@ void setTypeFromDec(AstNode node, uint vreg) {
     uint pointerDepth = 0;
     AstNode currentNode = node;
 
+    bool signed_ = true;
+    bool long_ = false;
+    bool short_ = false;
+    bool volatile_ = false;
+    bool const_ = false;
+
     #define parentNodeToken astNodes[currentNode.parent].nodeToken
 
-    while (parentNodeToken == POINTER || parentNodeToken == TYPE_QUALIFIER) {
-        if (parentNodeToken == POINTER) {
+    while (parentNodeToken == AST_pointer || parentNodeToken == AST_type_qualifier) {
+        if (parentNodeToken == AST_pointer) {
             pointerDepth++;
-        } else if (parentNodeToken == TYPE_QUALIFIER) {
-
+        } else if (parentNodeToken == AST_type_qualifier) {
+            // TODO
         }
 
         currentNode = astNodes[currentNode.parent];
@@ -308,7 +300,7 @@ void setTypeFromDec(AstNode node, uint vreg) {
     // uint baseToken = fetchToken(node, 0);
     uint baseToken = fetchAstNodeFromChildRef(node.children[0].ref).nodeToken;
 
-    vregTypes[vreg].base = getTypeBase(baseToken, true, false, false);
+    vregTypes[vreg].base = getTypeBase(baseToken, signed_, long_, short_);
     vregTypes[vreg].pointer_depth = pointerDepth;
     vregTypes[vreg].load_depth = 1;
 }
@@ -336,13 +328,13 @@ void main() {
             if (workingVolume <= childNode.volume) {
                 // decend
 
-                if (currentNode.nodeToken == BREAKABLE) {
+                if (currentNode.nodeToken == AST_breakable) {
                     lastBreak = currentNodePos;
-                } else if (currentNode.nodeToken == CONTINUABLE) {
+                } else if (currentNode.nodeToken == AST_continuable) {
                     lastContinue = currentNodePos;
-                } else if (currentNode.nodeToken == FOR_WRAPPER) {
+                } else if (currentNode.nodeToken == AST_for_wrapper) {
                     lastContinue = continueOfForWrapper(currentNode);
-                } else if (currentNode.nodeToken == DECLARATION_FULL) {
+                } else if (currentNode.nodeToken == AST_declaration_full) {
                     lastAlloca = currentNodePos;
                 }
 
@@ -360,7 +352,7 @@ void main() {
         maxOut++;
     }
 
-    if (currentNode.nodeToken == TYPE_SPECIFIER) {
+    if (currentNode.nodeToken == AST_type_specifier) {
         setTypeFromDec(currentNode, lastAlloca);
     }
 

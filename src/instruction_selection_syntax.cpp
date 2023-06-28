@@ -2,84 +2,277 @@
 
 #include "utils.h"
 #include "exception.h"
+#include "ir_types.h"
+#include "ir_ssbo_format.h"
+#include "shader_structures.h"
+
+#include "arch/x86_64/opcodes.h"
 
 #include <string>
 #include <vector>
 #include <iostream>
+#include <unordered_map>
+
+#define REPLACEMENTS_BUF_LEN 1000
 
 enum class SchemaCtx: u32 {
     Match,
-    ActionLHS,
-    ActionRHS,
     Replacement
 };
 
-void action(std::vector<std::string>& action, std::string& type_) {
-    
+union IrType_u {
+    IrType type;
+    GLuint raw[3];
+};
+
+inline u32 get_vreg_id(u32& counter, std::unordered_map<std::string, u32>& map,
+              std::string& name) {
+
+    if (map.find(name) == map.end()) {
+        map[name] = counter++;
+    }
+    return map[name];
 }
 
-void new_match(std::vector<std::string>& match, std::vector<std::string>& action, std::string& type_) {
-    for (auto token : match) {
-        std::cout << token << " ";
+struct TypeCheckingCase {
+    u32 replacements_loc;
+    std::vector<IrType_u> types;
+};
+
+typedef std::vector<TypeCheckingCase> TypeCheckingEntry;
+
+Ssbo* create_type_checking_ssbo(std::vector<TypeCheckingEntry> entries) {
+    #define TYPE_CHECKING_BUF_LEN 1000
+
+    GLuint buf[TYPE_CHECKING_BUF_LEN];
+    u32 len = 1;
+
+    len += entries.size();
+
+    u32 contents_table_index = 1;
+
+    for (TypeCheckingEntry entry : entries) {
+        #define check_overflow() if (len >= TYPE_CHECKING_BUF_LEN) { \
+            throw Exception("Instruction selection schema too long. Increase `TYPE_CHECKING_BUF_LEN` in instruction_selection_syntax.cpp."); \
+        }
+
+        buf[contents_table_index] = len;
+
+        check_overflow();
+        buf[len++] = entry.size();
+
+        GLuint* fail_jmp_loc = nullptr;
+
+        for (TypeCheckingCase c : entry) {
+            if (fail_jmp_loc != nullptr) {
+                *fail_jmp_loc = len;
+            }
+
+            check_overflow();
+            buf[len++] = c.types.size();
+            check_overflow();
+            buf[len++] = 0; // fail_jmp_loc
+            check_overflow();
+            buf[len++] = c.replacements_loc;
+
+            for (IrType_u t : c.types) {
+                for (GLuint i = 0; i < 3; i++) {
+                    check_overflow();
+                    buf[len++] = t.raw[i];
+                }
+            }
+        }
+
+        contents_table_index++;
+
+        #undef check_overflow
     }
-    std::cout << "-> ";
-    std::cout << type_ << " := ";
-    for (auto token : action) {
-        std::cout << token << " ";
-    }
-    std::cout << std::endl;
+
+    return new Ssbo(len * sizeof(GLuint), buf);
 }
+
+inline void append_match(std::vector<std::string>& match_unparsed,
+    std::vector<std::string>& replacement_unparsed,
+    ParseTree& ir_tokens, ParseTree& pt, GLint* replacements_buf,
+    u32& replacements_buf_len, std::vector<TypeCheckingEntry>& type_checking) {
+
+    // MATCH PARSE TREE
+    // -------------------------------
+    // [IR tokens] -> type_checking_loc
+
+
+    // TYPE CHECKING SSBO
+    // -------------------------------
+    // 0 -> num_of_entries : pointers to entries
+    // num_of_entries + 1 ... : entries
+
+    // TYPE CHECKING SSBO ENTRY
+    // -------------------------------
+    // loc + 0 : cases count
+    // loc + 1 ... : cases
+
+    // TYPE CHECKING CASE
+    // -------------------------------
+    // loc + 0 : types_count
+    // loc + 1 : fail_jmp_loc
+    // loc + 2 : replacements_loc
+    // loc + 3 ... : types
+
+
+    // REPLACEMENTS SSBO ENTRY
+    // -------------------------------
+    // loc + 0 : len
+    // loc + 1 ... : asm tokens
+
+    u32 vreg_id_counter = 1;
+    auto vreg_id_map = std::unordered_map<std::string, u32>();
+
+    #define TYPES_BUF_SIZE 30
+
+    IrType_u types[TYPES_BUF_SIZE];
+
+    auto match = std::vector<GLuint>();
+
+    for (std::string token : match_unparsed) {
+        if (token[0] == '%') {
+            StrSplit spl = str_split(token.c_str(), ':');
+
+            if (spl.len != 2) {
+                throw Exception("Virtual registers missing a type annotation.");
+            }
+
+            auto name = std::string(spl.spl[0]);
+            u32 id = get_vreg_id(vreg_id_counter, vreg_id_map, name);
+            u32 base_type = ir_types::string_to_id(std::string(spl.spl[1]));
+
+            if (base_type == 4000) {
+                throw Exception(std::string("Unknown type annotation \"") + spl.spl[1] + "\".");
+            }
+
+            match.push_back(IR_REFERNCE);
+            match.push_back(id);
+
+            if (id >= TYPES_BUF_SIZE) {
+                throw Exception("Instruction selection schema uses too many virtual registers. Increase `TYPES_BUF_SIZE` in instruction_selection_syntax.cpp.");
+            }
+
+            types[id].type.base = base_type;
+            types[id].type.pointer_depth = 0; // TODO
+            types[id].type.load_depth = 0;
+
+        } else {
+            auto id = get_token_id(ir_tokens, (char*)token.c_str());
+            match.push_back(id);
+        }
+    }
+
+    GLint* len_pos = replacements_buf + replacements_buf_len;
+    u32 replacements_buf_len_i = ++replacements_buf_len;
+
+    for (std::string token : replacement_unparsed) {
+        if (replacements_buf_len >= REPLACEMENTS_BUF_LEN) {
+            throw Exception("Instruction selection schema too long. Increase `REPLACEMENTS_BUF_LEN` in instruction_selection_syntax.cpp.");
+        }
+
+        if (token[0] == '%') {
+            u32 pre_vreg_id_counter = vreg_id_counter;
+            u32 id = get_vreg_id(vreg_id_counter, vreg_id_map, token);
+            if (pre_vreg_id_counter != vreg_id_counter) {
+                throw Exception("Unknown virtual register \"" + token + "\".");
+            }
+
+            replacements_buf[replacements_buf_len++] = -id;
+        } else {
+            GLint opcode = opcode_of(token);
+            replacements_buf[replacements_buf_len++] = opcode;
+        }
+    }
+
+    *len_pos = replacements_buf_len - replacements_buf_len_i;
+
+    u32 replacement_loc = replacements_buf_len_i - 1;
+
+    UintString match_uint = to_uint_string(match);
+
+    u32 type_checking_loc = pt.exec(match_uint);
+    if (type_checking_loc == 0) {
+        type_checking.push_back(TypeCheckingEntry());
+        type_checking_loc = type_checking.size();
+    }
+
+    auto type_checking_case = TypeCheckingCase {
+        replacement_loc,
+        std::vector<IrType_u>(types, types + vreg_id_counter - 1)
+    };
+
+    type_checking[type_checking_loc - 1].push_back(type_checking_case);
+
+    auto new_entry = ParseTreeEntry {
+        match_uint,
+        type_checking_loc,
+    };
+
+    pt.append_entry(new_entry);
+}
+
 
 inline void handle_token(std::vector<std::string>& match,
-    std::vector<std::string>& tokens, std::string& type_,
-    SchemaCtx& ctx, std::string& token) {
+    std::vector<std::string>& tokens, ParseTree& ir_tokens,
+    SchemaCtx& ctx, std::string& token, ParseTree& pt,
+    GLint* replacements_buf, u32& replacements_buf_len, std::vector<TypeCheckingEntry>& type_checking) {
 
     if (ctx == SchemaCtx::Match && token == "->") {
-        ctx = SchemaCtx::ActionLHS;
+        ctx = SchemaCtx::Replacement;
         match = tokens;
         tokens = std::vector<std::string>();
-    } else if (ctx == SchemaCtx::ActionLHS && token == ":=") {
-        ctx = SchemaCtx::ActionRHS;
-
-        if (tokens.size() != 1) {
-            throw Exception("Type assign action RHS has too many or no tokens");
-        }
-        type_ = tokens[0];
-        tokens = std::vector<std::string>();
-    } else if (ctx == SchemaCtx::ActionRHS && token == "|") {
-        // ignored
-    } else if (ctx == SchemaCtx::ActionRHS && token == ";") {
-        new_match(match, tokens, type_);
+    } else if (ctx == SchemaCtx::Replacement && token == ";") {
         ctx = SchemaCtx::Match;
+        append_match(match, tokens, ir_tokens, pt, replacements_buf, replacements_buf_len, type_checking);
         tokens = std::vector<std::string>();
     } else {
         tokens.push_back(token);
     }
 }
 
-TypePropagationRet parse_type_propagation(const char* schema) {
+InstSelRet parse_instruction_selection(const char* schema, ParseTree& ir_tokens) {
+    try {
+        auto pt = ParseTree(1000);
 
-    auto token = std::string();
-    auto tokens = std::vector<std::string>();
+        auto token = std::string();
+        auto tokens = std::vector<std::string>();
 
-    auto type_ = std::string();
+        auto match = std::vector<std::string>();
 
-    auto match = std::vector<std::string>();
+        auto type_checking = std::vector<TypeCheckingEntry>();
 
-    auto ctx = SchemaCtx::Match;
-    for (u32 i = 0; schema[i] != '\0'; i++) {
-        char c = schema[i];
-        if (char_utils::is_whitespace(c)) {
-            if (token.length() > 0) {
-                handle_token(match, tokens, type_, ctx, token);
-                token = std::string();
+        GLint replacements_buf[REPLACEMENTS_BUF_LEN];
+        GLuint replacements_buf_len = 0;
+
+        auto ctx = SchemaCtx::Match;
+        for (u32 i = 0; schema[i] != '\0'; i++) {
+            char c = schema[i];
+            if (char_utils::is_whitespace(c)) {
+                if (token.length() > 0) {
+                    handle_token(match, tokens, ir_tokens, ctx, token, pt, replacements_buf,
+                                 replacements_buf_len, type_checking);
+                    token = std::string();
+                }
+            } else {
+                token += c;
             }
-        } else {
-            token += c;
         }
+
+        Ssbo* matches_ssbo_ptr = pt.into_ssbo();
+        Ssbo* type_checking_ssbo_ptr = create_type_checking_ssbo(type_checking);
+        Ssbo* replacements_ssbo_ptr = new Ssbo(replacements_buf_len * sizeof(GLint), replacements_buf);
+
+        return InstSelRet {
+            matches_ssbo_ptr,
+            type_checking_ssbo_ptr,
+            replacements_ssbo_ptr
+        };
+    } catch (Exception e) {
+        e.type = ExceptionType::InstructionSelectionSchema;
+        throw e;
     }
-
-    auto ret = TypePropagationRet();
-
-    return ret;
 }

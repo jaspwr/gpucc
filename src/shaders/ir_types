@@ -6,10 +6,11 @@
 #define U64 5
 #define I8  6
 #define I16 7
-#define I32 9
-#define I64 10
-#define F32 11
-#define F64 12
+#define I32 8
+#define I64 9
+#define F32 10
+#define F64 11
+#define x86_FP80 12
 
 #define ERROR_TYPE 4000
 
@@ -27,6 +28,8 @@ IrType favoured(IrType lhs, IrType rhs) {
     // TODO: Report all implicit casts (ugh).
     if (lhs.base == 0) return rhs;
     if (rhs.base == 0) return lhs;
+
+    // TODO: Actually write this.
 
     return lhs;
 }

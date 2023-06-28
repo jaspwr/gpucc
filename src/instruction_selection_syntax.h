@@ -2,10 +2,12 @@
 
 #include "ssbo.h"
 #include "types.h"
+#include "parse_tree.h"
 
-struct TypePropagationRet {
+struct InstSelRet {
     Ssbo* match_parse_tree;
-    Ssbo* type_set_action;
+    Ssbo* type_checking;
+    Ssbo* replacement_parse_tree;
 };
 
-TypePropagationRet parse_type_propagation(const char* schema);
+InstSelRet parse_instruction_selection(const char* schema, ParseTree& ir_tokens);

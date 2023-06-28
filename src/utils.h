@@ -9,6 +9,8 @@
 #define MAX_PATH 260
 
 struct StrSplit {
+    // TODO: Make these a class that clean themselves
+    //       up in a destructor.
     char** spl;
     u32 len;
 };

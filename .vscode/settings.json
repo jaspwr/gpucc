@@ -69,7 +69,8 @@
         "format": "cpp",
         "span": "cpp",
         "stdfloat": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "ir_types": "c"
     },
     "cSpell.words": [
         "optimise"

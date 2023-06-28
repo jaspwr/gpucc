@@ -13,9 +13,6 @@
 #include "postprocessor.h"
 #include "instruction_selection_syntax.h"
 
-#include "type_propagation.h"
-#include "x86_64_selection.h"
-
 #include "include/glad/glad.h"
 #include <math.h>
 #include <iostream>
