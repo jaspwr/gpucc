@@ -23,6 +23,12 @@ struct ChildNode {
     }
 };
 
+struct IrType {
+    GLuint base;
+    GLuint pointer_depth;
+    GLuint load_depth;
+};
+
 struct AstNode {
     GLuint nodeToken;
     ChildNode children[4];
