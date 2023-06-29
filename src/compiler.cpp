@@ -104,7 +104,7 @@ void codegen_shdr_exec(Shaders& shaders, GLuint output_buffer_size) {
 
 std::string compile(Job& job, Shaders& shaders, ParseTree& yacc_parse_tree,
                     ParseTree& ir_parse_tree, ParseTree* lang_tokens_parse_tree,
-                    IrTokenList* ir_tokens, ast_ssbos _ast_ssbos) {
+                    IrTokenList* ir_tokens, ast_ssbos _ast_ssbos, InstSelRet& inst_sel) {
 
     #ifdef BENCHMARKING
     auto all = Benchmark("All");
@@ -142,15 +142,6 @@ std::string compile(Job& job, Shaders& shaders, ParseTree& yacc_parse_tree,
 
     // IDK what the fuck is going on here
     // tokens->dump();
-
-    #ifdef BENCHMARKING
-    auto bm_gram = Benchmark("Grammar SSBO Setup");
-    #endif
-
-
-    #ifdef BENCHMARKING
-    bm_gram.finalise();
-    #endif
 
 
     ast_nodes.bind(3);
@@ -207,7 +198,7 @@ std::string compile(Job& job, Shaders& shaders, ParseTree& yacc_parse_tree,
 
     AstNode* ast_nodes_dmp = (AstNode*)ast_nodes.dump();
 
-    // FIXME: there shouldn't nee to be a +5 here
+    // FIXME: there shouldn't need to be a +5 here
     const GLuint output_buffer_size = fetch_entry_node_volume(tokens, ast_nodes_dmp) + 5;
     if (job.dbg) printf("Output buffer size: %d\n", output_buffer_size);
 
@@ -227,8 +218,19 @@ std::string compile(Job& job, Shaders& shaders, ParseTree& yacc_parse_tree,
     print_types(types_dmp, types.size);
 
     auto _s = serialize_uir_to_readable((GLuint*) out_buf_dmp, output_buffer_size, *ir_tokens, source_str);
-    if (job.dbg) printf("OUTPUT:\n%s\n", _s.c_str());
+    if (job.dbg) printf("IR:\n%s\n", _s.c_str());
 
+    Ssbo asm_buf = Ssbo(output_buffer_size * sizeof(GLuint));
+    asm_buf.bind(7);
+
+    inst_sel.type_checking->bind(9);
+    inst_sel.replacements->bind(5);
+    inst_sel.match_parse_tree->bind(8);
+
+    #define RANGE 12
+    shaders.instruction_selection.exec((output_buffer_size / 3) / 32);
+
+    asm_buf.print_contents();
 
     // auto post_proc = postprocess((const GLint*)out_buf_dmp, output_buffer_size, var_reg, ir_parse_tree, source_str, ast_nodes_dmp);
 

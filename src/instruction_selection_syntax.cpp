@@ -29,7 +29,7 @@ inline u32 get_vreg_id(u32& counter, std::unordered_map<std::string, u32>& map,
               std::string& name) {
 
     if (map.find(name) == map.end()) {
-        map[name] = counter++;
+        map.insert({name, counter++});
     }
     return map[name];
 }
@@ -57,9 +57,11 @@ Ssbo* create_type_checking_ssbo(std::vector<TypeCheckingEntry> entries) {
         }
 
         buf[contents_table_index] = len;
+        printf("contents_table_index: %d := %d\n", contents_table_index, len);
 
         check_overflow();
         buf[len++] = entry.size();
+        printf("buf[%d] := %d\n", len - 1, buf[len - 1]);
 
         GLuint* fail_jmp_loc = nullptr;
 
@@ -71,15 +73,19 @@ Ssbo* create_type_checking_ssbo(std::vector<TypeCheckingEntry> entries) {
             check_overflow();
             buf[len++] = c.types.size();
             check_overflow();
+            fail_jmp_loc = &buf[len];
             buf[len++] = 0; // fail_jmp_loc
             check_overflow();
             buf[len++] = c.replacements_loc;
+
+            printf("\tlen: %d, repl %d \n", (i32)c.types.size(), c.replacements_loc);
 
             for (IrType_u t : c.types) {
                 for (GLuint i = 0; i < 3; i++) {
                     check_overflow();
                     buf[len++] = t.raw[i];
                 }
+                printf("\t\tbase: %d, ptr: %d, load: %d\n", t.type.base, t.type.pointer_depth, t.type.load_depth);
             }
         }
 
@@ -127,9 +133,7 @@ inline void append_match(std::vector<std::string>& match_unparsed,
     u32 vreg_id_counter = 1;
     auto vreg_id_map = std::unordered_map<std::string, u32>();
 
-    #define TYPES_BUF_SIZE 30
-
-    IrType_u types[TYPES_BUF_SIZE];
+    auto types = std::vector<IrType_u>();
 
     auto match = std::vector<GLuint>();
 
@@ -152,13 +156,15 @@ inline void append_match(std::vector<std::string>& match_unparsed,
             match.push_back(IR_REFERNCE);
             match.push_back(id);
 
-            if (id >= TYPES_BUF_SIZE) {
-                throw Exception("Instruction selection schema uses too many virtual registers. Increase `TYPES_BUF_SIZE` in instruction_selection_syntax.cpp.");
+            u32 types_index = id - 1;
+
+            while (types_index >= types.size()) {
+                types.push_back(IrType_u());
             }
 
-            types[id].type.base = base_type;
-            types[id].type.pointer_depth = 0; // TODO
-            types[id].type.load_depth = 0;
+            types[types_index].type.base = base_type;
+            types[types_index].type.pointer_depth = 0; // TODO
+            types[types_index].type.load_depth = 0;
 
         } else {
             auto id = get_token_id(ir_tokens, (char*)token.c_str());
@@ -202,7 +208,7 @@ inline void append_match(std::vector<std::string>& match_unparsed,
 
     auto type_checking_case = TypeCheckingCase {
         replacement_loc,
-        std::vector<IrType_u>(types, types + vreg_id_counter - 1)
+        types
     };
 
     type_checking[type_checking_loc - 1].push_back(type_checking_case);

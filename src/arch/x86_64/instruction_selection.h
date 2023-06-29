@@ -4,6 +4,11 @@ const char* inst_selection_schema = R"(
     add %a %c
     ;
 
+%a:f32 = ADD %b:f32 %c:f32 ->
+    mov %a %b
+    add %a %c
+    ;
+
 %a:i32 = MUL %b:i32 %c:i32 ->
     mov %a %b
     imul %a %c
@@ -17,8 +22,8 @@ JMP %a:_ ->
     mov %a %b
     ;
 
-%a:i1 = CMP EQ %b:i32 %c:i32
-JZ %a:i1 %d:_ ->
+%a:u1 = CMP EQ %b:i32 %c:i32
+JZ %a:u1 %d:_ ->
     cmp %b %c
     jne %d
     ;

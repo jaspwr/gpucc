@@ -60,7 +60,7 @@ Shader::~Shader() {
 void Shader::exec(u32 work_groups_x) {
     glFinish();
 
-    if (work_groups_x == 0) throw Exception("Work group count not set.");
+    if (work_groups_x == 0) throw Exception("Invalid work group count. Can not be 0.");
     if (work_groups_x > GL_MAX_COMPUTE_WORK_GROUP_COUNT) throw Exception("Tried to dispatch too many work groups.");
     glUseProgram(shader_bin_index);
     glDispatchCompute(work_groups_x, 1, 1);

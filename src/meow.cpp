@@ -29,7 +29,7 @@ int main(int argc, char** argv) {
 
         auto ast_ssbos = create_ast_ssbos(grammars, *lang_tokens_parse_tree, ir_tokens, yacc_parse_tree, ir_parse_tree);
 
-        InstSelRet inst_rel_ret = parse_instruction_selection(inst_selection_schema, ir_parse_tree);
+        InstSelRet inst_sel = parse_instruction_selection(inst_selection_schema, ir_parse_tree);
 
         write_file((get_bin_dir() + "/shaders/ir_tokens_generated").c_str(),
             ir_tokens_shader_definitions(*ir_tokens).c_str());
@@ -42,7 +42,7 @@ int main(int argc, char** argv) {
 
         Shaders shaders = Gl::compile_shaders();
 
-        compile(job, shaders, yacc_parse_tree, ir_parse_tree, lang_tokens_parse_tree, ir_tokens, ast_ssbos);
+        compile(job, shaders, yacc_parse_tree, ir_parse_tree, lang_tokens_parse_tree, ir_tokens, ast_ssbos, inst_sel);
     } catch (Exception& e) {
         e.print();
         return 1;

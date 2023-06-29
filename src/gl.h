@@ -21,6 +21,7 @@ struct Shaders {
     Shader ast;
     Shader codegen;
     Shader type_propagation;
+    Shader instruction_selection;
 };
 
 class Gl {

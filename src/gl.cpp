@@ -7,7 +7,8 @@ Shaders Gl::compile_shaders() {
 		Shader("shaders/literals.glsl", GL_ALL_BARRIER_BITS),
 		Shader("shaders/ast.glsl", GL_ALL_BARRIER_BITS),
 		Shader("shaders/codegen.glsl", GL_ALL_BARRIER_BITS),
-		Shader("shaders/type_propagation.glsl", GL_ALL_BARRIER_BITS)
+		Shader("shaders/type_propagation.glsl", GL_ALL_BARRIER_BITS),
+		Shader("shaders/instruction_selection.glsl", GL_ALL_BARRIER_BITS)
 	};
 }
 

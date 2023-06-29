@@ -78,7 +78,7 @@ void print_types(void* types, u32 length) {
     GLuint* _types = (GLuint*)types;
     for (u32 i = 0; i < length / sizeof(GLuint); i += TYPE_STRUCT_SIZE) {
         if (_types[i + 0] == 0) continue;
-        std::cout << "[" << i / TYPE_STRUCT_SIZE << "] ";
+        std::cout << "[%" << i / TYPE_STRUCT_SIZE << "] ";
         std::cout << "Type: " << ir_types::id_to_string(_types[i + 0]) << " ";
         std::cout << "PointerDepth: " << _types[i + 1] << " ";
         std::cout << "LoadDepth: " << _types[i + 2] << " ";
