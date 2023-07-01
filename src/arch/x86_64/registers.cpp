@@ -20,5 +20,5 @@ std::string generate_shader_definitions() {
 }
 
 const char* from_register(int reg) {
-    return registers[reg];
+    return registers[reg - STARTING_ID];
 }

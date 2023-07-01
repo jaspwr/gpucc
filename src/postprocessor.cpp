@@ -1,3 +1,21 @@
+// Copyright (C) 2023 Jasper Parker <j@sperp.dev>
+//
+// This file is part of Meow.
+//
+// Meow is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published
+// by the Free Software Foundation, either version 3 of the License,
+// or (at your option) any later version.
+//
+// Meow is distributed in the hope that it will be useful, but
+// WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+// General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Meow. If not, see <https://www.gnu.org/licenses/>.
+
+
 #include "postprocessor.h"
 #include "extendable_buffer.h"
 #include "exception.h"
@@ -12,7 +30,7 @@ SizedGLintBuffer::~SizedGLintBuffer() {
 const GLuint tokenise_ir_token(const char* token, ParseTree& ir_tokens) {
     // TODO: make this a regualr hashmap. There's a lot of places where ParseTrees should be hashmaps.
     auto ret = ir_tokens.exec(to_uint_string(token));
-    if (ret == 0) throw Exception(ExceptionType::Postprocessor, "Could not find IR token \"" + std::string(token) + "\"."); 
+    if (ret == 0) throw Exception(ExceptionType::Postprocessor, "Could not find IR token \"" + std::string(token) + "\".");
     return ret;
 }
 
@@ -36,14 +54,14 @@ void insert_line (ExtendableBuffer<GLint>& buffer, GLuint NEWLINE, std::vector<G
 
 struct Switch {
     u32 insert_position;
-    
+
     Switch(u32 insert_position) {
         this->insert_position = insert_position;
     }
 };
 
 void handle_break(Stack<GLint>& break_stack, ExtendableBuffer<GLint>& buffer, GLuint JMP) {
-    buffer.append(JMP); 
+    buffer.append(JMP);
     buffer.append(IR_REFERNCE);
     break_stack.push(buffer.get_size());
     buffer.append(0);
@@ -73,7 +91,7 @@ typedef std::unordered_map<std::string, GLint> LabelMap;
 typedef std::unordered_map<std::string, std::vector<GLint>> UnresolvedLabelMap;
 
 void handle_gotoable_label(const GLint* shader_out, GLuint shader_out_size, u32& i,
-    ExtendableBuffer<GLint>& buffer, std::string& source, LabelMap& labels, 
+    ExtendableBuffer<GLint>& buffer, std::string& source, LabelMap& labels,
     UnresolvedLabelMap& unresolved_labels) {
 
     // TODO: check how gotos and labels work specifically.
@@ -93,7 +111,7 @@ void handle_gotoable_label(const GLint* shader_out, GLuint shader_out_size, u32&
 }
 
 void handle_goto_replace(const GLint* shader_out, GLuint shader_out_size, u32& i,
-    ExtendableBuffer<GLint>& buffer, std::string& source, LabelMap& labels, 
+    ExtendableBuffer<GLint>& buffer, std::string& source, LabelMap& labels,
     UnresolvedLabelMap& unresolved_labels) {
 
     if (i + 2 >= shader_out_size) throw Exception(ExceptionType::Postprocessor, "Malformed IR. `goto_replace` token at end of shader.");
@@ -113,7 +131,7 @@ void handle_goto_replace(const GLint* shader_out, GLuint shader_out_size, u32& i
 
 CompilerType consume_type(const GLint* shader_out, u32& i,
     GLuint I8, GLuint I32, GLuint F32, GLuint VOID, GLuint PTR ) {
-    
+
     auto ret = CompilerType();
     BaseType bt;
 
@@ -145,7 +163,7 @@ void handle_identifier(const GLint* shader_out, std::string& source, ExtendableB
 
     if (marker == IR_SOURCE_POS_REF) {
         auto token = extract_token_at(source, reg);
-        if (!char_utils::is_numeric(token[0])) { 
+        if (!char_utils::is_numeric(token[0])) {
             auto var = var_reg.get_var(token);
             GLint* w_shader_out = (GLint*)shader_out;
             marker = IR_REFERNCE;
@@ -169,7 +187,8 @@ void handle_identifier(const GLint* shader_out, std::string& source, ExtendableB
 void parse_var_def(const GLint* shader_out, u32& i, std::string& source, VariableRegistry& var_reg, Register reg, GLuint I8, GLuint I32, GLuint F32, GLuint VOID, GLuint PTR ) {
     //auto type = consume_type(shader_out, i, I8, I32, F32, VOID, PTR);
 
-    // printf("type: %d\n", type.pointer_level);
+    // printf("type: %d
+", type.pointer_level);
 
     auto pos = i--; // `i` is decremented is because it's incremented in the for loop.
     while (shader_out[pos] != IR_SOURCE_POS_REF) pos++;
@@ -198,7 +217,7 @@ Literal get_literal(GLuint pos, AstNode* ast_nodes_dmp) {
 }
 
 
-SizedGLintBuffer postprocess(const GLint* shader_out, GLuint shader_out_size, 
+SizedGLintBuffer postprocess(const GLint* shader_out, GLuint shader_out_size,
     VariableRegistry& var_reg, ParseTree& ir_tokens, std::string& source, AstNode* ast_nodes_dmp) {
 
     auto buffer = ExtendableBuffer<GLint>(1024);
@@ -219,7 +238,8 @@ SizedGLintBuffer postprocess(const GLint* shader_out, GLuint shader_out_size,
     auto REPLACE_ME = tokenise_ir_token("replace_me", ir_tokens);
     auto REPLACE_WITH = tokenise_ir_token("replace_with", ir_tokens);
     auto ALLOCA = tokenise_ir_token("ALLOCA", ir_tokens);
-    auto NEWLINE = tokenise_ir_token("\n", ir_tokens);
+    auto NEWLINE = tokenise_ir_token("
+", ir_tokens);
     auto SWITCH = tokenise_ir_token("switch", ir_tokens);
     auto SWITCH_BODY_END = tokenise_ir_token("switch_body_end", ir_tokens);
     auto SWITCH_CASE = tokenise_ir_token("switch_case", ir_tokens);
@@ -239,7 +259,7 @@ SizedGLintBuffer postprocess(const GLint* shader_out, GLuint shader_out_size,
     TypedValue::IR_F32 = F32;
     TypedValue::IR_PTR = PTR;
     TypedValue::IR_VOID = VOID;
-    
+
     auto ENUM = tokenise_ir_token("enum", ir_tokens);
 
     auto OPEN_CURLY = tokenise_ir_token("{", ir_tokens);
@@ -271,7 +291,7 @@ SizedGLintBuffer postprocess(const GLint* shader_out, GLuint shader_out_size,
             }
 
             handle_identifier(shader_out, source, buffer, var_reg, i, NEWLINE, EQUAL, LOAD, loadable_flag);
-            
+
             loadable_flag = false;
             continue;
         }
@@ -298,10 +318,10 @@ SizedGLintBuffer postprocess(const GLint* shader_out, GLuint shader_out_size,
             auto case_value = (GLuint)shader_out[i + 2];
             auto case_label = (GLuint)shader_out[i + 4];
             auto insertion = std::vector<GLuint>{IR_SOURCE_POS_REF, case_value, IR_REFERNCE, case_label};
-            
+
             // FIXME: this dosent work
             // insert_at(buffer, buffer.get_size() - switch_.insert_position, insertion, NEWLINE);
-            
+
             i += 2;
             continue;
         }
@@ -373,7 +393,7 @@ SizedGLintBuffer postprocess(const GLint* shader_out, GLuint shader_out_size,
         }
         if (value == CONTINUABLE) {
             if (i + 2 >= shader_out_size) throw Exception(ExceptionType::Postprocessor, "Malformed IR. `continuable` token at end of shader.");
-            
+
             // TODO
             // do something for single/null satements.
             continues_for_next_scope.push(shader_out[i + 2]);
@@ -391,7 +411,7 @@ SizedGLintBuffer postprocess(const GLint* shader_out, GLuint shader_out_size,
             }
             auto scope_ref = shader_out[i + 2];
             scope_stack.push(scope_ref);
-            
+
             while (!continues_for_next_scope.empty()) {
                 continue_stack.push({continues_for_next_scope.pop(), scope_ref});
             }
@@ -402,7 +422,7 @@ SizedGLintBuffer postprocess(const GLint* shader_out, GLuint shader_out_size,
         if (value == SCOPE_END) {
             auto scope = scope_stack.pop();
             var_reg.pop_scope();
-            
+
             if (!continue_stack.empty() && continue_stack.peek().scope == scope) {
                 continue_stack.pop();
             }
@@ -422,7 +442,7 @@ SizedGLintBuffer postprocess(const GLint* shader_out, GLuint shader_out_size,
             handle_breakable_label(shader_out, break_stack, buffer, i);
             continue;
         }
-    
+
         buffer.append(value);
     }
 
