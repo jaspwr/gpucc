@@ -29,6 +29,11 @@ struct IrType {
     GLuint load_depth;
 };
 
+struct LiveInterval {
+    GLuint start;
+    GLuint end;
+};
+
 struct AstNode {
     GLuint nodeToken;
     ChildNode children[4];

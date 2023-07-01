@@ -1,0 +1,8 @@
+struct LiveInterval {
+    uint start;
+    uint end;
+};
+
+layout(std430, binding = 3) volatile buffer LiveIntervals {
+    LiveInterval liveIntervals[];
+};

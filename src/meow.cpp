@@ -14,6 +14,7 @@
 #include "c_tokens.cpp"
 #include "grammars/c_grammar.cpp"
 #include "arch/x86_64/instruction_selection.h"
+#include "arch/x86_64/registers.h"
 
 int main(int argc, char** argv) {
     try {
@@ -39,6 +40,9 @@ int main(int argc, char** argv) {
 
         write_file((get_bin_dir() + "/shaders/ast_tokens_generated").c_str(),
             yacc_parse_tree.to_shader_defs().c_str());
+
+        write_file((get_bin_dir() + "/shaders/phys_registers_generated").c_str(),
+            generate_shader_definitions().c_str());
 
         Shaders shaders = Gl::compile_shaders();
 

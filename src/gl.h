@@ -22,6 +22,8 @@ struct Shaders {
     Shader codegen;
     Shader type_propagation;
     Shader instruction_selection;
+    Shader liveness;
+    Shader register_allocator;
 };
 
 class Gl {

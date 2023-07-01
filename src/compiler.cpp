@@ -117,8 +117,8 @@ std::string compile(Job& job, Shaders& shaders, ParseTree& yacc_parse_tree,
     std::string source_str = load_source(job.source_files, var_reg, job);
     auto source = to_uint_string(source_str);
 
-
-    auto ast_nodes = Ssbo((AST_NODES_OVERFLOW_BUFFER_SIZE + source.length) * sizeof(AstNode));
+    const GLuint vreg_space = AST_NODES_OVERFLOW_BUFFER_SIZE + source.length;
+    auto ast_nodes = Ssbo((vreg_space) * sizeof(AstNode));
 
     var_reg.new_register_next = AST_NODES_OVERFLOW_BUFFER_SIZE + source.length + 20;
 
@@ -160,7 +160,7 @@ std::string compile(Job& job, Shaders& shaders, ParseTree& yacc_parse_tree,
     #endif
 
 
-    auto types = Ssbo(666 * sizeof(GLuint)); // TODO: Get proper size.
+    auto types = Ssbo(vreg_space * sizeof(IrType)); // TODO: Get proper size.
     types.bind(6);
 
     _ast_ssbos.ast_parse_trees[0]->bind(4);
@@ -227,10 +227,31 @@ std::string compile(Job& job, Shaders& shaders, ParseTree& yacc_parse_tree,
     inst_sel.replacements->bind(5);
     inst_sel.match_parse_tree->bind(8);
 
-    #define RANGE 12
-    shaders.instruction_selection.exec((output_buffer_size / 3) / 32);
+    #define RANGE 3
+    shaders.instruction_selection.exec((output_buffer_size / RANGE) / 32);
+
+    delete inst_sel.type_checking;
+    delete inst_sel.replacements;
+    delete inst_sel.match_parse_tree;
 
     asm_buf.print_contents();
+
+    Ssbo live_intervals = Ssbo(vreg_space * sizeof(LiveInterval));
+    live_intervals.bind(3);
+
+    shaders.liveness.exec((output_buffer_size / RANGE) / 32);
+
+    void* live_dmp = live_intervals.dump();
+    print_live_intervals(live_dmp, live_intervals.size);
+
+    Ssbo phys_reg_map = Ssbo(vreg_space * sizeof(GLuint));
+    phys_reg_map.bind(10);
+
+    shaders.register_allocator.exec((vreg_space) / 32);
+
+    void* asm_dmp = asm_buf.dump();
+    void* phys_reg_map_dmp = phys_reg_map.dump();
+    print_asm(asm_dmp, asm_buf.size, phys_reg_map_dmp, phys_reg_map.size);
 
     // auto post_proc = postprocess((const GLint*)out_buf_dmp, output_buffer_size, var_reg, ir_parse_tree, source_str, ast_nodes_dmp);
 

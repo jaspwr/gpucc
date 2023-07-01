@@ -70,7 +70,8 @@
         "span": "cpp",
         "stdfloat": "cpp",
         "variant": "cpp",
-        "ir_types": "c"
+        "ir_types": "c",
+        "phys_registers_generated": "c"
     },
     "cSpell.words": [
         "optimise"

@@ -4,6 +4,9 @@
 #include "cli.h"
 #include "ir_types.h"
 
+#include "arch/x86_64/opcodes.h"
+#include "arch/x86_64/registers.h"
+
 #include <iostream>
 #include <math.h>
 #include <unordered_map>
@@ -26,6 +29,41 @@ std::string check_both_parse_trees(GLuint token, ParseTree* lang_tokens,
         }
     }
     return "Unknown token";
+}
+
+void print_live_intervals(void* data, u32 length) {
+    LiveInterval* intervals = (LiveInterval*)data;
+    for (u32 i = 0; i < length / sizeof(LiveInterval); i++) {
+        if (intervals[i].start == 0 && intervals[i].end == 0) continue;
+        std::cout << "[%" << i << "] ";
+        std::cout << "(" << intervals[i].start << " -> ";
+        std::cout << intervals[i].end << ")";
+        std::cout << "\n";
+    }
+}
+
+void print_asm(void* asm_data, u32 asm_length, void* phys_reg_map_data, u32 phys_reg_map_length) {
+    GLint* asm_tokens = (GLint*)asm_data;
+    GLuint* phys_reg_map = (GLuint*)phys_reg_map_data;
+    for (u32 i = 0; i < asm_length / sizeof(GLuint); i++) {
+        GLint token = asm_tokens[i];
+        if (token == 0) continue;
+        if (token > 0) {
+            std::cout << "\n";
+            std::cout << i << ": ";
+            std::cout << from_opcode(token);
+        } else {
+            GLuint vreg = -token;
+            GLuint phys_reg = phys_reg_map[vreg];
+            if (phys_reg == 0) {
+                std::cout << " %" << vreg;
+            } else {
+                std::cout << " " << from_register(phys_reg) << " (%" << vreg << ")";
+            }
+        }
+
+    }
+    std::cout << "\n";
 }
 
 void print_tokens(void* tokens, u32 length,
