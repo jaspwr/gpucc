@@ -6,7 +6,7 @@ name="Jasper Parker"
 email="j@sperp.dev"
 
 function append() {
-    echo -e "// Copyright (C) $year $name <$email>
+    echo "// Copyright (C) $year $name <$email>
 //
 // This file is part of $project_name.
 //
@@ -27,33 +27,38 @@ function append() {
 $(cat $1)" > $1
 }
 
-# append "postprocessor.cpp"
-
-for file in ./*.cpp
-do
-    append $file
-done
-
-for file in ./*/*.cpp
-do
-    append $file
-done
-
-for file in ./*.h
-do
-    append $file
-done
-
-for file in ./*/*.h
-do
-    append $file
-done
-
-for file in ./*.glsl
-do
-    append $file
-done
-
-for file in ./*/*.glsl
-do
-    append $file
+#
+# for file in ./*.cpp
+# do
+#     append $file
+# done
+#
+# for file in ./*/*.cpp
+# do
+#     append $file
+# done
+#
+# for file in ./*.h
+# do
+#     append $file
+# done
+#
+# for file in ./*/*.h
+# do
+#     append $file
+# done
+#
+# for file in ./*/*/*.cpp
+# do
+#     append $file
+# done
+#
+# for file in ./*/*/*.h
+# do
+#     append $file
+# done
+#
+# for file in ./*/*.glsl
+# do
+#     append $file
+# done
