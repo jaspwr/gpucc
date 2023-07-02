@@ -26,7 +26,7 @@ ObjectLikeMacro::ObjectLikeMacro(std::string value) {
     this->value = value;
 }
 
-void ObjectLikeMacro::exectue(ExtendableBuffer<u8>* buffer, u32& i, const char* source) {    
+void ObjectLikeMacro::execute(ExtendableBuffer<u8>* buffer, u32& i, const char* source) {
     buffer->add((u8*)value.c_str(), value.size());
 }
 
@@ -56,7 +56,7 @@ std::string trim_whitespace(std::string str) {
 
 std::vector<std::string> extract_args(u32& i, const char* source) {
     // Slow but whatever
-    
+
     auto args_str = extract_args_str(i, source);
 
     auto args = std::vector<std::string>();
@@ -110,10 +110,10 @@ FunctionLikeMacro::FunctionLikeMacro(std::string value) {
         }
     }
     push_alphanum_arg(plain_string_buffer, args, template_value);
-    
+
 }
 
-void FunctionLikeMacro::exectue(ExtendableBuffer<u8>* buffer, u32& i, const char* source) {    
+void FunctionLikeMacro::execute(ExtendableBuffer<u8>* buffer, u32& i, const char* source) {
     auto args = extract_args(i, source);
 
     auto value = template_value.render(args);

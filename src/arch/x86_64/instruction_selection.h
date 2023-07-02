@@ -24,13 +24,19 @@ const char* inst_selection_schema = R"(
 
 %a:f32 = ADD %b:f32 %c:f32 ->
     mov %a %b
-    add %a %c
+    addss %a %c
+    ;
+
+%a:f32 = MUL %b:f32 %c:f32 ->
+    mov %a %b
+    mulss %a %c
     ;
 
 %a:i32 = MUL %b:i32 %c:i32 ->
     mov %a %b
     imul %a %c
     ;
+
 
 JMP %a:_ ->
     jmp %a

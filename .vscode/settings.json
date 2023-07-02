@@ -71,7 +71,8 @@
         "stdfloat": "cpp",
         "variant": "cpp",
         "ir_types": "c",
-        "phys_registers_generated": "c"
+        "phys_registers_generated": "c",
+        "ascii": "c"
     },
     "cSpell.words": [
         "optimise"

@@ -26,7 +26,7 @@
 
 class PreprocessorMacro {
     public:
-        virtual void exectue(ExtendableBuffer<u8>* buffer, u32& i, const char* source) {};
+        virtual void execute(ExtendableBuffer<u8>* buffer, u32& i, const char* source) {};
 };
 
 class ObjectLikeMacro : public PreprocessorMacro {
@@ -34,7 +34,7 @@ class ObjectLikeMacro : public PreprocessorMacro {
         std::string value;
     public:
         ObjectLikeMacro(std::string value);
-        void exectue(ExtendableBuffer<u8>* buffer, u32& i, const char* source) override;
+        void execute(ExtendableBuffer<u8>* buffer, u32& i, const char* source) override;
 };
 
 class FunctionLikeMacro : public PreprocessorMacro {
@@ -43,5 +43,5 @@ class FunctionLikeMacro : public PreprocessorMacro {
 
     public:
         FunctionLikeMacro(std::string value);
-        void exectue(ExtendableBuffer<u8>* buffer, u32& i, const char* source) override;
+        void execute(ExtendableBuffer<u8>* buffer, u32& i, const char* source) override;
 };

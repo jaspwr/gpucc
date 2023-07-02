@@ -1,0 +1,146 @@
+// Copyright (C) 2023 Jasper Parker <j@sperp.dev>
+//
+// This file is part of Meow.
+//
+// Meow is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published
+// by the Free Software Foundation, either version 3 of the License,
+// or (at your option) any later version.
+//
+// Meow is distributed in the hope that it will be useful, but
+// WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+// General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Meow. If not, see <https://www.gnu.org/licenses/>.
+
+
+#define ASCII_NUL               0
+#define ASCII_SOH               1
+#define ASCII_STX               2
+#define ASCII_ETX               3
+#define ASCII_EOT               4
+#define ASCII_ENQ               5
+#define ASCII_ACK               6
+#define ASCII_BEL               7
+#define ASCII_BS                8
+#define ASCII_TAB               9
+#define ASCII_LF                10
+#define ASCII_VT                11
+#define ASCII_FF                12
+#define ASCII_CR                13
+#define ASCII_SO                14
+#define ASCII_SI                15
+#define ASCII_DLE               16
+#define ASCII_DC1               17
+#define ASCII_DC2               18
+#define ASCII_DC3               19
+#define ASCII_DC4               20
+#define ASCII_NAK               21
+#define ASCII_SYN               22
+#define ASCII_ETB               23
+#define ASCII_CAN               24
+#define ASCII_EM                25
+#define ASCII_SUB               26
+#define ASCII_ESC               27
+#define ASCII_FS                28
+#define ASCII_GS                29
+#define ASCII_RS                30
+#define ASCII_US                31
+#define ASCII_SPACE             32
+#define ASCII_EXCLAMATION_MARK  33
+#define ASCII_DOUBLE_QUOTES     34
+#define ASCII_HASH              35
+#define ASCII_DOLLAR            36
+#define ASCII_PERCENT           37
+#define ASCII_AMPERSAND         38
+#define ASCII_SINGLE_QUOTE      39
+#define ASCII_LEFT_PARENTHESIS  40
+#define ASCII_RIGHT_PARENTHESIS 41
+#define ASCII_ASTERISK          42
+#define ASCII_PLUS              43
+#define ASCII_COMMA             44
+#define ASCII_MINUS             45
+#define ASCII_PERIOD            46
+#define ASCII_SLASH             47
+#define ASCII_0                 48
+#define ASCII_1                 49
+#define ASCII_2                 50
+#define ASCII_3                 51
+#define ASCII_4                 52
+#define ASCII_5                 53
+#define ASCII_6                 54
+#define ASCII_7                 55
+#define ASCII_8                 56
+#define ASCII_9                 57
+#define ASCII_COLON             58
+#define ASCII_SEMICOLON         59
+#define ASCII_LESS_THAN         60
+#define ASCII_EQUALS            61
+#define ASCII_GREATER_THAN      62
+#define ASCII_QUESTION_MARK     63
+#define ASCII_AT_SIGN           64
+#define ASCII_UPPER_A           65
+#define ASCII_UPPER_B           66
+#define ASCII_UPPER_C           67
+#define ASCII_UPPER_D           68
+#define ASCII_UPPER_E           69
+#define ASCII_UPPER_F           70
+#define ASCII_UPPER_G           71
+#define ASCII_UPPER_H           72
+#define ASCII_UPPER_I           73
+#define ASCII_UPPER_J           74
+#define ASCII_UPPER_K           75
+#define ASCII_UPPER_L           76
+#define ASCII_UPPER_M           77
+#define ASCII_UPPER_N           78
+#define ASCII_UPPER_O           79
+#define ASCII_UPPER_P           80
+#define ASCII_UPPER_Q           81
+#define ASCII_UPPER_R           82
+#define ASCII_UPPER_S           83
+#define ASCII_UPPER_T           84
+#define ASCII_UPPER_U           85
+#define ASCII_UPPER_V           86
+#define ASCII_UPPER_W           87
+#define ASCII_UPPER_X           88
+#define ASCII_UPPER_Y           89
+#define ASCII_UPPER_Z           90
+#define ASCII_LEFT_BRACKET      91
+#define ASCII_BACKSLASH         92
+#define ASCII_RIGHT_BRACKET     93
+#define ASCII_CARET             94
+#define ASCII_UNDERSCORE        95
+#define ASCII_BACKTICK          96
+#define ASCII_LOWER_A           97
+#define ASCII_LOWER_B           98
+#define ASCII_LOWER_C           99
+#define ASCII_LOWER_D           100
+#define ASCII_LOWER_E           101
+#define ASCII_LOWER_F           102
+#define ASCII_LOWER_G           103
+#define ASCII_LOWER_H           104
+#define ASCII_LOWER_I           105
+#define ASCII_LOWER_J           106
+#define ASCII_LOWER_K           107
+#define ASCII_LOWER_L           108
+#define ASCII_LOWER_M           109
+#define ASCII_LOWER_N           110
+#define ASCII_LOWER_O           111
+#define ASCII_LOWER_P           112
+#define ASCII_LOWER_Q           113
+#define ASCII_LOWER_R           114
+#define ASCII_LOWER_S           115
+#define ASCII_LOWER_T           116
+#define ASCII_LOWER_U           117
+#define ASCII_LOWER_V           118
+#define ASCII_LOWER_W           119
+#define ASCII_LOWER_X           120
+#define ASCII_LOWER_Y           121
+#define ASCII_LOWER_Z           122
+#define ASCII_LEFT_BRACE        123
+#define ASCII_VERTICAL_BAR      124
+#define ASCII_RIGHT_BRACE       125
+#define ASCII_TILDE             126
+#define ASCII_DEL               127

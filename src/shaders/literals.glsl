@@ -29,6 +29,8 @@ layout(local_size_x = 32, local_size_y = 1, local_size_z = 1 ) in;
 
 //INCLUDE ir_types
 
+//INCLUDE ascii
+
 struct ParseTreeItem {
 	uint nextRow;
 	uint final;
@@ -82,7 +84,6 @@ int appendAstNode(AstNode newNode, uint pos, uint len) {
 	return appendAstNodeToOverflowBuffer(newNode);
 }
 
-#define ASCII_ZERO 48
 
 void formatFloat(in uint firstPart, in uint secondPart, inout uint valueHalf1, inout uint valueHalf2) {
 	float dec = float(secondPart);
@@ -101,17 +102,37 @@ void formatFloat(in uint firstPart, in uint secondPart, inout uint valueHalf1, i
 	valueHalf2 = exponent << 23 | value >> 9;
 }
 
-void parseNumber(inout uint pos, in uint base, inout uint valueHalf1, inout uint valueHalf2, inout bool isFloat) {
+bool isInHexLetterRange(uint c) {
+	return (c >= ASCII_LOWER_A && c <= ASCII_LOWER_F)
+	        || (c >= ASCII_UPPER_A && c <= ASCII_UPPER_F);
+}
+
+void parseNumber(inout uint pos, in uint base, inout uint valueHalf1, inout uint valueHalf2, inout uint typeBase) {
 	bool pastDecimalPoint = false;
 	uint firstPart = 0;
 	uint secondPart = 0;
+
 	while (true) {
-		if (source[pos] >= ASCII_ZERO && source[pos] <= 57 /* 9 */) {
+		bool isHex = base == 16 && isInHexLetterRange(source[pos]);
+
+		if ((source[pos] >= ASCII_0 && source[pos] <= ASCII_9) || isHex) {
+			int digit = int(source[pos]) - int(ASCII_0);
+
+			if (isHex) {
+				if (source[pos] >= ASCII_LOWER_A && source[pos] <= ASCII_LOWER_F) {
+					digit = int(source[pos]) - int(ASCII_LOWER_A) + 10;
+				} else if (source[pos] >= ASCII_UPPER_A && source[pos] <= ASCII_UPPER_F) {
+					digit = int(source[pos]) - int(ASCII_UPPER_A) + 10;
+				} else {
+					break;
+				}
+			}
+
 			if (pastDecimalPoint) {
-				secondPart = secondPart * base + (source[pos] - ASCII_ZERO);
+				secondPart = secondPart * base + uint(digit);
 				// TODO: detect overflow
 			} else {
-				firstPart = firstPart * base + (source[pos] - ASCII_ZERO);
+				firstPart = firstPart * base + uint(digit);
 			}
 		} else if (source[pos] == 46 /* . */) {
 			pastDecimalPoint = true;
@@ -120,26 +141,46 @@ void parseNumber(inout uint pos, in uint base, inout uint valueHalf1, inout uint
 		}
 		pos++;
 	}
+
+	uint longCount = 0;
+	bool unsigned_ = false;
+
+	while (true) {
+		if (source[pos] == ASCII_LOWER_L || source[pos] == ASCII_UPPER_L) {
+			longCount++;
+		} else if (source[pos] == ASCII_LOWER_U || source[pos] == ASCII_UPPER_U) {
+			unsigned_ = true;
+		} else if (source[pos] == ASCII_LOWER_F || source[pos] == ASCII_UPPER_F) {
+		   	pastDecimalPoint = true;
+		} else {
+			break;
+		}
+		pos++;
+	}
+
 	if (pastDecimalPoint) {
-		isFloat = true;
+		typeBase = F32;
 		formatFloat(firstPart, secondPart, valueHalf1, valueHalf2);
 	} else {
-		isFloat = false;
+		switch (longCount) {
+			case 0: typeBase = unsigned_ ? U32 : I32; break;
+			case 1: typeBase = unsigned_ ? U64 : I64; break;
+			default: typeBase = /* TODO */ I32; break;
+		}
+
 		valueHalf1 = 0;
 		valueHalf2 = firstPart;
 	}
 }
 
-
 IrType parseLiteral(in uint sourcePos, in uint len, out ChildNode childArray[4]) {
-	int type = -1;
+	uint type = 0;
 	uint valueHalf1 = 0;
 	uint valueHalf2 = 0;
 
 	int base = 10;
 
-
-	uint pos = sourcePos; // Possibally not needed idk how arg copying works in glsl
+	uint pos = sourcePos;
 
 	if (source[pos] == 39 /* ' */) {
 		type = U8;
@@ -150,9 +191,8 @@ IrType parseLiteral(in uint sourcePos, in uint len, out ChildNode childArray[4])
 		}
 	} else {
 		// Non char
-		// TODO: make control flow nicer
-		if (source[pos] == ASCII_ZERO) {
-			if (source[pos + 1] == 120 /* x */) {
+		if (source[pos] == ASCII_0) {
+			if (source[pos + 1] == ASCII_UPPER_X || source[pos + 1] == ASCII_LOWER_X) {
 				base = 16;
 				pos += 2;
 			} else {
@@ -160,20 +200,14 @@ IrType parseLiteral(in uint sourcePos, in uint len, out ChildNode childArray[4])
 				pos += 1;
 			}
 		}
-		bool isFloat = false;
-		parseNumber(pos, base, valueHalf1, valueHalf2, isFloat);
-		if (isFloat) {
-			type = F32;
-		} else {
-			type = I32;
-		}
+		parseNumber(pos, base, valueHalf1, valueHalf2, type);
 	}
 
 	// valueHalf1 = source[pos];
 
-	childArray[0] = ChildNode( 0, type );
-	childArray[1] = ChildNode( 0, valueHalf1 );
-	childArray[2] = ChildNode( 0, valueHalf2 );
+	childArray[0] = ChildNode( 0, valueHalf1 );
+	childArray[1] = ChildNode( 0, valueHalf2 );
+	childArray[2] = ChildNode( 0, 0 );
 	childArray[3] = ChildNode( 0, 0 );
 
 	return IrType(type, 0, 0);

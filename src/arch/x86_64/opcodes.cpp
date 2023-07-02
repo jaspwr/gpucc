@@ -73,6 +73,10 @@ std::unordered_map<std::string, int> opcode_map = {
     {"repz", 0xF3},
     {"repne", 0xF2},
     {"repnz", 0xF2},
+    {"addss", 0xF31},
+    {"subss", 0xF32},
+    {"mulss", 0xF33},
+    {"divss", 0xF34},
 
     // TODO ...
 };

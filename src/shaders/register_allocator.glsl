@@ -26,10 +26,18 @@ layout(local_size_x = 32, local_size_y = 1, local_size_z = 1 ) in;
 
 //INCLUDE phys_registers_generated
 
+//INCLUDE structs
+
 #define COPY_OPCODE 0x8B
+
+#define LITERAL 1
 
 layout(std430, binding = 7) readonly buffer ASM {
     int asm_[];
+};
+
+layout(std430, binding = 3) readonly coherent buffer AstNodes {
+	AstNode astNodes[];
 };
 
 
@@ -149,13 +157,24 @@ void findNeighbors(uint selfVreg, inout uint neighbors[MAX_NEIGHBORS], inout uin
     }
 }
 
+uint getBaseReg(PhysRegPool pool) {
+    switch (pool) {
+        case INT_POOL: return PHYS_REG_rax;
+        case FLOAT_POOL: return PHYS_REG_xmm0;
+        default: return 0; // TODO
+    }
+}
+
 void tryAlloc(uint selfVreg, inout uint neighbors[MAX_NEIGHBORS], inout uint neighborCount) {
     PhysRegPool pool = getPhysRegPool(selfVreg);
 
     if (pool == DOES_NOT_ALLOCATE) return;
 
     // Find a free register
-    uint reg = 1;
+
+    uint baseReg = getBaseReg(pool);
+
+    uint reg = baseReg;
     for (uint i = 0; i < neighborCount; i++) {
         if (physRegMap[neighbors[i]] == reg) {
             reg++;
@@ -164,15 +183,13 @@ void tryAlloc(uint selfVreg, inout uint neighbors[MAX_NEIGHBORS], inout uint nei
     }
 
     if (pool == INT_POOL) {
-        if (reg > INT_POOL_SIZE) {
+        if (reg - baseReg > INT_POOL_SIZE) {
             return;
         }
-        reg += PHYS_REG_rax - 1;
     } else if (pool == FLOAT_POOL) {
-        if (reg > FLOAT_POOL_SIZE) {
+        if (reg - baseReg > FLOAT_POOL_SIZE) {
             return;
         }
-        reg += PHYS_REG_xmm0 - 1;
     } else {
         // unreachable
     }
@@ -218,6 +235,11 @@ void main() {
     findNeighbors(vreg, neighbors, neighborCount);
 
     barrier();
+
+    if (astNodes[vreg - 1].nodeToken == 1) {
+        return;
+    }
+
 
     uint maxAllocs = max_(INT_POOL_SIZE, FLOAT_POOL_SIZE);
     for (uint i = 0; i < maxAllocs; i++) {

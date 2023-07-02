@@ -66,7 +66,11 @@ Ssbo* tokenise(UintString& source, Shader* tokeniser) {
     return tokens;
 }
 
-GLuint fetch_entry_node_volume(Ssbo* tokens, AstNode* ast_nodes_dmp) {
+GLuint fetch_entry_node_volume(Ssbo* tokens, void* ast_nodes_dmp) {
+    // FIXME: There is bullshit with struct alignment and padding here.
+    //        It's causing the bug with the +5 down lower in this file.
+    AstNode* ast_nodes = (AstNode*)ast_nodes_dmp;
+
     #ifdef BENCHMARKING
     auto bm = Benchmark("Out volume fetch");
     #endif
@@ -75,7 +79,7 @@ GLuint fetch_entry_node_volume(Ssbo* tokens, AstNode* ast_nodes_dmp) {
     GLuint ast_node_location = tokens_dmp[0].ast_node_location;
     delete[] tokens_dmp;
     GLuint volume = 0;
-    AstNode entry_node = ast_nodes_dmp[ast_node_location - 1];
+    AstNode entry_node = ast_nodes[ast_node_location - 1];
     for (auto child : entry_node.children) {
         volume += child.codegenVolume;
     }
@@ -135,7 +139,7 @@ std::string compile(Job& job, Shaders& shaders, ParseTree& yacc_parse_tree,
     auto source = to_uint_string(source_str);
 
     const GLuint vreg_space = AST_NODES_OVERFLOW_BUFFER_SIZE + source.length;
-    auto ast_nodes = Ssbo((vreg_space) * sizeof(AstNode));
+    Ssbo ast_nodes = Ssbo((vreg_space) * sizeof(AstNode));
 
     var_reg.new_register_next = AST_NODES_OVERFLOW_BUFFER_SIZE + source.length + 20;
 
@@ -197,9 +201,9 @@ std::string compile(Job& job, Shaders& shaders, ParseTree& yacc_parse_tree,
     #endif
 
     if (job.dbg) {
-        auto nodes = ast_nodes.dump();
-        print_ast_nodes(nodes, ast_nodes.size - 1, *lang_tokens_parse_tree, yacc_parse_tree);
-        free(nodes);
+        // auto nodes = ast_nodes.dump();
+        // print_ast_nodes(nodes, ast_nodes.size - 1, *lang_tokens_parse_tree, yacc_parse_tree);
+        // free(nodes);
 
         // tokens->print_contents();
 
@@ -213,7 +217,7 @@ std::string compile(Job& job, Shaders& shaders, ParseTree& yacc_parse_tree,
 
     }
 
-    AstNode* ast_nodes_dmp = (AstNode*)ast_nodes.dump();
+    void* ast_nodes_dmp = ast_nodes.dump();
 
     // FIXME: there shouldn't need to be a +5 here
     const GLuint output_buffer_size = fetch_entry_node_volume(tokens, ast_nodes_dmp) + 5;
@@ -254,7 +258,7 @@ std::string compile(Job& job, Shaders& shaders, ParseTree& yacc_parse_tree,
     asm_buf.print_contents();
 
     Ssbo live_intervals = Ssbo(vreg_space * sizeof(LiveInterval));
-    live_intervals.bind(3);
+    live_intervals.bind(2);
 
     shaders.liveness.exec((output_buffer_size / RANGE) / 32);
 
@@ -268,7 +272,9 @@ std::string compile(Job& job, Shaders& shaders, ParseTree& yacc_parse_tree,
 
     void* asm_dmp = asm_buf.dump();
     void* phys_reg_map_dmp = phys_reg_map.dump();
-    print_asm(asm_dmp, asm_buf.size, phys_reg_map_dmp, phys_reg_map.size);
+
+    print_asm(asm_dmp, asm_buf.size, phys_reg_map_dmp, phys_reg_map.size,
+              ast_nodes_dmp, ast_nodes.size);
 
     // auto post_proc = postprocess((const GLint*)out_buf_dmp, output_buffer_size, var_reg, ir_parse_tree, source_str, ast_nodes_dmp);
 
@@ -282,7 +288,7 @@ std::string compile(Job& job, Shaders& shaders, ParseTree& yacc_parse_tree,
     delete ir_tokens;
     delete lang_tokens_parse_tree;
     delete[] source.data;
-    delete[] ast_nodes_dmp;
+    free(ast_nodes_dmp);
     delete tokens;
 
     #ifdef BENCHMARKING

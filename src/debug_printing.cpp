@@ -49,6 +49,35 @@ std::string check_both_parse_trees(GLuint token, ParseTree* lang_tokens,
     return "Unknown token";
 }
 
+AstNode get_ast_node(GLuint* ast_nodes, u32 index) {
+
+    #define AST_NODE_SIZE 11
+
+    return {
+        ast_nodes[index * AST_NODE_SIZE + 0],
+        (int) ast_nodes[index * AST_NODE_SIZE + 1],
+        ast_nodes[index * AST_NODE_SIZE + 2],
+        (int) ast_nodes[index * AST_NODE_SIZE + 3],
+        ast_nodes[index * AST_NODE_SIZE + 4],
+        (int) ast_nodes[index * AST_NODE_SIZE + 5],
+        ast_nodes[index * AST_NODE_SIZE + 6],
+        (int) ast_nodes[index * AST_NODE_SIZE + 7],
+        ast_nodes[index * AST_NODE_SIZE + 8],
+        ast_nodes[index * AST_NODE_SIZE + 9],
+        ast_nodes[index * AST_NODE_SIZE + 10]
+    };
+}
+
+inline std::vector<AstNode> get_ast_nodes(GLuint* _nodes, u32 length) {
+    std::vector<AstNode> ast_nodes;
+    for (u32 i = 0; i < floor(length / sizeof(AstNode)); i++) {
+        AstNode node = get_ast_node(_nodes, i);
+        if (node.nodeToken == 0) continue;
+        ast_nodes.push_back(node);
+    }
+    return ast_nodes;
+}
+
 void print_live_intervals(void* data, u32 length) {
     LiveInterval* intervals = (LiveInterval*)data;
     for (u32 i = 0; i < length / sizeof(LiveInterval); i++) {
@@ -60,7 +89,9 @@ void print_live_intervals(void* data, u32 length) {
     }
 }
 
-void print_asm(void* asm_data, u32 asm_length, void* phys_reg_map_data, u32 phys_reg_map_length) {
+void print_asm(void* asm_data, u32 asm_length, void* phys_reg_map_data,
+               u32 phys_reg_map_length, void* ast_data, u32 ast_length) {
+
     GLint* asm_tokens = (GLint*)asm_data;
     GLuint* phys_reg_map = (GLuint*)phys_reg_map_data;
     for (u32 i = 0; i < asm_length / sizeof(GLuint); i++) {
@@ -74,7 +105,15 @@ void print_asm(void* asm_data, u32 asm_length, void* phys_reg_map_data, u32 phys
             GLuint vreg = -token;
             GLuint phys_reg = phys_reg_map[vreg];
             if (phys_reg == 0) {
-                std::cout << " %" << vreg;
+                AstNode node = get_ast_node((GLuint*)ast_data, vreg - 1);
+                if (node.nodeToken == 1 /* Literals */) { // TODO: Do properly.
+                    u64 value = node.children[0].codegenVolume;
+                    value <<= 32;
+                    value |= node.children[1].codegenVolume;
+                    printf(" 0x%llx", value);
+                } else {
+                    std::cout << " %" << vreg;
+                }
             } else {
                 std::cout << " " << from_register(phys_reg) << " (%" << vreg << ")";
             }
@@ -99,25 +138,6 @@ void print_tokens(void* tokens, u32 length,
         std::cout << "[" << i << "] \"" << token_str << "\"" << repeated_char(spacing, ' ');
         _tokens[i].print();
     }
-}
-
-AstNode get_ast_node(GLuint* ast_nodes, u32 index) {
-
-    #define AST_NODE_SIZE 11
-
-    return {
-        ast_nodes[index * AST_NODE_SIZE + 0],
-        (int) ast_nodes[index * AST_NODE_SIZE + 1],
-        ast_nodes[index * AST_NODE_SIZE + 2],
-        (int) ast_nodes[index * AST_NODE_SIZE + 3],
-        ast_nodes[index * AST_NODE_SIZE + 4],
-        (int) ast_nodes[index * AST_NODE_SIZE + 5],
-        ast_nodes[index * AST_NODE_SIZE + 6],
-        (int) ast_nodes[index * AST_NODE_SIZE + 7],
-        ast_nodes[index * AST_NODE_SIZE + 8],
-        ast_nodes[index * AST_NODE_SIZE + 9],
-        ast_nodes[index * AST_NODE_SIZE + 10]
-    };
 }
 
 void print_centered(std::string str, u32 width) {
@@ -187,20 +207,9 @@ void print_tree_lines(u32 nodes_count, u32 width) {
     }
 }
 
-
-
-
 void print_ast_nodes(void* nodes, u32 length, ParseTree& lang_tokens, ParseTree& abstract_tokens) {
-    //AstNode* _nodes = (AstNode*)_nodes;
     GLuint* _nodes = (GLuint*)nodes;
-    std::vector<AstNode> ast_nodes;
-    std::unordered_map<GLuint, u32> node_map;
-    for (u32 i = 0; i < floor(length / sizeof(AstNode)); i++) {
-        auto node = get_ast_node(_nodes, i);
-        if (node.nodeToken == 0) continue;
-        ast_nodes.push_back(node);
-        node_map[i] = ast_nodes.size() - 1;
-    }
+    std::vector<AstNode> ast_nodes = get_ast_nodes(_nodes, length);
     AstNode& entry = ast_nodes[0];
     GLuint largest_volume = 0;
     for (auto& node : ast_nodes) {

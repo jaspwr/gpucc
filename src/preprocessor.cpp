@@ -133,7 +133,7 @@ namespace preprocessor {
                 // FIXME: variadic macros https://gcc.gnu.org/onlinedocs/cpp/Variadic-Macros.html#Variadic-Macros
 
 
-                search->second->exectue(buffer, i, source);
+                search->second->execute(buffer, i, source);
                 //buffer->add((u8*)repl.c_str(), repl.length() * sizeof(char));
             }
 
