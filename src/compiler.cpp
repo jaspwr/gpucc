@@ -231,7 +231,7 @@ std::string compile(Job& job, Shaders& shaders, ParseTree& yacc_parse_tree,
 
 
 
-    shaders.type_propagation.exec((types.size / 3) / 32);
+    shaders.type_propagation.exec((types.size / 3) / 32 + 1);
 
     auto out_buf_dmp = (GLint*)output_buffer.dump();
 
@@ -249,7 +249,7 @@ std::string compile(Job& job, Shaders& shaders, ParseTree& yacc_parse_tree,
     inst_sel.match_parse_tree->bind(8);
 
     #define RANGE 3
-    shaders.instruction_selection.exec((output_buffer_size / RANGE) / 32);
+    shaders.instruction_selection.exec((output_buffer_size / RANGE) / 32 + 1);
 
     delete inst_sel.type_checking;
     delete inst_sel.replacements;
@@ -257,10 +257,19 @@ std::string compile(Job& job, Shaders& shaders, ParseTree& yacc_parse_tree,
 
     asm_buf.print_contents();
 
+
+    Ssbo frame_pointers = Ssbo(vreg_space * sizeof(GLuint));
+    frame_pointers.bind(9);
+    #define FRAME_POINTERS_RANGE 20
+    shaders.frame_pointers.exec((output_buffer_size / FRAME_POINTERS_RANGE) / 32 + 1);
+
+    // printf("FRAME POINTERS:\n");
+    // frame_pointers.print_contents();
+
     Ssbo live_intervals = Ssbo(vreg_space * sizeof(LiveInterval));
     live_intervals.bind(2);
 
-    shaders.liveness.exec((output_buffer_size / RANGE) / 32);
+    shaders.liveness.exec((output_buffer_size / RANGE) / 32 + 1);
 
     void* live_dmp = live_intervals.dump();
     print_live_intervals(live_dmp, live_intervals.size);
@@ -268,13 +277,18 @@ std::string compile(Job& job, Shaders& shaders, ParseTree& yacc_parse_tree,
     Ssbo phys_reg_map = Ssbo(vreg_space * sizeof(GLuint));
     phys_reg_map.bind(10);
 
-    shaders.register_allocator.exec((vreg_space) / 32);
+    shaders.register_allocator.exec((vreg_space) / 32 + 1);
 
     void* asm_dmp = asm_buf.dump();
     void* phys_reg_map_dmp = phys_reg_map.dump();
+    void* frame_pointers_dmp = frame_pointers.dump();
+
+    // for (u32 i = 0; i < 333; i++) {
+    //     printf("%d: %d\n", i, ((GLuint*)phys_reg_map_dmp)[i]);
+    // }
 
     print_asm(asm_dmp, asm_buf.size, phys_reg_map_dmp, phys_reg_map.size,
-              ast_nodes_dmp, ast_nodes.size);
+              ast_nodes_dmp, ast_nodes.size, frame_pointers_dmp, frame_pointers.size);
 
     // auto post_proc = postprocess((const GLint*)out_buf_dmp, output_buffer_size, var_reg, ir_parse_tree, source_str, ast_nodes_dmp);
 

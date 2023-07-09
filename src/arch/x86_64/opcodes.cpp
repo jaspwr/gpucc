@@ -24,6 +24,7 @@
 #include <unordered_map>
 
 std::unordered_map<std::string, int> opcode_map = {
+    {"label", 0x2},
     {"add", 0x01},
     {"push", 0x50},
     {"pop", 0x58},

@@ -51,3 +51,23 @@ IrType favoured(IrType lhs, IrType rhs) {
 
     return lhs;
 }
+
+uint sizeOf(IrType type) {
+    if (type.pointer_depth > 0) return 8;
+
+    if (type.base == U0) return 0;
+    if (type.base == U1) return 1;
+    if (type.base == U8) return 1;
+    if (type.base == U16) return 2;
+    if (type.base == U32) return 4;
+    if (type.base == U64) return 8;
+    if (type.base == I8) return 1;
+    if (type.base == I16) return 2;
+    if (type.base == I32) return 4;
+    if (type.base == I64) return 8;
+    if (type.base == F32) return 4;
+    if (type.base == F64) return 8;
+    if (type.base == x86_FP80) return 10;
+
+    return 0;
+}

@@ -184,6 +184,8 @@ inline void append_match(std::vector<std::string>& match_unparsed,
             types[types_index].type.pointer_depth = 0; // TODO
             types[types_index].type.load_depth = 0;
 
+        } else if (token == "#newline") {
+            match.push_back(get_token_id(ir_tokens, (char*) "\n"));
         } else {
             auto id = get_token_id(ir_tokens, (char*)token.c_str());
             match.push_back(id);

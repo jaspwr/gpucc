@@ -232,6 +232,8 @@ void main() {
     // Label -> continue
     // Loadable -> continue
 
+    if (vregTypes[vreg].load_depth != 0) return;
+
     findNeighbors(vreg, neighbors, neighborCount);
 
     barrier();
@@ -243,12 +245,10 @@ void main() {
 
     uint maxAllocs = max_(INT_POOL_SIZE, FLOAT_POOL_SIZE);
     for (uint i = 0; i < maxAllocs; i++) {
-        // allocation phase
         tryAlloc(pos, neighbors, neighborCount);
 
         barrier();
 
-        // eviction phase
         evictIfClash(pos, neighbors, neighborCount);
     }
 }

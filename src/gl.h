@@ -42,6 +42,7 @@ struct Shaders {
     Shader instruction_selection;
     Shader liveness;
     Shader register_allocator;
+    Shader frame_pointers;
 };
 
 class Gl {

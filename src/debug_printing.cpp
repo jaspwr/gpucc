@@ -90,10 +90,13 @@ void print_live_intervals(void* data, u32 length) {
 }
 
 void print_asm(void* asm_data, u32 asm_length, void* phys_reg_map_data,
-               u32 phys_reg_map_length, void* ast_data, u32 ast_length) {
+               u32 phys_reg_map_length, void* ast_data, u32 ast_length,
+               void* frame_pointer_data, u32 frame_pointer_length) {
 
     GLint* asm_tokens = (GLint*)asm_data;
     GLuint* phys_reg_map = (GLuint*)phys_reg_map_data;
+    GLuint* frame_pointers = (GLuint*)frame_pointer_data;
+
     for (u32 i = 0; i < asm_length / sizeof(GLuint); i++) {
         GLint token = asm_tokens[i];
         if (token == 0) continue;
@@ -111,11 +114,14 @@ void print_asm(void* asm_data, u32 asm_length, void* phys_reg_map_data,
                     value <<= 32;
                     value |= node.children[1].codegenVolume;
                     printf(" 0x%llx", value);
+                } else if (frame_pointers[vreg] != 0) {
+                    std::cout << " PTR [rbp - " << frame_pointers[vreg] << "]";
                 } else {
                     std::cout << " %" << vreg;
                 }
             } else {
-                std::cout << " " << from_register(phys_reg) << " (%" << vreg << ")";
+                // std::cout << " " << from_register(phys_reg) << " (%" << vreg << ")";
+                std::cout << " " << from_register(phys_reg);
             }
         }
 

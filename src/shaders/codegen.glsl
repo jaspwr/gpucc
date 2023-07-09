@@ -109,8 +109,8 @@ bool strcmp(uint lhs_pos, uint rhs_pos) {
     return true;
 }
 
-uint fetchIdentifierFromPartialScopeDec(AstNode partialScopeDec, inout uint decFullLoc) {
-    AstNode decAssign = fetchAstNodeFromChildRef(partialScopeDec.children[1].ref);
+uint fetchIdentifierFromPartialScopeDec(AstNode partialScopeDec, inout uint decFullLoc, uint decAssignIndex) {
+    AstNode decAssign = fetchAstNodeFromChildRef(partialScopeDec.children[decAssignIndex].ref);
     decFullLoc = decAssign.children[0].ref;
     AstNode decFull = fetchAstNodeFromChildRef(decAssign.children[0].ref);
     AstNode dec = fetchAstNodeFromChildRef(decFull.children[0].ref);
@@ -150,6 +150,17 @@ uint findIdentifierVreg(uint str_pos, AstNode start) {
                     break;
                 }
 
+                if (node.nodeToken == AST_for &&
+                    node.children[0].ref != 0) {
+
+                    AstNode for_head = fetchAstNodeFromChildRef(node.children[0].ref);
+                    uint decFullLoc = 0;
+                    uint identifier = fetchIdentifierFromPartialScopeDec(for_head, decFullLoc, 0);
+                    if (strcmp(str_pos, identifier)) {
+                        return decFullLoc;
+                    }
+                }
+
                 if (node.parent == 0) return 0;
 
                 node = astNodes[node.parent];
@@ -158,7 +169,7 @@ uint findIdentifierVreg(uint str_pos, AstNode start) {
             case DESCENDING: {
                 if (node.nodeToken == AST_partial_scope_dec) {
                     uint decFullLoc = 0;
-                    uint identifier = fetchIdentifierFromPartialScopeDec(node, decFullLoc);
+                    uint identifier = fetchIdentifierFromPartialScopeDec(node, decFullLoc, 1);
                     // return decFullLoc;
                     //return identifier;
                     if (strcmp(str_pos, identifier)) {

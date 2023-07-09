@@ -270,8 +270,8 @@ primary_expression
 
 function_definition
     : $0 function_definition_head $1 scope
-    ; < !0 {
-        !1}
+    ; < !0 FN_PRELUDE
+        !1RET
     >
 
 global_statement
@@ -381,7 +381,7 @@ shift_left
 comparison_less_than
     : [ '(', '['} { '.', '->' } { cast_operator, '*', '/', '%', '-', '+', '<<', '>>', '>', '++', '--' } ] '<' } $0 primary_expression '<' $1 primary_expression
     ; < $x = CMP LT $0 $1
-    >
+    `$x := i1` >
 
 comparison_greater_than
     : [ '(', '['} { '.', '->' } { cast_operator, '*', '/', '%', '-', '+', '<<', '>>', '++', '--' } ] '>' } $0 primary_expression '>' $1 primary_expression
@@ -569,7 +569,7 @@ add_assign
     $0 primary_expression '+=' $1 primary_expression
     ; < $x = ADD $0 $1
     STORE $0 $x
-    >
+    ` $x := $1 ` >
 
 sub_assign
     : [ '(', '['} { '.', '->' } { cast_operator, '*', '/', '%', '-', '+', '<<', '>>', '>',

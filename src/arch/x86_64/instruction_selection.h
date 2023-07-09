@@ -46,9 +46,24 @@ JMP %a:_ ->
     mov %a %b
     ;
 
-%a:u1 = CMP EQ %b:i32 %c:i32
+%a:u1 = CMP EQ %b:i32 %c:i32 #newline
 JZ %a:u1 %d:_ ->
     cmp %b %c
     jne %d
     ;
+
+%a:u1 = CMP LT %b:i32 %c:i32 #newline
+JZ %a:u1 %d:_ ->
+    cmp %b %c
+    jge %d
+    ;
+
+%a:_ : ->
+    label %a
+    ;
+
+STORE %a:_ %b:_ ->
+    mov %a %b
+    ;
+
 )";

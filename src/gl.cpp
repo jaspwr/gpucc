@@ -29,6 +29,7 @@ Shaders Gl::compile_shaders() {
 		Shader("shaders/instruction_selection.glsl", GL_ALL_BARRIER_BITS),
 		Shader("shaders/liveness.glsl", GL_ALL_BARRIER_BITS),
 		Shader("shaders/register_allocator.glsl", GL_ALL_BARRIER_BITS),
+		Shader("shaders/frame_pointers.glsl", GL_ALL_BARRIER_BITS),
 	};
 }
 

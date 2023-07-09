@@ -90,7 +90,7 @@ bool tryTypeMatches(inout uint type_checking_ptr, inout uint vregs[10], inout ui
 			continue;
 		}
 
-		if (type_ != vregTypes[vregs[j]]) {
+		if (type_.base != vregTypes[vregs[j]].base) {
 			type_checking_ptr = fail_jmp_loc;
 			return false;
 		}
