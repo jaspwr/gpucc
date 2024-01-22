@@ -52,6 +52,10 @@ layout(std430, binding = 0) readonly buffer IrCodegen {
     uint irCodegen[];
 };
 
+layout(std430, binding = 8) volatile buffer AggregateTypesMap {
+	uint agTypesMap[];
+};
+
 uint codegenPointer(uint nodeToken) {
 	return irCodegen[nodeToken];
 }
@@ -107,6 +111,62 @@ bool strcmp(uint lhs_pos, uint rhs_pos) {
         i++;
     }
     return true;
+}
+
+uint hashName(uint namePos, uint nonce, uint mapSize) {
+    uint hash = 0;
+    for (uint i = 0; isAlphanum(source[namePos + i]); i++) {
+        uint c = source[namePos + i];
+        hash = ((hash << 5) + hash) + c * nonce + c;
+    }
+    return hash % mapSize;
+}
+
+#define VARIANT_UNION false
+#define VARIANT_STRUCT true
+
+uint identifyAgType(uint pos) {
+    bool variant = VARIANT_STRUCT;
+
+    AstNode struct_union_type = astNodes[pos];
+    AstNode struct_or_union_type = fetchAstNodeFromChildRef(struct_union_type.children[0].ref);
+
+    if (struct_or_union_type.nodeToken == AST_union_type) {
+        variant = VARIANT_UNION;
+    }
+
+    uint namePos = -struct_or_union_type.children[0].ref;
+    uint nameHash = 0;
+    for (uint nonce = 0; nonce < 5; nonce++) {
+        nameHash = hashName(namePos, nonce, agTypesMap.length());
+        AstNode def_struct_definition_head = astNodes[agTypesMap[nameHash]];
+        AstNode def_struct_or_union_type
+            = fetchAstNodeFromChildRef(def_struct_definition_head.children[0].ref);
+
+        uint def_namePos = -def_struct_or_union_type.children[0].ref;
+
+        if (strcmp(namePos, def_namePos)) break;
+    }
+
+    return nameHash;
+}
+
+uint hashAgTypeName(uint pos, uint startingNonce) {
+    AstNode struct_definition_head = astNodes[pos];
+    AstNode struct_or_union_type = fetchAstNodeFromChildRef(struct_definition_head.children[0].ref);
+
+    uint namePos = -struct_or_union_type.children[0].ref;
+    uint nameHash = 0;
+    uint nonce = startingNonce;
+    uint bufSize = agTypesMap.length();
+    for (uint i = 0; i < 1024; i++) {
+        nameHash = hashName(namePos, nonce, bufSize);
+        if (agTypesMap[nameHash] == 0) break;
+        nonce++;
+    }
+
+    // TODO: Handle collisions.
+    return nameHash;
 }
 
 uint fetchIdentifierFromPartialScopeDec(AstNode partialScopeDec, inout uint decFullLoc, uint decAssignIndex) {
@@ -303,7 +363,7 @@ uint getTypeBase(uint token, bool signed_, bool long_, bool short_) {
 }
 
 void setTypeFromDec(AstNode node, uint vreg) {
-    // `node` is a `type_specifier` node.
+    // `node` is a `type_specifier` or `struct_union_type` node.
 
     uint pointerDepth = 0;
     AstNode currentNode = node;
@@ -327,11 +387,20 @@ void setTypeFromDec(AstNode node, uint vreg) {
     }
 
     // uint baseToken = fetchToken(node, 0);
-    uint baseToken = fetchAstNodeFromChildRef(node.children[0].ref).nodeToken;
+    uint base = 0;
+    if (node.nodeToken == AST_type_specifier) {
+        uint baseToken = fetchAstNodeFromChildRef(node.children[0].ref).nodeToken;
+        base = getTypeBase(baseToken, signed_, long_, short_);
+    } else if (node.nodeToken == AST_struct_union_type) {
+        uint baseToken = identifyAgType(node.children[0].ref);
+        base = baseToken + 20;
+    }
 
-    vregTypes[vreg].base = getTypeBase(baseToken, signed_, long_, short_);
+    vregTypes[vreg].base = base;
     vregTypes[vreg].pointer_depth = pointerDepth;
-    vregTypes[vreg].load_depth = 1;
+    vregTypes[vreg].qualifiers = 1;
+
+    if (volatile_) setVolatileBit(vregTypes[vreg]);
 }
 
 
@@ -381,11 +450,32 @@ void main() {
         maxOut++;
     }
 
-    if (currentNode.nodeToken == AST_type_specifier) {
-        setTypeFromDec(currentNode, lastAlloca);
+
+    // This part is messy but it is necessary because of the
+    // execution barrier. There may be a cleaner way to do this.
+    bool done = false;
+    for (uint nonce = 0; nonce < 5; nonce++) {
+        uint justWroteTo = 0;
+        uint structNamePos = currentNodePos - 1;
+        if (!done && currentNode.nodeToken == AST_struct_definition_head) {
+            uint nameHash = hashAgTypeName(structNamePos, nonce);
+            atomicMax(agTypesMap[nameHash], structNamePos);
+            justWroteTo = nameHash;
+        }
+        barrier();
+        if (!done && currentNode.nodeToken == AST_struct_definition_head) {
+            if (agTypesMap[justWroteTo] == structNamePos) {
+                done = true;
+            }
+        }
     }
 
+    barrier();
 
+    if (currentNode.nodeToken == AST_type_specifier
+        || currentNode.nodeToken == AST_struct_union_type) {
+        setTypeFromDec(currentNode, lastAlloca);
+    }
 
     if (codegenPointer(currentNode.nodeToken) == 0) return;
     // NOTE: Nothing after this happens if the node does not add any IR.

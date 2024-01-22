@@ -34,7 +34,7 @@
 #include <math.h>
 #include <iostream>
 
-//#define BENCHMARKING
+#define BENCHMARKING
 
 #ifdef BENCHMARKING
 #include "benchmark.h"
@@ -180,7 +180,6 @@ std::string compile(Job& job, Shaders& shaders, ParseTree& yacc_parse_tree,
     auto bm_ = Benchmark("AST Exec");
     #endif
 
-
     auto types = Ssbo(vreg_space * sizeof(IrType)); // TODO: Get proper size.
     types.bind(6);
 
@@ -223,15 +222,19 @@ std::string compile(Job& job, Shaders& shaders, ParseTree& yacc_parse_tree,
     const GLuint output_buffer_size = fetch_entry_node_volume(tokens, ast_nodes_dmp) + 5;
     if (job.dbg) printf("Output buffer size: %d\n", output_buffer_size);
 
+    Ssbo aggregate_type_map = Ssbo(vreg_space * sizeof(GLuint));
+    aggregate_type_map.bind(8);
 
     Ssbo output_buffer = Ssbo(output_buffer_size * sizeof(GLuint));
     output_buffer.bind(1);
 
     codegen_shdr_exec(shaders, output_buffer_size);
 
-
+    printf("AGGREGATE TYPE MAP:\n");
+    aggregate_type_map.print_contents();
 
     shaders.type_propagation.exec((types.size / 3) / 32 + 1);
+
 
     auto out_buf_dmp = (GLint*)output_buffer.dump();
 

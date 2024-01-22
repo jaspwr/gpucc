@@ -232,7 +232,7 @@ void main() {
     // Label -> continue
     // Loadable -> continue
 
-    if (vregTypes[vreg].load_depth != 0) return;
+    if (vregTypes[vreg].qualifiers != 0) return;
 
     findNeighbors(vreg, neighbors, neighborCount);
 

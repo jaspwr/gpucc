@@ -35,7 +35,7 @@
 struct IrType {
     uint base;
     uint pointer_depth;
-    uint load_depth;
+    uint qualifiers;
 };
 
 layout(std430, binding = 6) coherent volatile buffer VregTypes {
@@ -50,6 +50,30 @@ IrType favoured(IrType lhs, IrType rhs) {
     // TODO: Actually write this.
 
     return lhs;
+}
+
+void setStructBit(inout IrType type_) {
+    type_.qualifiers |= 0x4;
+}
+
+void unsetStructBit(inout IrType type_) {
+    type_.qualifiers &= ~0x4;
+}
+
+void setUnionBit(inout IrType type_) {
+    type_.qualifiers |= 0x2;
+}
+
+void unsetUnionBit(inout IrType type_) {
+    type_.qualifiers &= ~0x2;
+}
+
+void setVolatileBit(inout IrType type_) {
+    type_.qualifiers |= 0x8;
+}
+
+void unsetVolatileBit(inout IrType type_) {
+    type_.qualifiers &= ~0x8;
 }
 
 uint sizeOf(IrType type) {

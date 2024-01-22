@@ -44,7 +44,7 @@ struct ChildNode {
 struct IrType {
     GLuint base;
     GLuint pointer_depth;
-    GLuint load_depth;
+    GLuint qualifiers;
 };
 
 struct LiveInterval {

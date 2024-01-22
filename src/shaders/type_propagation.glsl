@@ -126,11 +126,13 @@ void tryGetAction(inout bool done, inout IrType setsTo,
     }
 }
 
+
 void main() {
     uint pos = gl_GlobalInvocationID.x;
     bool done = false;
     IrType setsTo = IrType(0, 0, 0);
     uint setting = 0;
+
     for (int i = 0; i < 100; i++) {
 
         tryGetAction(done, setsTo, setting, pos);
@@ -139,7 +141,9 @@ void main() {
 
         if (setting != 0) {
             done = true;
+            // setsTo.qualifiers = 0; // HACK
             vregTypes[setting] = setsTo;
+            // vregTypes[setting].qualifiers = 0;
             setting = 0;
         }
     }

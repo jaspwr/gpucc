@@ -103,7 +103,7 @@ Ssbo* create_type_checking_ssbo(std::vector<TypeCheckingEntry> entries) {
                     check_overflow();
                     buf[len++] = t.raw[i];
                 }
-                printf("\t\tbase: %d, ptr: %d, load: %d\n", t.type.base, t.type.pointer_depth, t.type.load_depth);
+                printf("\t\tbase: %d, ptr: %d, load: %d\n", t.type.base, t.type.pointer_depth, t.type.qualifiers);
             }
         }
 
@@ -182,7 +182,7 @@ inline void append_match(std::vector<std::string>& match_unparsed,
 
             types[types_index].type.base = base_type;
             types[types_index].type.pointer_depth = 0; // TODO
-            types[types_index].type.load_depth = 0;
+            types[types_index].type.qualifiers = 0;
 
         } else if (token == "#newline") {
             match.push_back(get_token_id(ir_tokens, (char*) "\n"));

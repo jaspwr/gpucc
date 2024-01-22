@@ -102,7 +102,7 @@ void print_asm(void* asm_data, u32 asm_length, void* phys_reg_map_data,
         if (token == 0) continue;
         if (token > 0) {
             std::cout << "\n";
-            std::cout << i << ": ";
+            // std::cout << i << ": ";
             std::cout << from_opcode(token);
         } else {
             GLuint vreg = -token;
@@ -163,7 +163,7 @@ void print_types(void* types, u32 length) {
         std::cout << "[%" << i / TYPE_STRUCT_SIZE << "] ";
         std::cout << "Type: " << ir_types::id_to_string(_types[i + 0]) << " ";
         std::cout << "PointerDepth: " << _types[i + 1] << " ";
-        std::cout << "LoadDepth: " << _types[i + 2] << " ";
+        std::cout << "qualifiers: " << _types[i + 2] << " ";
         std::cout << "\n";
     }
 }

@@ -85,21 +85,50 @@ int appendAstNode(AstNode newNode, uint pos, uint len) {
 }
 
 
-void formatFloat(in uint firstPart, in uint secondPart, inout uint valueHalf1, inout uint valueHalf2) {
-	float dec = float(secondPart);
-	uint shift = 1;
-	while (dec >= 1.0) {
-		shift *= 10;
-		dec /= 10.0;
+void formatFloat(in uint integer, in uint fraction, inout uint valueHalf1, inout uint valueHalf2) {
+	if (integer == 0 && fraction == 0) {
+		valueHalf1 = 0;
+		valueHalf2 = 0;
+		return;
 	}
 
-	uint value = firstPart * shift + secondPart;
+	float base = 10.0;
 	uint exponent = 0;
-	while (value >= shift) {
-		value /= 10;
+
+
+	float fraction_ = float(fraction);
+	while (fraction_ > 1.0) {
+		fraction_ /= base;
+	}
+
+	float value = float(integer) + fraction_;
+
+	float value_ = value;
+
+	while (value > 1.0) {
+		value /= 2.0;
 		exponent++;
 	}
-	valueHalf2 = exponent << 23 | value >> 9;
+
+	for (uint i = 0; i < 20; i++) {
+		value_ *= 2.0;
+	}
+
+	uint mantissa = uint(value_);
+
+	// uint integer_ = integer;
+	// while (integer_ > 0) {
+	// 	integer_ >>= 1;
+	// 	exponent++;
+	// }
+
+	// uint mantissa = integer;
+
+	while ((mantissa & 0x80000000) == 0) {
+		mantissa <<= 1;
+	}
+
+	valueHalf2 = (exponent - 1) << 23 | mantissa >> 9;
 }
 
 bool isInHexLetterRange(uint c) {

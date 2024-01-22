@@ -23,6 +23,7 @@ primary_expression
     | $0 #literal
     | ] 'if', 'switch', 'for' } '(' $0 primary_expression ')'
     | $0 sizeof
+    | $0 access
     ;
 
 switch_case_opener
@@ -81,8 +82,8 @@ struct_union_type
     ;
 
 struct_type
-    : 'struct' $1 #identifier
-    ; < struct $1 >
+    : 'struct' $0 #identifier
+    ; < struct $0 >
 
 struct_definition_head
     : $0 struct_type '{'
@@ -212,6 +213,11 @@ method_call_head
     : $0 primary_expression '('
     ;
 
+access
+    : $0 primary_expression '.' $1 primary_expression
+    | $0 primary_expression '->' $1 primary_expression
+    ; < $x = GETELEMENTPTR $0 $1
+    >
 )";
 
 const char* c_yacc = R"(
@@ -266,6 +272,8 @@ primary_expression
     | $0 dereference
     | $0 address_of
     | $0 cast_expression
+    | $0 access
+    | $0 comma
     ;
 
 function_definition
@@ -294,8 +302,9 @@ declaration_full
 
 declaration_assign
     : $0 declaration_full '=' $1 primary_expression ';'
-    ; < STORE $0 $1
-    >
+    ; < $x = COPY $1
+    STORE $0 $x
+    ` $x := $1 ` >
 
 declaration_nothing
     : $0 declaration_full ';'
@@ -340,8 +349,8 @@ comma
     : ] ',', method_call_head } [ '(', '['} { '.', '->' } { cast_operator, '*', '/', '%', '-', '+', '<<', '>>', '>',
     '<', '<=', '>=', '!=', '==', '&', '^', '=', '+=', '-=', '*=', '/=', '%=', '<<=', '>>=', '&=', '^=', '|=', '++', '--', '&&', '||', '?', ':' }
      $0 primary_expression ',' $1 primary_expression
-    ; < $x = COMMA $0 $1
-    >
+    ; < $x = COPY $1
+    ` $x := $1 ` >
 
 addition
     : [ '(', '['} { '.', '->' } { '*', '/', '-', '%', '++', '--' } ] '+' } $0 primary_expression '+' $1 primary_expression
@@ -434,7 +443,7 @@ unary_plus
         division, modulo, shift_right, shift_left, comparison_greater_than, array_access, array_access_wrapper,
         comparison_less_than, comparison_less_than_or_equal, comparison_greater_than_or_equal
         comparison_equal, comparison_not_equal, bitwise_and, bitwise_xor, bitwise_or ,unary_not,
-        unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign,
+        unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign, comma,
         shl_assign, shr_assign, and_assign, xor_assign, or_assign, prefix_increment, dereference, address_of,
         postfix_increment, prefix_decrement, postfix_decrement, prefix_increment_second, prefix_decrement_second bool_and, bool_or, ternary_selection }
         '+' $0 primary_expression
@@ -445,7 +454,7 @@ unary_minus
         division, modulo, shift_right, shift_left, comparison_greater_than, array_access, array_access_wrapper,
         comparison_less_than, comparison_less_than_or_equal, comparison_greater_than_or_equal
         comparison_equal, comparison_not_equal, bitwise_and, bitwise_xor, bitwise_or ,unary_not,
-        unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign,
+        unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign, comma,
         shl_assign, shr_assign, and_assign, xor_assign, or_assign, prefix_increment, dereference, address_of,
         postfix_increment, prefix_decrement, postfix_decrement, prefix_increment_second, prefix_decrement_second bool_and, bool_or, ternary_selection }
         '-' $0 primary_expression
@@ -457,7 +466,7 @@ unary_not
         division, modulo, shift_right, shift_left, comparison_greater_than, array_access, array_access_wrapper,
         comparison_less_than, comparison_less_than_or_equal, comparison_greater_than_or_equal
         comparison_equal, comparison_not_equal, bitwise_and, bitwise_xor, bitwise_or ,unary_not,
-        unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign,
+        unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign, comma,
         shl_assign, shr_assign, and_assign, xor_assign, or_assign, prefix_increment, dereference, address_of,
         postfix_increment, prefix_decrement, postfix_decrement, prefix_increment_second, prefix_decrement_second bool_and, bool_or, ternary_selection }
         '!' $0 primary_expression
@@ -469,7 +478,7 @@ unary_bitwise_not
         division, modulo, shift_right, shift_left, comparison_greater_than, array_access, array_access_wrapper,
         comparison_less_than, comparison_less_than_or_equal, comparison_greater_than_or_equal
         comparison_equal, comparison_not_equal, bitwise_and, bitwise_xor, bitwise_or ,unary_not,
-        unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign,
+        unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign, comma,
         shl_assign, shr_assign, and_assign, xor_assign, or_assign, prefix_increment, dereference, address_of,
         postfix_increment, prefix_decrement, postfix_decrement, prefix_increment_second, prefix_decrement_second bool_and, bool_or, ternary_selection }
         '~' $0 primary_expression
@@ -481,7 +490,7 @@ dereference
         division, modulo, shift_right, shift_left, comparison_greater_than, array_access, array_access_wrapper,
         comparison_less_than, comparison_less_than_or_equal, comparison_greater_than_or_equal
         comparison_equal, comparison_not_equal, bitwise_and, bitwise_xor, bitwise_or ,unary_not,
-        unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign,
+        unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign, comma,
         shl_assign, shr_assign, and_assign, xor_assign, or_assign, prefix_increment, dereference, address_of,
         postfix_increment, prefix_decrement, postfix_decrement, prefix_increment_second, prefix_decrement_second bool_and, bool_or, ternary_selection }
         '*' $0 primary_expression
@@ -493,7 +502,7 @@ address_of
         division, modulo, shift_right, shift_left, comparison_greater_than, array_access, array_access_wrapper,
         comparison_less_than, comparison_less_than_or_equal, comparison_greater_than_or_equal
         comparison_equal, comparison_not_equal, bitwise_and, bitwise_xor, bitwise_or ,unary_not,
-        unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign,
+        unary_bitwise_not, assign, add_assign, sub_assign, mul_assign, div_assign, mod_assign, comma,
         shl_assign, shr_assign, and_assign, xor_assign, or_assign, prefix_increment, dereference, address_of,
         postfix_increment, prefix_decrement, postfix_decrement, prefix_increment_second, prefix_decrement_second bool_and, bool_or, ternary_selection }
         '&' $0 primary_expression
@@ -559,9 +568,9 @@ assign
     : [ '(', '['} { '.', '->' } { cast_operator, '*', '/', '%', '-', '+', '<<', '>>', '>',
     '<', '<=', '>=', '!=', '==', '&', '^', '++', '--', '&&', '||', '?', ':' } ] '=' }
     $0 primary_expression '=' $1 primary_expression
-    ; < STORE $0 $1
-    $x = COPY $0
-    >
+    ; < $x = COPY $1
+    STORE $0 $x
+    ` $x := $1 ` >
 
 add_assign
     : [ '(', '['} { '.', '->' } { cast_operator, '*', '/', '%', '-', '+', '<<', '>>', '>',

@@ -68,8 +68,8 @@ bool inbounds(in uint index, in uint len) {
 IrType fetch_type_at(inout uint ptr) {
 	uint base = type_checking[ptr++];
 	uint pointer_depth = type_checking[ptr++];
-	uint load_depth = type_checking[ptr++];
-	return IrType(base, pointer_depth, load_depth);
+	uint qualifiers = type_checking[ptr++];
+	return IrType(base, pointer_depth, qualifiers);
 }
 
 bool tryTypeMatches(inout uint type_checking_ptr, inout uint vregs[10], inout uint vregs_count, inout uint replace_loc) {
