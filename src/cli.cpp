@@ -38,17 +38,6 @@ void consume_arg(int& argc, char**& argv, Job& job) {
         job.yacc = get_next_arg(argc, argv);
     } else if (strcmp(*argv, "--dbg") == 0) {
         job.dbg = true;
-    } else if (strcmp(*argv, "-emit") == 0) {
-        std::string emit = get_next_arg(argc, argv);
-        if (emit == "mew-ir") {
-            job.emit = Emit::mew_ir;
-        } else if (emit == "llvm-ir") {
-            job.emit = Emit::llvm_ir;
-        } else if (emit == "llvm-bc") {
-            job.emit = Emit::llvm_bc;
-        } else {
-            throw "Invalid emit type.";
-        }
     } else {
         job.source_files.push_back(*argv);
     }

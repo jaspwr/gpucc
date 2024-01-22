@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "include/glad/glad.h"
+#include <glad/glad.h>
 
 // TODO: encase these in a namespace
 

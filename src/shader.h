@@ -17,7 +17,7 @@
 
 
 #pragma once
-#include "include/glad/glad.h"
+#include <glad/glad.h>
 
 #include "job.h"
 #include "types.h"

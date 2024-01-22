@@ -30,7 +30,7 @@
 #include "preprocessor.h"
 #include "instruction_selection_syntax.h"
 
-#include "include/glad/glad.h"
+#include <glad/glad.h>
 #include <math.h>
 #include <iostream>
 
