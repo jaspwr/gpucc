@@ -14,10 +14,6 @@ if [ ! -d "../bin" ]; then
     mkdir "../bin"
 fi
 
-if [ ! -d "../bin/shaders" ]; then
-    mkdir "../bin/shaders"
-fi
-
 if [ ! -f "glad.o" ]; then
     $c_compiler -c ../glad.c -o glad.o
 fi
