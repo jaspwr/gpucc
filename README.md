@@ -6,6 +6,9 @@ In its current state, it is able to parse a subset of C that does not yet includ
 and compile it to something very close to proper x86_64 assembly. As this project is more of a proof of concept
 and I don't really have the time to work on it, it will likely never be finished.
 
+## Demonstration
+https://github.com/jaspwr/gpucc/assets/40232406/267f3cb7-7cc7-4b60-b6ae-35c0f66da822
+
 ## Basic Overview
 
 The compilation is split into several stages, each comprised of one or more shaders (excluding the preprocessor).
