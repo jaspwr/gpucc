@@ -22,6 +22,37 @@ The compilation is split into several stages, each comprised of one or more shad
 
 
     One issue we see with this type of parsing is that patterns like `'-' IDENTIFIER` will match to a unary minus pattern even when the full pattern might be `IDENTIFIER '-' IDENTIFIER` but the chunk given to that invocation cannot see the previous token. For this reason, each pattern has certain tokens that it checks for before and after the pattern that will block certain patterns from being matched.
+
+Example
+```
+pointer
+    : $0 type_specifier '*'
+    | $0 pointer '*'
+    | $0 struct_union_type '*'
+    ;
+
+struct_union_type
+    : $0 union_type
+    | $0 struct_type
+    ;
+
+multiplication
+    : [ '(', '['} { '.', '->' } { '/', '%', '++', '--' } ] '*' } $0 primary_expression '*' $1 primary_expression
+    ; < $x = MUL $0 $1
+    ` $x := $0 | $1 ` >
+
+division
+    : [ '(', '['} { '.', '->' } [ '++', '--' } ] '/' } $0 primary_expression '/' $1 primary_expression
+    ; < $x = DIV $0 $1
+    >
+
+modulo
+    : [ '(', '['} { '.', '->' } ] '%', '++', '--' } $0 primary_expression '%' $1 primary_expression
+    ; < $x = MOD $0 $1
+    >
+```
+Anything in `] .. }` is previous token checks, `[ .. }` following token checks and `{ .. }` is either side. This syntax isn't very nice or intuitive but it could be added to the parser with minimal effort.
+
 3. ### IR Codegen
     `src/shaders/codegen.glsl` takes the AST and generates IR code in the `IrCodegen` SSBO. The patterns each AST node correspond to can be seen in `src/grammars/c_grammar.cpp` in the angel brackets after each match case.
 
