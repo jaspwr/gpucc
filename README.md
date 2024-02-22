@@ -55,6 +55,19 @@ Addionally, a `codegenVolume` is accumulated so along with the other `volume` ea
 1. ### Instruction selection
 A syntax similar to the YACC in `src\arch\x86_64\intruction_selection.h` is used to define patterns in the IR that can be matched and then replaced with machine instructions. This is then performed by `src\shaders\instruction_selection.glsl`.
 
+Example:
+```
+%a:i32 = ADD %b:i32 %c:i32 ->
+    mov %a , %b
+    add %a , %c
+    ;
+
+%a:f32 = ADD %b:f32 %c:f32 ->
+    mov %a %b
+    addss %a %c
+    ;
+```
+
 1. ### Virtual register liveness analysis
 The IR is divided up into segments where each invocation looks at a set of IR tokens. `src/shaders/live_intervals.glsl` then looks at all the references to virtual registers in it's segment and then will do an atomic max and atomic min of the position in the IR into the `LivenessIntervals` SSBO at the index of the virtual registers ID.
 

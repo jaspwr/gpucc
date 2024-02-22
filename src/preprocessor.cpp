@@ -120,8 +120,6 @@ namespace preprocessor {
             //     }
             //     printf("typedef: %s\n", type.c_str());
 
-            //     buffer->add((u8*)"fuck you", 8);
-
             //     flush_token_buffer(token_buffer_ptr);
             // }
 

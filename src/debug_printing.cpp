@@ -97,14 +97,23 @@ void print_asm(void* asm_data, u32 asm_length, void* phys_reg_map_data,
     GLuint* phys_reg_map = (GLuint*)phys_reg_map_data;
     GLuint* frame_pointers = (GLuint*)frame_pointer_data;
 
+    bool last_opcode = false;
+
     for (u32 i = 0; i < asm_length / sizeof(GLuint); i++) {
         GLint token = asm_tokens[i];
         if (token == 0) continue;
         if (token > 0) {
+            last_opcode = true;
             std::cout << "\n";
             // std::cout << i << ": ";
             std::cout << from_opcode(token);
         } else {
+            if (last_opcode) {
+                last_opcode = false;
+            } else {
+                std::cout << ",";
+            }
+
             GLuint vreg = -token;
             GLuint phys_reg = phys_reg_map[vreg];
             if (phys_reg == 0) {
@@ -115,7 +124,8 @@ void print_asm(void* asm_data, u32 asm_length, void* phys_reg_map_data,
                     value |= node.children[1].codegenVolume;
                     printf(" 0x%llx", value);
                 } else if (frame_pointers[vreg] != 0) {
-                    std::cout << " PTR [rbp - " << frame_pointers[vreg] << "]";
+                    // TODO: pointer lengths.
+                    std::cout << " DWORD [rbp - " << frame_pointers[vreg] << "]";
                 } else {
                     std::cout << " %" << vreg;
                 }

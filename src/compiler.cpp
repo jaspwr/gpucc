@@ -160,15 +160,8 @@ std::string compile(Job& job, Shaders& shaders, ParseTree& yacc_parse_tree,
 
     if (job.dbg) tokens->print_contents();
 
-
-    // IDK what the fuck is going on here
-    // tokens->dump();
-
-
     ast_nodes.bind(3);
     _ast_ssbos.ir_codegen->bind(0);
-
-
 
     if (job.dbg) {
         auto tokens_dmp = tokens->dump();
