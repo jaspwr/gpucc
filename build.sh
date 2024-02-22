@@ -25,10 +25,10 @@ copy_shaders() {
 }
 
 if [ "$1" = "debug" ]; then
-    $copiler meow.cpp $arglist -g -O0 &&
+    $copiler gpucc.cpp $arglist -g -O0 &&
     copy_shaders
 else if [ "$1" = "run" ]; then
-    $compiler meow.cpp $arglist &&
+    $compiler gpucc.cpp $arglist &&
     copy_shaders &&
     prime-run ../bin/meow ../tests/random.c --dbg
 else if [ "$1" = "justrun" ]; then
@@ -39,6 +39,6 @@ else if [ "$1" = "test" ]; then
     prime-run ../bin/testbin &&
     rm ../bin/testbin
 else
-    $compiler meow.cpp $arglist -O3 &&
+    $compiler gpucc.cpp $arglist -O3 &&
     copy_shaders
 fi fi fi fi

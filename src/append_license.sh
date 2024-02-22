@@ -1,6 +1,6 @@
 #!/bin/bash
 
-project_name="Meow"
+project_name="gpucc"
 year="2023"
 name="Jasper Parker"
 email="j@sperp.dev"
