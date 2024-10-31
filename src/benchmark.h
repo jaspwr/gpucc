@@ -46,7 +46,6 @@ struct Benchmark {
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> duration = end - start;
         
-        // Big mess
         auto output = name + repeated_char(30 - name.length() + 1, ' ') + std::to_string(duration.count()) + "s";
         u32 bar_len = (u32)(duration.count() * 1e4);
         #define MAX_BAR_LEN 60
