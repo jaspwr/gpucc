@@ -6,9 +6,6 @@ In its current state, it is able to parse a subset of C that does not yet includ
 and compile it to something very close to proper x86_64 assembly. As this project is more of a proof of concept
 and I don't really have the time to work on it, it will likely never be finished.
 
-## Demonstration
-https://github.com/jaspwr/gpucc/assets/40232406/267f3cb7-7cc7-4b60-b6ae-35c0f66da822
-
 ## Basic Overview
 Slides from my presentation on this project to the UTS Programmers' Society are available [here](https://cdn.discordapp.com/attachments/1121020960607322235/1232698715584860200/jasper_progsoc_talk.pdf?ex=668df0e4&is=668c9f64&hm=5530e0922150d78020a6f5300ae04bb6021087f33526a7fa8beddfca71e93ce1&).
 

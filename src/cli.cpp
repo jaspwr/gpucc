@@ -21,8 +21,15 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <sys/ioctl.h>
 #include <stdio.h>
+
+#ifdef __linux__
+#include <sys/ioctl.h>
+#endif
+
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 std::string get_next_arg(int& argc, char**& argv) {
     argc--;
@@ -55,7 +62,21 @@ Job parse_args(int argc, char** argv) {
 }
 
 TerminalSize get_terminal_size() {
-    struct winsize w;
+#ifdef __linux__
+    winsize w;
     ioctl(0, TIOCGWINSZ, &w);
     return TerminalSize { w.ws_row, w.ws_col };
+#endif
+
+#ifdef _WIN32
+    // https://stackoverflow.com/questions/6812224/getting-terminal-size-in-c-for-windows
+
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    int columns, rows;
+
+    GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &csbi);
+    columns = csbi.srWindow.Right - csbi.srWindow.Left + 1;
+    rows = csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
+    return TerminalSize { (u32)rows, (u32)columns };
+#endif
 }
