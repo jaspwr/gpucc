@@ -7,7 +7,7 @@ and compile it to something very close to proper x86_64 assembly. As this projec
 and I don't really have the time to work on it, it will likely never be finished.
 
 ## Basic Overview
-Slides from my presentation on this project to the UTS Programmers' Society are available [here](https://github.com/jaspwr/gpucc/tree/main/misc/jasper_procsoc_talk.pdf).
+Slides from my presentation on this project to the UTS Programmers' Society are available [here](https://github.com/jaspwr/gpucc/blob/main/misc/jasper_progsoc_talk.pdf).
 
 The compilation is split into several stages, each comprised of one or more shaders (excluding the preprocessor).
 
